@@ -14,7 +14,11 @@ TK=$(curl -fsS --retry 5 --retry-delay 10 -m 60 -H "Authorization: Bearer $ACTIO
 pegar() {
   local r c; r=$(curl -sS --retry 3 --retry-delay 10 -m 60 -w '\n%{http_code}' -H "Authorization: Bearer $TK" "$URL") || return 1
   c=$(echo "$r" | tail -n 1); r=$(echo "$r" | sed '$d')
-  if [ "$c" != "200" ]; then echo "Servidor respondeu $c: $r" | cut -c1-300; return 1; fi
+  if [ "$c" != "200" ]; then
+    echo "Servidor respondeu $c: $r" | cut -c1-300
+    echo "Identidade enviada: $(echo "$TK" | cut -d. -f2 | tr '_-' '/+' | base64 -d 2>/dev/null | jq -c '{repository,ref,event_name,aud,iss}' 2>/dev/null)"
+    return 1
+  fi
   [ "$(echo "$r" | jq -r .existe)" = "true" ] || return 2
   echo "$r" | jq -r .keystore | base64 -d > "$KS"
   SENHA=$(echo "$r" | jq -r .senha)
