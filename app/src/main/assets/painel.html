@@ -78,6 +78,9 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
 .fav b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fav small { color: var(--su); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fav .x { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); width: 38px; height: 38px; background: none; border: 0; color: var(--su); font-size: 20px; cursor: pointer; }
+.grade-w { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+.grade-w .w { position: relative; aspect-ratio: 9 / 16; border-radius: 10px; border: 1px solid var(--borda); background: rgba(255,255,255,.06) center/cover no-repeat; cursor: pointer; padding: 0; }
+.grade-w .w .x { position: absolute; top: 3px; right: 3px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: rgba(0,0,0,.6); color: #fff; font-size: 15px; line-height: 1; cursor: pointer; }
 .dica { font-size: 12px; color: var(--su); margin: -6px 0 14px; line-height: 1.4; }
 </style>
 </head>
@@ -129,6 +132,9 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
             <button class="botao primario" id="f-galeria">Da galeria</button>
             <button class="botao perigo" id="f-remover">Remover</button>
           </div>
+          <p class="rotulo" style="margin-top:16px">Meus wallpapers (baixados e escolhidos)</p>
+          <div class="grade-w" id="walls"></div>
+          <p class="dica" id="walls-dica">Todo fundo que você usar fica guardado aqui e continua depois de atualizar o Velox. Toque para usar; o × apaga da lista.</p>
           <p class="rotulo" style="margin-top:16px">Colar link da imagem</p>
           <div class="junto"><input class="campo-t" id="f-url" type="url" placeholder="https://…" aria-label="Endereço da imagem"><button class="botao" id="f-usar">Usar</button></div>
           <p class="rotulo">Buscar na internet</p>
@@ -294,6 +300,18 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     if (E.foto && E.fotoAmostra) { p.style.backgroundImage = "url(" + E.fotoAmostra + ")"; p.textContent = ""; }
     else { p.style.backgroundImage = "none"; p.textContent = E.foto ? "Foto de fundo ativa" : "Sem foto: usando só o tema"; }
   }
+  function desenharWalls() {
+    var g = $("walls"); g.innerHTML = "";
+    var l = E.walls || [];
+    if (!l.length) { g.appendChild(el("p", "vazio", "Nenhum wallpaper guardado ainda.")); g.style.display = "block"; return; }
+    g.style.display = "grid";
+    l.forEach(function (n) {
+      var b = el("div", "w"); b.style.backgroundImage = "url(https://velox.local/w/" + n + ")";
+      b.onclick = function () { ir("fundo-usar", { n: n }); };
+      var x = el("button", "x", "×"); x.setAttribute("aria-label", "Apagar wallpaper"); x.onclick = function (ev) { ev.stopPropagation(); ir("fundo-apagar", { n: n }); };
+      b.appendChild(x); g.appendChild(b);
+    });
+  }
   $("f-galeria").onclick = function () { ir("fundo-galeria"); };
   $("f-remover").onclick = function () { ir("fundo-remover"); E.foto = false; E.fotoAmostra = ""; desenharFundo(); };
   $("f-usar").onclick = function () { var u = $("f-url").value.trim(); if (/^https:\/\//i.test(u)) ir("fundo-url", { u: u }); else ir("aviso", { m: "Use um endereço de imagem que comece com https://" }); };
@@ -338,7 +356,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
   if (E.padrao) { $("padrao-t").textContent = "O Velox já é o seu navegador principal"; $("navprinc").textContent = "Ativo"; }
   if (E.v) $("versao").textContent = "Versão " + E.v + " · Vetorial Tech";
 
-  desenharFav(); desenharAbas(); desenharChaves(); vars(); desenharVisual(); desenharFundo(); mostrar(atual);
+  desenharWalls(); desenharFav(); desenharAbas(); desenharChaves(); vars(); desenharVisual(); desenharFundo(); mostrar(atual);
 })();
 </script>
 </body>

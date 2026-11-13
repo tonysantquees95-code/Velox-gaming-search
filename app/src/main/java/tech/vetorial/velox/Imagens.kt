@@ -80,9 +80,73 @@ object Imagens {
 
     fun temFundo(ctx: Context): Boolean = arquivoFundo(ctx).exists()
 
+    /** Biblioteca de wallpapers: todo fundo usado fica guardado aqui (sobrevive a atualizações) e pode ser escolhido de novo. */
+    fun pastaWallpapers(ctx: Context) = File(ctx.filesDir, "wallpapers").also { it.mkdirs() }
+
+    fun listarWallpapers(ctx: Context): List<String> =
+        (pastaWallpapers(ctx).listFiles { f -> f.name.matches(Regex("w_[0-9a-f]{12}\\.jpg")) } ?: emptyArray())
+            .sortedByDescending { it.lastModified() }.map { it.name }
+
+    fun arquivoWallpaper(ctx: Context, nome: String): File? =
+        if (nome.matches(Regex("w_[0-9a-f]{12}\\.jpg"))) File(pastaWallpapers(ctx), nome).takeIf { it.exists() } else null
+
+    /** Guarda o fundo na biblioteca e devolve o nome do arquivo. Também deixa uma cópia na galeria (Imagens/Velox), que sobrevive até a desinstalar o app. */
+    private fun guardarNaBiblioteca(ctx: Context, jpeg: ByteArray): String {
+        val hash = java.security.MessageDigest.getInstance("SHA-1").digest(jpeg).joinToString("") { "%02x".format(it) }.take(12)
+        val nome = "w_$hash.jpg"
+        val f = File(pastaWallpapers(ctx), nome)
+        if (!f.exists()) {
+            f.writeBytes(jpeg)
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= 29) {
+                    val v = android.content.ContentValues().apply {
+                        put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, "Velox-$hash.jpg")
+                        put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                        put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Velox")
+                    }
+                    ctx.contentResolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v)?.let { u -> ctx.contentResolver.openOutputStream(u)?.use { it.write(jpeg) } }
+                }
+            } catch (e: Exception) {
+                // sem a cópia na galeria: a da biblioteca continua valendo
+            }
+        } else f.setLastModified(System.currentTimeMillis())
+        return nome
+    }
+
+    fun usarWallpaper(ctx: Context, nome: String): Boolean {
+        val f = arquivoWallpaper(ctx, nome) ?: return false
+        f.copyTo(arquivoFundo(ctx), overwrite = true)
+        f.setLastModified(System.currentTimeMillis())
+        return true
+    }
+
+    fun apagarWallpaper(ctx: Context, nome: String) { arquivoWallpaper(ctx, nome)?.delete() }
+
+    /** Miniatura (JPEG) de um wallpaper da biblioteca, para a lista do painel. */
+    fun miniaturaWallpaper(ctx: Context, nome: String): ByteArray? {
+        val f = arquivoWallpaper(ctx, nome) ?: return null
+        val b = decodificar(f.readBytes(), 360) ?: return null
+        return ByteArrayOutputStream().also { b.compress(Bitmap.CompressFormat.JPEG, 80, it) }.toByteArray()
+    }
+
+    /** Se o arquivo do fundo atual sumiu mas há wallpapers guardados, volta o mais recente. */
+    fun restaurarFundoSeSumiu(ctx: Context): Boolean {
+        if (temFundo(ctx)) {
+            // fundo de versões antigas ainda não estava na biblioteca: guarda agora
+            if (listarWallpapers(ctx).isEmpty()) guardarNaBiblioteca(ctx, arquivoFundo(ctx).readBytes())
+            return false
+        }
+        val nome = listarWallpapers(ctx).firstOrNull() ?: return false
+        return usarWallpaper(ctx, nome)
+    }
+
     fun salvarFundo(ctx: Context, dados: ByteArray): Boolean {
         val b = decodificar(dados, 1600) ?: return false
-        arquivoFundo(ctx).outputStream().use { b.compress(Bitmap.CompressFormat.JPEG, 86, it) }
+        val saida = ByteArrayOutputStream()
+        b.compress(Bitmap.CompressFormat.JPEG, 86, saida)
+        val jpeg = saida.toByteArray()
+        arquivoFundo(ctx).writeBytes(jpeg)
+        guardarNaBiblioteca(ctx, jpeg)
         return true
     }
 

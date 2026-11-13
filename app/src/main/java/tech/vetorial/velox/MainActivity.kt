@@ -90,6 +90,7 @@ class MainActivity : Activity() {
     override fun onCreate(estado: Bundle?) {
         super.onCreate(estado)
         ajustes = Ajustes(this)
+        try { Imagens.restaurarFundoSeSumiu(this) } catch (e: Exception) { /* segue sem fundo */ }
         tema = Tema.daString(ajustes.temaTexto)
         bloqueadosTotal.set(ajustes.bloqueadosTotal)
         montarTela()
@@ -414,6 +415,7 @@ class MainActivity : Activity() {
             .put("v", versao)
             .put("foto", fotoFundo != null)
             .put("vindex", vindexInstalado())
+            .put("walls", JSONArray(Imagens.listarWallpapers(this)))
             .put("fav", JSONArray(ajustes.favoritosJson))
             .put("padrao", ehNavegadorPrincipal())
         fotoFundo?.let { o.put("fotoAmostra", Imagens.miniatura(it, 360, true)) }
@@ -432,6 +434,14 @@ class MainActivity : Activity() {
         wv.settings.allowContentAccess = false
         wv.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean = acaoDoPainel(req.url)
+            override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
+                val u = req.url
+                if (u.host == "velox.local" && (u.path ?: "").startsWith("/w/")) {
+                    val bytes = try { Imagens.miniaturaWallpaper(this@MainActivity, (u.path ?: "").removePrefix("/w/")) } catch (e: Exception) { null }
+                    if (bytes != null) return WebResourceResponse("image/jpeg", null, ByteArrayInputStream(bytes))
+                }
+                return null
+            }
         }
         raizApp.addView(wv, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         painel = wv
@@ -477,6 +487,11 @@ class MainActivity : Activity() {
             "fav-abrir" -> { fecharPainel(); u.getQueryParameter("u")?.let { abrirTexto(it) } }
             "padrao" -> { fecharPainel(); pedirNavegadorPrincipal() }
             "fundo-galeria" -> escolherImagem(PEDIDO_FUNDO)
+            "fundo-usar" -> {
+                val n = u.getQueryParameter("n") ?: ""
+                if (Imagens.usarWallpaper(this, n)) { fotoFundo = Imagens.carregarFundo(this); depoisDeMudarFundo(); Toast.makeText(this, "Fundo aplicado.", Toast.LENGTH_SHORT).show() }
+            }
+            "fundo-apagar" -> { Imagens.apagarWallpaper(this, u.getQueryParameter("n") ?: ""); abrirPainel("fundo") }
             "fundo-remover" -> { Imagens.removerFundo(this); fotoFundo = null; depoisDeMudarFundo() }
             "fundo-url" -> imagemDaRede(u.getQueryParameter("u"), null)
             "fundo-buscar" -> buscarImagens(u.getQueryParameter("q"), null)
