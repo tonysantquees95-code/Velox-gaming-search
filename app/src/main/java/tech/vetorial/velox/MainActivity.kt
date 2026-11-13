@@ -487,6 +487,16 @@ class MainActivity : Activity() {
             "dl-pronto" -> enviarDownloads()
             "dl-abrir" -> u.getQueryParameter("id")?.toLongOrNull()?.let { abrirArquivoBaixado(it) }
             "dl-pasta" -> abrirVindex()
+            "dl-limpar" -> {
+                try {
+                    val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+                    val ids = mutableListOf<Long>()
+                    dm.query(DownloadManager.Query().setFilterByStatus(DownloadManager.STATUS_FAILED))?.use { c -> val i = c.getColumnIndexOrThrow(DownloadManager.COLUMN_ID); while (c.moveToNext()) ids.add(c.getLong(i)) }
+                    if (ids.isNotEmpty()) dm.remove(*ids.toLongArray())
+                } catch (e: Exception) { /* nada a limpar */ }
+                enviarDownloads()
+            }
+            "dl-retentar" -> u.getQueryParameter("id")?.toLongOrNull()?.let { retentarDownload(it) }
             "dl-apagar" -> { u.getQueryParameter("id")?.toLongOrNull()?.let { id -> try { (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).remove(id); baixando.remove(id) } catch (e: Exception) { /* já não existe */ }; enviarDownloads() } }
             "fav-add" -> { favoritarPaginaAtual(); if (u.getQueryParameter("fica") != "1") fecharPainel() else abrirPainel("favoritos", true) }
             "fav-del" -> { u.getQueryParameter("i")?.toIntOrNull()?.let { removerFavorito(it) }; abrirPainel("favoritos", true) }
@@ -1134,6 +1144,8 @@ class MainActivity : Activity() {
                 val iTot = c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
                 val iB = c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
                 val iR = c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)
+                val iLoc = c.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI)
+                val iU = c.getColumnIndexOrThrow(DownloadManager.COLUMN_URI)
                 var n = 0
                 while (c.moveToNext() && n < 60) {
                     n++
@@ -1165,7 +1177,10 @@ class MainActivity : Activity() {
                         estado == 3 && motivo >= 400 -> "erro do site ($motivo)"
                         else -> ""
                     }
-                    itens.put(JSONObject().put("id", id).put("t", c.getString(iT) ?: "").put("s", estado).put("b", bytes)
+                    val titulo = (c.getString(iT) ?: "").takeIf { it.isNotBlank() && it != "arquivo" }
+                        ?: (c.getString(iLoc) ?: "").substringAfterLast('/').takeIf { it.isNotBlank() }
+                        ?: (c.getString(iU) ?: "").substringBefore('?').substringAfterLast('/').takeIf { it.isNotBlank() } ?: "download"
+                    itens.put(JSONObject().put("id", id).put("t", titulo).put("s", estado).put("b", bytes)
                         .put("tot", c.getLong(iTot).coerceAtLeast(0)).put("v", vel.toLong()).put("q", q))
                 }
             }
@@ -1174,6 +1189,26 @@ class MainActivity : Activity() {
         }
         val b64 = Base64.encodeToString(JSONObject().put("itens", itens).toString().toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
         wv.evaluateJavascript("window.vxAtualizar && window.vxAtualizar('$b64')", null)
+    }
+
+    /** Baixa de novo um download que falhou, com os cookies e a página de origem de agora. */
+    private fun retentarDownload(id: Long) {
+        try {
+            val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            var url = ""; var titulo = ""
+            dm.query(DownloadManager.Query().setFilterById(id))?.use { c ->
+                if (c.moveToFirst()) {
+                    url = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_URI)) ?: ""
+                    titulo = c.getString(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE)) ?: ""
+                }
+            }
+            if (!url.startsWith("http")) { Toast.makeText(this, "Não deu para repetir esse download. Baixe pelo site de novo.", Toast.LENGTH_LONG).show(); return }
+            dm.remove(id)
+            baixar(url, atual?.webView?.settings?.userAgentString, null, null, titulo.takeIf { it.isNotBlank() && it != "arquivo" })
+            enviarDownloads()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Não consegui repetir o download.", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun abrirArquivoBaixado(id: Long) {
@@ -1207,11 +1242,15 @@ class MainActivity : Activity() {
 
     // ---------------------------------------------------------------- downloads
 
-    private fun baixar(url: String, userAgent: String?, disposicao: String?, tipo: String?) {
+    private fun baixar(url: String, userAgent: String?, disposicao: String?, tipo: String?, nomeForcado: String? = null) {
         try {
-            val nome = URLUtil.guessFileName(url, disposicao, tipo)
+            val nome = nomeForcado ?: URLUtil.guessFileName(url, disposicao, tipo)
             val pedido = DownloadManager.Request(Uri.parse(url))
-            pedido.setMimeType(tipo)
+            pedido.setTitle(nome)
+            // muitos sites respondem erro 500/403 sem saber de que página veio o pedido
+            val origem = atual?.url ?: ""
+            if (origem.startsWith("http")) pedido.addRequestHeader("Referer", origem)
+            if (!tipo.isNullOrEmpty()) pedido.setMimeType(tipo)
             CookieManager.getInstance().getCookie(url)?.let { pedido.addRequestHeader("Cookie", it) }
             if (!userAgent.isNullOrEmpty()) pedido.addRequestHeader("User-Agent", userAgent)
             pedido.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)

@@ -31,7 +31,7 @@ body { display: flex; flex-direction: column; padding: 0; }
 </head>
 <body>
 <div class="fundo"><i class="modelo"></i></div>
-<div class="topo-d"><h1>Downloads</h1><button class="fechar" id="fechar" aria-label="Fechar">×</button></div>
+<div class="topo-d"><h1>Downloads</h1><button class="botao" id="limpar" style="min-height:38px;padding:0 12px;font-size:12px">Limpar falhas</button><button class="fechar" id="fechar" aria-label="Fechar">×</button></div>
 <div class="resumo">
   <div class="vidro"><b id="r-ativos">0</b><span>baixando</span></div>
   <div class="vidro"><b id="r-vel">0 KB/s</b><span>velocidade</span></div>
@@ -47,11 +47,12 @@ body { display: flex; flex-direction: column; padding: 0; }
   var fmt = function (b) { if (b < 1024) return b + " B"; if (b < 1048576) return (b / 1024).toFixed(0) + " KB"; if (b < 1073741824) return (b / 1048576).toFixed(1) + " MB"; return (b / 1073741824).toFixed(2) + " GB"; };
   var tempo = function (s) { if (!isFinite(s) || s < 0) return ""; if (s < 60) return Math.ceil(s) + " s"; if (s < 3600) return Math.floor(s / 60) + " min " + Math.round(s % 60) + " s"; return Math.floor(s / 3600) + " h " + Math.round((s % 3600) / 60) + " min"; };
   var armado = {};
+  $("limpar").onclick = function () { ir("dl-limpar"); };
   $("fechar").onclick = function () { ir("fechar"); };
   var ultima = "";
   window.vxAtualizar = function (b64) {
     var D; try { D = JSON.parse(decodeURIComponent(escape(atob(b64)))); } catch (e) { return; }
-    var chave = JSON.stringify(D.itens.map(function (i) { return [i.id, i.s, i.b, i.tot, i.v]; }));
+    var chave = JSON.stringify(D.itens.map(function (i) { return [i.id, i.s, i.b, i.tot, i.v, i.t]; }));
     if (chave === ultima) return; ultima = chave;
     var ativos = 0, feitos = 0, vel = 0;
     D.itens.forEach(function (i) { if (i.s === 0 || i.s === 1) ativos++; if (i.s === 2) feitos++; if (i.s === 0) vel += i.v; });
@@ -76,10 +77,11 @@ body { display: flex; flex-direction: column; padding: 0; }
         var a1 = el("button", "botao primario", "Abrir arquivo"); a1.onclick = function () { ir("dl-abrir", { id: i.id }); }; ac.appendChild(a1);
         var a2 = el("button", "botao", "Abrir pasta"); a2.onclick = function () { ir("dl-pasta", { id: i.id }); }; ac.appendChild(a2);
       }
-      var rot = (i.s === 2) ? "Apagar" : "Cancelar";
-      var a3 = el("button", "botao", armado[i.id] ? "Toque de novo" : rot); if (i.s !== 2) { a3.className = "botao"; }
+      if (i.s === 3) { var a4 = el("button", "botao primario", "Tentar de novo"); a4.onclick = function () { ir("dl-retentar", { id: i.id }); }; ac.appendChild(a4); }
+      var a3 = el("button", "botao", i.s === 2 ? (armado[i.id] ? "Toque de novo" : "Apagar arquivo") : (i.s === 3 ? "Remover" : "Cancelar"));
       a3.onclick = function () {
-        if (!armado[i.id]) { armado[i.id] = true; a3.textContent = "Toque de novo"; setTimeout(function () { armado[i.id] = false; ultima = ""; }, 3000); return; }
+        // baixando ou falhou: age na hora; arquivo já baixado pede um segundo toque (apaga do aparelho)
+        if (i.s === 2 && !armado[i.id]) { armado[i.id] = true; a3.textContent = "Toque de novo"; setTimeout(function () { armado[i.id] = false; ultima = ""; }, 3000); return; }
         armado[i.id] = false; ir("dl-apagar", { id: i.id });
       };
       ac.appendChild(a3);
