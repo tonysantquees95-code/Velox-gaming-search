@@ -37,7 +37,7 @@ class LogoVgx(contexto: Context) : View(contexto) {
     /** Neons andando em volta das letras (como na página inicial). */
     private var fase = 0f
     private var anim: ValueAnimator? = null
-    private val comprimentos = floatArrayOf(x1, x2, v).map { PathMeasure(it, true).length }.toFloatArray()
+    private val comprimentos = listOf(x1, x2, v).map { PathMeasure(it, true).length }.toFloatArray()
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
