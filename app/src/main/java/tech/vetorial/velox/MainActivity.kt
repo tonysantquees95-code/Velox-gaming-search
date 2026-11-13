@@ -1058,11 +1058,19 @@ class MainActivity : Activity() {
 
     private fun vindexInstalado(): Boolean = try { packageManager.getLaunchIntentForPackage(VINDEX) != null } catch (e: Exception) { false }
 
+    /** Abre os downloads no gerenciador que a pessoa usa (Vindex, Arquivos do Google ou outro); sem um padrão, o Android pergunta. */
     private fun abrirVindex() {
-        val i = try { packageManager.getLaunchIntentForPackage(VINDEX) } catch (e: Exception) { null }
-        if (i == null) { Toast.makeText(this, "O Vindex não está instalado neste aparelho.", Toast.LENGTH_LONG).show(); return }
         fecharPainel()
-        startActivity(i)
+        try {
+            startActivity(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: Exception) {
+            try {
+                val pasta = Uri.parse("content://com.android.externalstorage.documents/document/primary%3ADownload")
+                startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(pasta, "vnd.android.document/directory").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            } catch (e2: Exception) {
+                Toast.makeText(this, "Não encontrei um app para abrir os downloads.", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     // ---------------------------------------------------------------- downloads
