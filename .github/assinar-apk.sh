@@ -12,7 +12,9 @@ aviso() { echo "::error::$1 Sem a chave permanente o APK não atualizaria por ci
 TK=$(curl -fsS --retry 5 --retry-delay 10 -m 60 -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=venus-assinatura" | jq -r .value) || aviso "Não consegui o token do GitHub."
 
 pegar() {
-  local r; r=$(curl -fsS --retry 6 --retry-delay 15 --retry-all-errors -m 60 -H "Authorization: Bearer $TK" "$URL") || return 1
+  local r c; r=$(curl -sS --retry 3 --retry-delay 10 -m 60 -w '\n%{http_code}' -H "Authorization: Bearer $TK" "$URL") || return 1
+  c=$(echo "$r" | tail -n 1); r=$(echo "$r" | sed '$d')
+  if [ "$c" != "200" ]; then echo "Servidor respondeu $c: $r" | cut -c1-300; return 1; fi
   [ "$(echo "$r" | jq -r .existe)" = "true" ] || return 2
   echo "$r" | jq -r .keystore | base64 -d > "$KS"
   SENHA=$(echo "$r" | jq -r .senha)
