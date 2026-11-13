@@ -741,7 +741,8 @@ class MainActivity : Activity() {
     }
 
     private fun configurar(wv: WebView, anonima: Boolean) {
-        wv.setBackgroundColor(tema.fundo)
+        // vidro desde o início: com fundo sólido o wallpaper sumia até mexer na transparência
+        wv.setBackgroundColor(if (ajustes.sitesNoTema) Color.TRANSPARENT else tema.fundo)
         aplicarEscuro(wv)
         val s = wv.settings
         s.javaScriptEnabled = true
