@@ -1,0 +1,69 @@
+name: Gerar APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - ".github/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Testar
+        run: |
+          set -o pipefail
+          gradle testDebugUnitTest --no-daemon 2>&1 | tee build.log
+
+      - name: Compilar o APK
+        run: |
+          set -o pipefail
+          gradle assembleDebug --no-daemon 2>&1 | tee -a build.log
+
+      - name: Mostrar erros
+        if: failure()
+        run: |
+          grep -E "^e: " build.log | head -n 20 | while read -r linha; do echo "::error::$linha"; done || true
+          for f in app/build/test-results/*/*.xml; do
+            [ -f "$f" ] || continue
+            grep -o '<failure message="[^"]*"' "$f" | sed 's/<failure message="//; s/"$//' | head -n 20 | while read -r linha; do echo "::error::$linha"; done
+          done
+
+      # A chave de assinatura fica guardada (cifrada) no servidor da Vênus: cada versão instala por cima da anterior.
+      - name: Assinar o APK
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk Velox.apk
+          bash .github/assinar-apk.sh Velox.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: velox-android
+          path: Velox.apk
+          if-no-files-found: error
+
+      - name: Publicar a versão
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "v1.${{ github.run_number }}" Velox.apk --title "Velox 1.${{ github.run_number }}" --notes "Versão 1.${{ github.run_number }} do Velox Search." --latest
