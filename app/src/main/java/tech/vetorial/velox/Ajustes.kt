@@ -41,6 +41,11 @@ class Ajustes(contexto: Context) {
         get() = p.getLong("bloqueados_total", 0L)
         set(v) { p.edit().putLong("bloqueados_total", v).apply() }
 
+    /** Quando o Velox procurou atualização pela última vez (milissegundos). */
+    var ultimaConferencia: Long
+        get() = p.getLong("ultima_conferencia", 0L)
+        set(v) { p.edit().putLong("ultima_conferencia", v).apply() }
+
     /** Endereços das abas abertas (sem as anônimas), separados por quebra de linha. */
     var abas: List<String>
         get() = (p.getString("abas", "") ?: "").split('\n').filter { it.isNotBlank() }

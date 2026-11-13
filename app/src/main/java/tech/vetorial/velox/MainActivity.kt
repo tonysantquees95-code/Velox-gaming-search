@@ -82,6 +82,7 @@ class MainActivity : Activity() {
         bloqueadosTotal.set(ajustes.bloqueadosTotal)
         montarTela()
         aplicarOpcoesSalvas()
+        procurarAtualizacao(false)
         val pedido = intent?.dataString
         val salvas = ajustes.abas
         if (pedido != null) {
@@ -379,6 +380,7 @@ class MainActivity : Activity() {
             "buscador" -> Buscador.values().firstOrNull { it.id == u.getQueryParameter("id") }?.let { ajustes.buscador = it.id }
             "compartilhar" -> { fecharPainel(); compartilhar() }
             "limpar" -> limparDados()
+            "atualizar" -> procurarAtualizacao(true)
         }
         return true
     }
@@ -390,6 +392,52 @@ class MainActivity : Activity() {
             "imersivo" -> { ajustes.imersivo = ligado; aplicarImersivo() }
             "tela" -> { ajustes.telaLigada = ligado; aplicarTela() }
             "pc" -> { ajustes.siteParaComputador = ligado; for (a in abas) aplicarModoComputador(a.webView); atual?.webView?.reload() }
+        }
+    }
+
+    // ---------------------------------------------------------------- atualização do próprio Velox
+
+    private var atualizando = false
+
+    /** Procura a versão nova, baixa e instala. Automática: no máximo a cada 6 horas e sem barulho. Manual: sempre responde. */
+    private fun procurarAtualizacao(manual: Boolean) {
+        if (atualizando) return
+        if (!manual && !Atualizador.precisaConferir(ajustes.ultimaConferencia, System.currentTimeMillis())) return
+        atualizando = true
+        if (manual) Toast.makeText(this, "Procurando atualização…", Toast.LENGTH_SHORT).show()
+        Thread {
+            var aviso: String? = null
+            try {
+                val v = Atualizador.procurar()
+                ajustes.ultimaConferencia = System.currentTimeMillis()
+                val minha = Atualizador.instalada(this)
+                if (v == null) {
+                    if (manual) aviso = "Não consegui consultar as atualizações agora. Confira a internet."
+                } else if (!Atualizador.haNova(minha, v.numero)) {
+                    if (manual) aviso = "Você já está na versão mais nova (1.$minha)."
+                } else if (!Atualizador.podeInstalar(this)) {
+                    runOnUiThread { pedirPermissaoDeInstalar(v.numero) }
+                } else {
+                    runOnUiThread { Toast.makeText(this, "Baixando o Velox 1.${v.numero}…", Toast.LENGTH_LONG).show() }
+                    val apk = Atualizador.baixar(this, v)
+                    runOnUiThread { try { Atualizador.instalar(this, apk) } catch (e: Exception) { Toast.makeText(this, "Não consegui instalar: ${e.message ?: "erro"}", Toast.LENGTH_LONG).show() } }
+                }
+            } catch (e: Exception) {
+                if (manual) aviso = "A atualização falhou: ${e.message ?: "erro"}"
+            } finally {
+                atualizando = false
+            }
+            if (aviso != null) { val m = aviso; runOnUiThread { Toast.makeText(this, m, Toast.LENGTH_LONG).show() } }
+        }.start()
+    }
+
+    /** O Android só deixa um app se atualizar depois que a pessoa libera "instalar apps desconhecidos" para ele. */
+    private fun pedirPermissaoDeInstalar(numero: Int) {
+        Toast.makeText(this, "Velox 1.$numero disponível. Libere \"Permitir desta fonte\" para ele se atualizar sozinho.", Toast.LENGTH_LONG).show()
+        try {
+            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName")))
+        } catch (e: Exception) {
+            // sem a tela de permissão neste aparelho: segue sem atualizar
         }
     }
 

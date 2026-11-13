@@ -87,7 +87,8 @@ input[type="range"] { width: 100%; accent-color: var(--neon); height: 34px; }
           <button class="botao" id="compartilhar">Compartilhar página</button>
           <button class="botao perigo" id="limpar">Limpar dados</button>
         </div>
-        <div class="vidro linha" style="margin-top:14px"><div><b>Velox Gaming Search</b><small id="versao">Navegador gamer da Vetorial Tech</small></div></div>
+        <div class="vidro linha" style="margin-top:14px"><div><b>Velox Gaming Search</b><small id="versao">Navegador gamer da Vetorial Tech</small></div><button class="botao primario" id="atualizar" style="min-height:40px;padding:0 .9rem">Atualizar</button></div>
+        <p class="rotulo" style="margin-top:10px;text-transform:none;letter-spacing:.02em">O Velox procura versão nova sozinho ao abrir.</p>
       </section>
     </div>
   </div>
@@ -202,6 +203,7 @@ input[type="range"] { width: 100%; accent-color: var(--neon); height: 34px; }
   $("compartilhar").onclick = function () { ir("compartilhar"); };
   var armado = false;
   $("limpar").onclick = function () { if (!armado) { armado = true; this.textContent = "Toque de novo para apagar"; var b = this; setTimeout(function () { armado = false; b.textContent = "Limpar dados"; }, 3500); } else { ir("limpar"); this.textContent = "Dados apagados"; armado = false; } };
+  $("atualizar").onclick = function () { ir("atualizar"); };
   if (E.v) $("versao").textContent = "Versão " + E.v + " · Vetorial Tech";
 
   desenharAbas(); desenharChaves(); aplicar(); mostrar(atual);

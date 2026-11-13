@@ -42,3 +42,28 @@ class TemaTest {
         assertEquals(0xFFFFFFFF.toInt(), Tema.daString("c1=1b3dbd").sobreDestaque) // azul escuro: texto branco
     }
 }
+
+class AtualizadorTest {
+    @Test fun soBaixaDoGithubPorHttps() {
+        assertTrue(Atualizador.enderecoPermitido("https://github.com/x/y/releases/download/v1.2/Velox.apk"))
+        assertTrue(Atualizador.enderecoPermitido("https://objects.githubusercontent.com/abc"))
+        assertFalse(Atualizador.enderecoPermitido("http://github.com/x"))
+        assertFalse(Atualizador.enderecoPermitido("https://github.com.mal.com/x"))
+        assertFalse(Atualizador.enderecoPermitido("https://exemplo.com/Velox.apk"))
+    }
+
+    @Test fun comparaVersoes() {
+        assertTrue(Atualizador.haNova(5, 6))
+        assertFalse(Atualizador.haNova(6, 6))
+        assertFalse(Atualizador.haNova(0, 9)) // versão de desenvolvimento não se atualiza
+        assertFalse(Atualizador.haNova(5, null))
+    }
+
+    @Test fun conferePeloIntervalo() {
+        val h = 3_600_000L
+        assertTrue(Atualizador.precisaConferir(0, 1000))
+        assertFalse(Atualizador.precisaConferir(10 * h, 12 * h))
+        assertTrue(Atualizador.precisaConferir(10 * h, 17 * h))
+        assertTrue(Atualizador.precisaConferir(10 * h, 9 * h)) // relógio voltou
+    }
+}
