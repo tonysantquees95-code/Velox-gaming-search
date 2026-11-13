@@ -343,6 +343,7 @@ class MainActivity : Activity() {
         val wv = atual?.webView
         bVoltar.alpha = if (wv != null && wv.canGoBack()) 1f else 0.35f
         bAvancar.alpha = if (wv != null && wv.canGoForward()) 1f else 0.35f
+        atualizarEstrela()
     }
 
     // ---------------------------------------------------------------- modo jogo (opções)
@@ -515,6 +516,7 @@ class MainActivity : Activity() {
         for ((t, u) in l) a.put(JSONObject().put("t", t).put("u", u))
         ajustes.favoritosJson = a.toString()
         desenharFaixaFav()
+        atualizarEstrela()
     }
 
     private fun favoritarPaginaAtual() {
@@ -541,6 +543,14 @@ class MainActivity : Activity() {
             l.removeAt(i)
             gravarFavoritos(l)
         }
+    }
+
+    /** A estrela de cima fica vazia (☆) até a página ser favoritada; aí fica cheia (★). */
+    private fun atualizarEstrela() {
+        if (!::bEstrelaCima.isInitialized) return
+        val u = atual?.url ?: ""
+        val fav = u.isNotEmpty() && listaFavoritos().any { it.second == u }
+        bEstrelaCima.text = if (fav) "★" else "☆"
     }
 
     private fun alternarFaixaFav() {
@@ -849,7 +859,7 @@ class MainActivity : Activity() {
         override fun onPageStarted(view: WebView, url: String, icone: Bitmap?) {
             aba.bloqueados.set(0)
             if (!url.startsWith("file:///android_asset/")) aba.url = url else aba.url = ""
-            if (aba === atual) { campo.setText(Enderecos.paraMostrar(aba.url)); atualizarFundo() }
+            if (aba === atual) { campo.setText(Enderecos.paraMostrar(aba.url)); atualizarFundo(); atualizarEstrela() }
         }
 
         override fun onPageFinished(view: WebView, url: String) {
@@ -859,6 +869,12 @@ class MainActivity : Activity() {
                     view.evaluateJavascript(JS_TRANSPARENTE, null)
                     view.postDelayed({ view.evaluateJavascript(JS_TRANSPARENTE, null) }, 1200)
                     view.postDelayed({ view.evaluateJavascript(JS_TRANSPARENTE, null) }, 3500)
+                    if (ehGoogle(url)) {
+                        view.evaluateJavascript(JS_GOOGLE, null)
+                        view.postDelayed({ view.evaluateJavascript(JS_GOOGLE, null) }, 700)
+                        view.postDelayed({ view.evaluateJavascript(JS_GOOGLE, null) }, 2200)
+                        view.postDelayed({ view.evaluateJavascript(JS_GOOGLE, null) }, 5000)
+                    }
                 }
             }
             if (aba === atual) {
@@ -868,6 +884,11 @@ class MainActivity : Activity() {
                 atualizarSetas()
             }
         }
+    }
+
+    private fun ehGoogle(url: String): Boolean {
+        val h = try { Uri.parse(url).host ?: "" } catch (e: Exception) { "" }
+        return h == "google.com" || h.endsWith(".google.com") || (h.contains(".google.") && !h.endsWith("googleapis.com"))
     }
 
     private fun abrirFora(url: String): Boolean {
@@ -1086,6 +1107,19 @@ class MainActivity : Activity() {
         const val VINDEX = "tech.vetorial.vindex"
 
         /** Deixa transparentes os fundos grandes e lisos da página para aparecer o fundo do Velox por trás. */
+        /** Resultados do Google: tira o fundo sólido de tudo e deixa só um vidro escuro e leve atrás de cada resultado. */
+        const val JS_GOOGLE = "(function(){try{var s=document.getElementById('velox-google');if(!s){s=document.createElement('style');s.id='velox-google';" +
+            "s.textContent='html,body,#main,#cnt,#center_col,#rcnt,#sfcnt,#searchform,.sfbg,.sfbgg,#appbar,#hdtb,#hdtb-msb,#top_nav,#rso,#botstuff,#foot,#fbar,header,[role=main],[role=banner]{background:transparent!important;background-image:none!important}" +
+            "#rso>div,#rso .MjjYud,#rso .g,#botstuff>div{background:rgba(6,8,18,.42)!important;border-radius:14px!important;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}';" +
+            "(document.head||document.documentElement).appendChild(s);}" +
+            "var W=innerWidth;function l(e,d){if(!e||e.nodeType!==1||d>9)return;" +
+            "if(/^(IMG|VIDEO|CANVAS|SVG|IFRAME|INPUT|BUTTON|SELECT|TEXTAREA|SCRIPT|STYLE|A|SPAN)\$/i.test(e.tagName))return;" +
+            "var c=getComputedStyle(e),r=e.getBoundingClientRect();" +
+            "if(r.width>=W*0.5&&c.backgroundImage==='none'&&c.position!=='fixed'){var m=c.backgroundColor.match(/[\\d.]+/g);" +
+            "if(m&&(m.length<4||+m[3]>0.6))e.style.setProperty('background-color','rgba(6,8,18,0.28)','important');}" +
+            "var k=e.children;for(var i=0;i<k.length&&i<40;i++)l(k[i],d+1);}" +
+            "l(document.body,0);}catch(x){}})();"
+
         const val JS_TRANSPARENTE = "(function(){try{var s=document.getElementById('velox-tema');if(!s){s=document.createElement('style');s.id='velox-tema';" +
             "s.textContent='html,body{background:transparent!important;background-image:none!important}';(document.head||document.documentElement).appendChild(s);}" +
             "var W=innerWidth,H=innerHeight;function l(e,d){if(!e||e.nodeType!==1||d>4)return;" +
