@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apps da Vetorial Tech</title>
+<style>
+:root { --bg:#070B14; --sup:#0D1530; --campo:#141E40; --c1:#22d3ee; --c2:#a78bfa; --tx:#fff; --su:#8fa0cf; }
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--c1) 18%, var(--bg)) 0%, var(--bg) 55%); color: var(--tx); font-family: system-ui, sans-serif; padding: 28px 18px 48px; max-width: 640px; margin: 0 auto; line-height: 1.45; }
+h1 { margin: 0 0 6px; font-size: 26px; }
+.lead { color: var(--su); margin: 0 0 22px; }
+.app { background: var(--sup); border: 1px solid color-mix(in srgb, var(--c1) 28%, transparent); border-radius: 18px; padding: 16px; margin: 0 0 14px; }
+.app h2 { margin: 0; font-size: 20px; color: var(--c1); }
+.app .papel { margin: 2px 0 8px; color: var(--su); font-size: 13px; letter-spacing: .04em; }
+.app ul { margin: 8px 0 10px; padding-left: 18px; }
+.app li { margin: 3px 0; }
+.liga { font-size: 13px; color: var(--su); border-top: 1px dashed color-mix(in srgb, var(--su) 40%, transparent); padding-top: 8px; margin-top: 8px; }
+.btn { display: inline-block; min-height: 44px; line-height: 44px; padding: 0 20px; border-radius: 22px; background: linear-gradient(90deg, var(--c1), var(--c2)); color: #05060d; font-weight: 700; text-decoration: none; margin-top: 6px; }
+.conta { background: var(--campo); border-radius: 18px; padding: 16px; margin: 20px 0 0; }
+.conta h3 { margin: 0 0 6px; }
+.peq { color: var(--su); font-size: 12px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<h1>Mais da Vetorial Tech</h1>
+<p class="lead">O Velox é grátis. Estes são os outros apps da suíte: cada um resolve um problema, e juntos eles conversam entre si.</p>
+
+<section class="app">
+<h2>Vênus</h2>
+<div class="papel">ASSISTENTE DE IA PESSOAL E DA SUA LOJA</div>
+<ul>
+<li>Conversa por texto e voz e controla o celular.</li>
+<li>Cuida da loja: catálogo, vitrine online com QR Code, PDF de catálogo, marketing e vendas.</li>
+<li>A mesma conta e a mesma IA no celular, no Windows e na web.</li>
+</ul>
+<div class="liga">Conexão: pede ao Vortex para abrir um jogo e ao Vindex para otimizar o aparelho, só falando.</div>
+<a class="btn" href="https://github.com/tonysantquees95-code/Venus-core/releases/latest">Baixar a Vênus</a>
+</section>
+
+<section class="app">
+<h2>Vortex</h2>
+<div class="papel">CENTRAL DE JOGOS E EMULADORES</div>
+<ul>
+<li>Todos os seus jogos num lugar só, com emuladores embutidos (GBA, SNES, PS1, PS2, GameCube e mais).</li>
+<li>Saves na nuvem: comece no celular e continue no computador.</li>
+<li>Barra de desempenho durante o jogo e controles na tela.</li>
+</ul>
+<div class="liga">Conexão: a Vênus abre os jogos por voz e o seu save acompanha a conta.</div>
+<a class="btn" href="https://github.com/tonysantquees95-code/Vortex/releases/latest">Baixar o Vortex</a>
+</section>
+
+<section class="app">
+<h2>Vindex</h2>
+<div class="papel">GERENCIADOR E COFRE</div>
+<ul>
+<li>Diagnóstico do aparelho e limpeza segura.</li>
+<li>Organiza arquivos sozinho, por regras suas, e sempre deixa desfazer.</li>
+<li>Cofre protegido para documentos e senhas.</li>
+</ul>
+<div class="liga">Conexão: a Vênus pede um diagnóstico ou uma otimização e o Vindex responde com o resultado.</div>
+<a class="btn" href="https://github.com/tonysantquees95-code/Vindex-/releases/latest">Baixar o Vindex</a>
+</section>
+
+<section class="conta">
+<h3>Uma conta para tudo: o Vetorial ID</h3>
+<p style="margin:0">Crie o seu Vetorial ID uma vez e entre em todos os apps. Cada app tem 7 dias de teste grátis para quem se cadastrar no período de lançamento. Depois você escolhe um plano: a Vênus sozinha, com mais um app, ou o pacote completo.</p>
+<a class="btn" href="https://venus-servidor.tonysantquees95.workers.dev/conta.html">Criar meu Vetorial ID</a>
+</section>
+<p class="peq">Os apps são instalados por download direto e se atualizam sozinhos. O Velox continua grátis.</p>
+<script>
+(function () {
+  var p = new URLSearchParams(location.search), r = document.documentElement.style;
+  var m = { bg: '--bg', sup: '--sup', campo: '--campo', c1: '--c1', c2: '--c2', tx: '--tx', su: '--su' };
+  Object.keys(m).forEach(function (k) { var v = p.get(k); if (v && /^[0-9a-fA-F]{6}$/.test(v)) r.setProperty(m[k], '#' + v); });
+})();
+</script>
+</body>
+</html>

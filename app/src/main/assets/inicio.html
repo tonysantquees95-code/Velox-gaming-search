@@ -101,6 +101,10 @@ html.com-abertura .abertura { display: grid; }
   <div class="cab"><p class="rotulo">Atalhos</p><button class="mini" id="editar" type="button">EDITAR</button></div>
   <nav class="sites" id="sites"></nav>
 </section>
+<section class="bloco entrada" aria-label="Apps da Vetorial Tech">
+  <div class="cab"><p class="rotulo">Da Vetorial Tech</p></div>
+  <a class="chip" id="apps-vt" href="apps.html" style="display:block;text-align:center;text-decoration:none;line-height:44px;min-height:48px">Conheça a Vênus, o Vortex e o Vindex</a>
+</section>
 
 <div class="fundo-modal" id="modal">
   <div class="folha-m" role="dialog" aria-label="Atalho">
@@ -227,6 +231,7 @@ html.com-abertura .abertura { display: grid; }
   $("modal").addEventListener("click", function (e) { if (e.target === this) this.classList.remove("aberto"); });
   desenhar();
 })();
+  try { var al = document.getElementById('apps-vt'); if (al) al.href = 'apps.html' + location.search; } catch (e) {}
 </script>
 </body>
 </html>
