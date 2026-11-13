@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
+import android.app.AlertDialog
 import android.graphics.drawable.GradientDrawable
 import android.util.Base64
 import android.view.WindowManager
@@ -60,7 +61,11 @@ class MainActivity : Activity() {
     private lateinit var barraDeBaixo: LinearLayout
     private lateinit var logo: LogoVgx
     private lateinit var flutuante: ImageView
-    private val icones = mutableListOf<ImageView>()
+    private val botoes = mutableMapOf<String, ImageView>()
+    private val iconesProprios = HashMap<String, Bitmap?>()
+    private lateinit var fundoView: FundoView
+    private var fotoFundo: Bitmap? = null
+    private var iconeEscolhido: String? = null
     private lateinit var bVoltar: ImageView
     private lateinit var bAvancar: ImageView
     private var painel: WebView? = null
@@ -133,6 +138,8 @@ class MainActivity : Activity() {
 
     private fun montarTela() {
         raizApp = FrameLayout(this)
+        fundoView = FundoView(this)
+        raizApp.addView(fundoView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         coluna = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             fitsSystemWindows = true
@@ -164,7 +171,7 @@ class MainActivity : Activity() {
                 } else false
             }
         }
-        barraDeCima.addView(logo, LinearLayout.LayoutParams(dp(62), dp(30)).apply { rightMargin = dp(10) })
+        barraDeCima.addView(logo, LinearLayout.LayoutParams(dp(66), dp(34)).apply { rightMargin = dp(8) })
         barraDeCima.addView(campo, LinearLayout.LayoutParams(0, dp(44), 1f))
 
         barra = BarraNeon(this)
@@ -174,20 +181,20 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
         }
-        fun botao(recurso: Int, descricao: String, acao: () -> Unit): ImageView = ImageView(this).apply {
-            setImageResource(recurso)
+        fun botao(slot: String, descricao: String, acao: () -> Unit): ImageView = ImageView(this).apply {
+            setImageDrawable(IconeTraco.criar(slot))
+            botoes[slot] = this
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             setPadding(dp(15), dp(15), dp(15), dp(15))
             contentDescription = descricao
             isClickable = true
             isFocusable = true
             setOnClickListener { acao() }
-            icones.add(this)
         }
-        bVoltar = botao(R.drawable.ic_voltar, "Voltar") { voltar() }
-        bAvancar = botao(R.drawable.ic_avancar, "Avançar") { atual?.webView?.let { if (it.canGoForward()) it.goForward() } }
-        val bInicio = botao(R.drawable.ic_inicio, "Início") { abrirTexto(INICIO) }
-        val bRecarregar = botao(R.drawable.ic_recarregar, "Recarregar") { atual?.webView?.reload() }
+        bVoltar = botao("voltar", "Voltar") { voltar() }
+        bAvancar = botao("avancar", "Avançar") { atual?.webView?.let { if (it.canGoForward()) it.goForward() } }
+        val bInicio = botao("inicio", "Início") { abrirTexto(INICIO) }
+        val bRecarregar = botao("recarregar", "Recarregar") { atual?.webView?.reload() }
         contador = TextView(this).apply {
             textSize = 14f
             gravity = Gravity.CENTER
@@ -197,7 +204,7 @@ class MainActivity : Activity() {
             isFocusable = true
             setOnClickListener { abrirPainel("abas") }
         }
-        val bPainel = botao(R.drawable.ic_painel, "Painel do Velox: modo jogo, visual e mais") { abrirPainel("jogo") }
+        val bPainel = botao("painel", "Painel do Velox: modo jogo, visual e mais") { abrirPainel("jogo") }
         val altura = dp(54)
         for (b in listOf(bVoltar, bAvancar, bInicio, bRecarregar)) barraDeBaixo.addView(b, LinearLayout.LayoutParams(0, altura, 1f))
         val caixaAbas = FrameLayout(this)
@@ -208,11 +215,11 @@ class MainActivity : Activity() {
         coluna.addView(barraDeCima, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         coluna.addView(barra, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3)))
         coluna.addView(conteudo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
-        coluna.addView(barraDeBaixo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, altura))
+        coluna.addView(barraDeBaixo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, altura).apply { setMargins(dp(10), dp(4), dp(10), dp(8)) })
 
         // no modo imersivo as barras somem; este botão pequeno traz o painel de volta
         flutuante = ImageView(this).apply {
-            setImageResource(R.drawable.ic_painel)
+            setImageDrawable(IconeTraco.criar("painel"))
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             setPadding(dp(11), dp(11), dp(11), dp(11))
             contentDescription = "Abrir o painel do Velox"
@@ -223,33 +230,34 @@ class MainActivity : Activity() {
         raizApp.addView(coluna, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         raizApp.addView(flutuante, FrameLayout.LayoutParams(dp(44), dp(44), Gravity.BOTTOM or Gravity.END).apply { rightMargin = dp(14); bottomMargin = dp(70) })
         setContentView(raizApp)
+        fotoFundo = Imagens.carregarFundo(this)
         aplicarCores()
     }
 
     private fun raio(): Float = if (tema.redondo) dp(22).toFloat() else dp(7).toFloat()
 
     private fun pintarCampo() {
-        campo.background = GradientDrawable().apply {
-            setColor(tema.campo)
-            cornerRadius = raio()
-            val alfa = if (campo.hasFocus()) 0xFF else 0x73
-            setStroke(dp(if (campo.hasFocus()) 2 else 1), (tema.destaque and 0x00FFFFFF) or (alfa shl 24))
-        }
+        val alfa = if (campo.hasFocus()) 0xFF else 0x80
+        campo.background = PainelCortado(tema.campo, (tema.destaque and 0x00FFFFFF) or (alfa shl 24), dp(if (campo.hasFocus()) 2 else 1).toFloat(),
+            if (tema.redondo) dp(22).toFloat() else dp(10).toFloat(), tema.redondo)
     }
 
     /** Aplica as cores do tema em tudo que já está na tela (vale na hora, sem reiniciar). */
     private fun aplicarCores() {
-        coluna.setBackgroundColor(tema.fundo)
-        conteudo.setBackgroundColor(tema.fundo)
-        val degrau = intArrayOf(tema.superficie, LogoVgx.misturar(tema.superficie, tema.fundo, 0.55f))
-        barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, degrau)
-        barraDeBaixo.background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, degrau)
+        val comFoto = fotoFundo != null
+        coluna.setBackgroundColor(Color.TRANSPARENT)
+        conteudo.setBackgroundColor(Color.TRANSPARENT)
+        val alfa = if (comFoto) 0xE6000000.toInt() else 0xFF000000.toInt()
+        val a = (tema.superficie and 0x00FFFFFF) or alfa
+        val b = (LogoVgx.misturar(tema.superficie, tema.fundo, 0.55f) and 0x00FFFFFF) or alfa
+        barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(a, b))
+        barraDeBaixo.background = PainelCortado((tema.superficie and 0x00FFFFFF) or 0xF2000000.toInt(), (tema.destaque and 0x00FFFFFF) or 0xA0000000.toInt(),
+            dp(1).toFloat() + 0.5f, if (tema.redondo) dp(28).toFloat() else dp(14).toFloat(), tema.redondo)
         campo.setTextColor(tema.texto)
         campo.setHintTextColor(tema.suave)
         pintarCampo()
         logo.cores(tema.destaque, tema.secundaria)
         barra.cores(tema.destaque, tema.secundaria)
-        for (i in icones) i.setColorFilter(tema.texto)
         contador.setTextColor(tema.destaque)
         contador.background = GradientDrawable().apply {
             setColor(Color.TRANSPARENT)
@@ -263,9 +271,40 @@ class MainActivity : Activity() {
             setColor((tema.destaque and 0x00FFFFFF) or 0xD9000000.toInt())
         }
         window.statusBarColor = tema.superficie
-        window.navigationBarColor = tema.superficie
-        for (a in abas) a.webView.setBackgroundColor(tema.fundo)
+        window.navigationBarColor = tema.fundo
+        val vidro = if (ajustes.sitesNoTema) Color.TRANSPARENT else tema.fundo
+        for (x in abas) x.webView.setBackgroundColor(vidro)
+        aplicarIcones()
+        atualizarFundo()
         atualizarSetas()
+    }
+
+    /** Foto (ou cor) de fundo atrás das barras e das páginas. Nos sites escurece um pouco mais para o texto continuar legível. */
+    private fun atualizarFundo() {
+        val emSite = ajustes.sitesNoTema && (atual?.url?.isNotEmpty() == true)
+        val escuro = (tema.escurecer + if (emSite && fotoFundo != null) 25 else 0) / 100f
+        fundoView.definir(fotoFundo, tema.fundo, escuro)
+    }
+
+    /** Ícones da barra: os seus (foto) quando existirem, senão o desenho do pacote escolhido. */
+    private fun aplicarIcones() {
+        for ((slot, v) in botoes) {
+            val proprio = iconesProprios.getOrPut(slot) { Imagens.carregarIcone(this, slot)?.let { Imagens.arredondar(it, 0.22f) } }
+            if (proprio != null) {
+                v.clearColorFilter()
+                v.setImageBitmap(proprio)
+                v.setPadding(dp(11), dp(11), dp(11), dp(11))
+            } else {
+                val d = IconeTraco.criar(slot)
+                d.cor = tema.texto
+                d.c1 = tema.destaque
+                d.c2 = tema.secundaria
+                d.pacote = tema.pacote
+                v.clearColorFilter()
+                v.setImageDrawable(d)
+                v.setPadding(dp(15), dp(15), dp(15), dp(15))
+            }
+        }
     }
 
     private fun atualizarSetas() {
@@ -301,7 +340,7 @@ class MainActivity : Activity() {
 
     @Suppress("DEPRECATION")
     private fun aplicarEscuro(wv: WebView) {
-        val ligar = ajustes.sitesEscuros
+        val ligar = ajustes.sitesEscuros || ajustes.sitesNoTema
         try {
             if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
                 WebSettingsCompat.setAlgorithmicDarkeningAllowed(wv.settings, ligar)
@@ -327,10 +366,16 @@ class MainActivity : Activity() {
         val o = JSONObject()
             .put("abas", lista)
             .put("op", JSONObject().put("ad", ajustes.bloquearAnuncios).put("escuro", ajustes.sitesEscuros).put("imersivo", ajustes.imersivo)
-                .put("tela", ajustes.telaLigada).put("pc", ajustes.siteParaComputador))
+                .put("tela", ajustes.telaLigada).put("pc", ajustes.siteParaComputador).put("notema", ajustes.sitesNoTema))
             .put("bus", ajustes.buscador).put("buscadores", bus)
             .put("bl", JSONObject().put("p", atual?.bloqueados?.get() ?: 0).put("t", bloqueadosTotal.get()))
             .put("v", versao)
+            .put("foto", fotoFundo != null)
+            .put("vindex", vindexInstalado())
+        fotoFundo?.let { o.put("fotoAmostra", Imagens.miniatura(it, 360, true)) }
+        val ic = JSONObject()
+        for (slot in Imagens.SLOTS) iconesProprios[slot]?.let { ic.put(slot, Imagens.miniatura(it, 72, false)) }
+        o.put("icones", ic)
         return Base64.encodeToString(o.toString().toByteArray(Charsets.UTF_8), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
     }
 
@@ -381,6 +426,16 @@ class MainActivity : Activity() {
             "compartilhar" -> { fecharPainel(); compartilhar() }
             "limpar" -> limparDados()
             "atualizar" -> procurarAtualizacao(true)
+            "aviso" -> Toast.makeText(this, (u.getQueryParameter("m") ?: "").take(120), Toast.LENGTH_SHORT).show()
+            "vindex" -> abrirVindex()
+            "fundo-galeria" -> escolherImagem(PEDIDO_FUNDO)
+            "fundo-remover" -> { Imagens.removerFundo(this); fotoFundo = null; depoisDeMudarFundo() }
+            "fundo-url" -> imagemDaRede(u.getQueryParameter("u"), null)
+            "fundo-buscar" -> buscarImagens(u.getQueryParameter("q"), null)
+            "icone-galeria" -> u.getQueryParameter("s")?.takeIf { Imagens.slotValido(it) }?.let { iconeEscolhido = it; escolherImagem(PEDIDO_ICONE) }
+            "icone-url" -> imagemDaRede(u.getQueryParameter("u"), u.getQueryParameter("s"))
+            "icone-buscar" -> buscarImagens(u.getQueryParameter("q"), u.getQueryParameter("s"))
+            "icone-restaurar" -> u.getQueryParameter("s")?.takeIf { Imagens.slotValido(it) }?.let { Imagens.removerIcone(this, it); iconesProprios.remove(it); aplicarIcones() }
         }
         return true
     }
@@ -391,6 +446,12 @@ class MainActivity : Activity() {
             "escuro" -> { ajustes.sitesEscuros = ligado; for (a in abas) aplicarEscuro(a.webView); atual?.webView?.reload() }
             "imersivo" -> { ajustes.imersivo = ligado; aplicarImersivo() }
             "tela" -> { ajustes.telaLigada = ligado; aplicarTela() }
+            "notema" -> {
+                ajustes.sitesNoTema = ligado
+                for (a in abas) { aplicarEscuro(a.webView); a.webView.setBackgroundColor(if (ligado) Color.TRANSPARENT else tema.fundo) }
+                atualizarFundo()
+                atual?.webView?.reload()
+            }
             "pc" -> { ajustes.siteParaComputador = ligado; for (a in abas) aplicarModoComputador(a.webView); atual?.webView?.reload() }
         }
     }
@@ -442,9 +503,11 @@ class MainActivity : Activity() {
     }
 
     private fun mudarTema(consulta: String?) {
+        val antes = tema
         tema = Tema.daString(consulta)
         ajustes.temaTexto = tema.params()
         aplicarCores()
+        if (antes.atalhos != tema.atalhos) recarregarInicios()
     }
 
     // ---------------------------------------------------------------- abas
@@ -453,7 +516,7 @@ class MainActivity : Activity() {
         val abertura = if (aberturaFeita) "" else "&ab=1"
         aberturaFeita = true
         return INICIO + "?" + tema.params() + "&n1=" + bloqueadosSessao.get() + "&n2=" + bloqueadosTotal.get() +
-            "&ad=" + (if (ajustes.bloquearAnuncios) 1 else 0) + "&bus=" + Uri.encode(Buscador.porId(ajustes.buscador).nome) + abertura
+            "&ft=" + (if (fotoFundo != null) 1 else 0) + "&ad=" + (if (ajustes.bloquearAnuncios) 1 else 0) + "&bus=" + Uri.encode(Buscador.porId(ajustes.buscador).nome) + abertura
     }
 
     private fun configurar(wv: WebView, anonima: Boolean) {
@@ -495,6 +558,14 @@ class MainActivity : Activity() {
         configurar(wv, anonima)
         wv.webViewClient = navegador(aba)
         wv.webChromeClient = cromo(aba)
+        wv.setOnLongClickListener { v ->
+            val r = (v as WebView).hitTestResult
+            val extra = r.extra
+            if ((r.type == WebView.HitTestResult.IMAGE_TYPE || r.type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE) && Imagens.enderecoPermitido(extra)) {
+                menuDaImagem(extra!!)
+                true
+            } else false
+        }
         wv.setDownloadListener { u, ua, disp, tipo, _ -> baixar(u, ua, disp, tipo) }
         abas.add(aba)
         val alvo = when {
@@ -515,6 +586,7 @@ class MainActivity : Activity() {
         barra.progresso = 0
         atualizarContador()
         atualizarSetas()
+        atualizarFundo()
     }
 
     private fun atualizarContador() {
@@ -606,12 +678,20 @@ class MainActivity : Activity() {
         override fun onPageStarted(view: WebView, url: String, icone: Bitmap?) {
             aba.bloqueados.set(0)
             if (!url.startsWith("file:///android_asset/")) aba.url = url else aba.url = ""
-            if (aba === atual) campo.setText(Enderecos.paraMostrar(aba.url))
+            if (aba === atual) { campo.setText(Enderecos.paraMostrar(aba.url)); atualizarFundo() }
         }
 
         override fun onPageFinished(view: WebView, url: String) {
-            if (!url.startsWith("file:///android_asset/")) aba.url = url
+            if (!url.startsWith("file:///android_asset/")) {
+                aba.url = url
+                if (ajustes.sitesNoTema) {
+                    view.evaluateJavascript(JS_TRANSPARENTE, null)
+                    view.postDelayed({ view.evaluateJavascript(JS_TRANSPARENTE, null) }, 1200)
+                    view.postDelayed({ view.evaluateJavascript(JS_TRANSPARENTE, null) }, 3500)
+                }
+            }
             if (aba === atual) {
+                atualizarFundo()
                 campo.setText(Enderecos.paraMostrar(aba.url))
                 barra.progresso = 0
                 atualizarSetas()
@@ -687,10 +767,110 @@ class MainActivity : Activity() {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(pedido: Int, resultado: Int, dados: Intent?) {
         super.onActivityResult(pedido, resultado, dados)
+        if ((pedido == PEDIDO_FUNDO || pedido == PEDIDO_ICONE) && resultado == RESULT_OK) {
+            val uri = dados?.data ?: return
+            val slot = if (pedido == PEDIDO_ICONE) iconeEscolhido else null
+            Thread {
+                try {
+                    val bytes = contentResolver.openInputStream(uri)?.use { Imagens.lerFluxo(it) } ?: throw IllegalStateException("não abriu")
+                    val ok = if (slot == null) Imagens.salvarFundo(this, bytes) else Imagens.salvarIcone(this, slot, bytes)
+                    runOnUiThread { imagemSalva(ok, slot) }
+                } catch (e: Exception) {
+                    runOnUiThread { Toast.makeText(this, "Não consegui usar essa imagem.", Toast.LENGTH_LONG).show() }
+                }
+            }.start()
+            return
+        }
         if (pedido == PEDIDO_ARQUIVO) {
             envio?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultado, dados))
             envio = null
         }
+    }
+
+    // ---------------------------------------------------------------- foto de fundo e ícones próprios
+
+    private fun escolherImagem(pedido: Int) {
+        try {
+            startActivityForResult(Intent(Intent.ACTION_GET_CONTENT).setType("image/*").addCategory(Intent.CATEGORY_OPENABLE), pedido)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Não achei uma galeria neste aparelho.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    private fun imagemDaRede(url: String?, slot: String?) {
+        if (!Imagens.enderecoPermitido(url)) { Toast.makeText(this, "Use um endereço de imagem que comece com https://", Toast.LENGTH_LONG).show(); return }
+        if (slot != null && !Imagens.slotValido(slot)) return
+        Toast.makeText(this, "Baixando a imagem…", Toast.LENGTH_SHORT).show()
+        Thread {
+            try {
+                val bytes = Imagens.baixar(url!!)
+                val ok = if (slot == null) Imagens.salvarFundo(this, bytes) else Imagens.salvarIcone(this, slot, bytes)
+                runOnUiThread { imagemSalva(ok, slot) }
+            } catch (e: Exception) {
+                runOnUiThread { Toast.makeText(this, "Não consegui baixar a imagem.", Toast.LENGTH_LONG).show() }
+            }
+        }.start()
+    }
+
+    private fun imagemSalva(ok: Boolean, slot: String?) {
+        if (!ok) { Toast.makeText(this, "Essa imagem não abriu. Tente outra.", Toast.LENGTH_LONG).show(); return }
+        if (slot == null) {
+            fotoFundo = Imagens.carregarFundo(this)
+            depoisDeMudarFundo()
+        } else {
+            iconesProprios.remove(slot)
+            aplicarIcones()
+            if (painel != null) abrirPainel("barra")
+        }
+        Toast.makeText(this, if (slot == null) "Fundo aplicado." else "Ícone aplicado.", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun depoisDeMudarFundo() {
+        aplicarCores()
+        recarregarInicios()
+        if (painel != null) abrirPainel("fundo")
+    }
+
+    /** As páginas iniciais (do Velox) leem o tema no endereço; recarrega para pegar foto e estilo novos. */
+    private fun recarregarInicios() {
+        for (a in abas) if (a.webView.url?.startsWith(INICIO) == true) a.webView.loadUrl(enderecoInicial())
+    }
+
+    /** Abre a busca de imagens numa aba nova. Segurando o dedo numa imagem aparece "usar como fundo/ícone". */
+    private fun buscarImagens(consulta: String?, slot: String?) {
+        iconeEscolhido = if (Imagens.slotValido(slot)) slot else null
+        fecharPainel()
+        val q = Uri.encode((consulta ?: "wallpaper").take(80).ifBlank { "wallpaper" })
+        novaAba("https://www.bing.com/images/search?q=$q", false)
+        Toast.makeText(this, "Segure o dedo numa imagem para usar no Velox.", Toast.LENGTH_LONG).show()
+    }
+
+    private fun menuDaImagem(url: String) {
+        val rotulos = mapOf("voltar" to "Voltar", "avancar" to "Avançar", "inicio" to "Início", "recarregar" to "Recarregar", "painel" to "Painel")
+        val opcoes = ArrayList<String>()
+        val acoes = ArrayList<() -> Unit>()
+        val direto = iconeEscolhido
+        if (direto != null) { opcoes.add("Usar como ícone: ${rotulos[direto]}"); acoes.add { imagemDaRede(url, direto) } }
+        opcoes.add("Usar como fundo do Velox"); acoes.add { imagemDaRede(url, null) }
+        opcoes.add("Usar como ícone da barra…"); acoes.add { escolherSlot(url) }
+        opcoes.add("Baixar imagem"); acoes.add { baixar(url, null, null, null) }
+        AlertDialog.Builder(this).setItems(opcoes.toTypedArray()) { _, i -> acoes[i]() }.show()
+    }
+
+    private fun escolherSlot(url: String) {
+        val nomes = arrayOf("Voltar", "Avançar", "Início", "Recarregar", "Painel")
+        AlertDialog.Builder(this).setTitle("Qual botão?").setItems(nomes) { _, i -> imagemDaRede(url, Imagens.SLOTS[i]) }.show()
+    }
+
+    // ---------------------------------------------------------------- Vindex (outro app da Vetorial Tech)
+
+    private fun vindexInstalado(): Boolean = try { packageManager.getLaunchIntentForPackage(VINDEX) != null } catch (e: Exception) { false }
+
+    private fun abrirVindex() {
+        val i = try { packageManager.getLaunchIntentForPackage(VINDEX) } catch (e: Exception) { null }
+        if (i == null) { Toast.makeText(this, "O Vindex não está instalado neste aparelho.", Toast.LENGTH_LONG).show(); return }
+        fecharPainel()
+        startActivity(i)
     }
 
     // ---------------------------------------------------------------- downloads
@@ -729,5 +909,19 @@ class MainActivity : Activity() {
     companion object {
         const val INICIO = "file:///android_asset/inicio.html"
         const val PEDIDO_ARQUIVO = 1
+        const val PEDIDO_FUNDO = 2
+        const val PEDIDO_ICONE = 3
+        const val VINDEX = "tech.vetorial.vindex"
+
+        /** Deixa transparentes os fundos grandes e lisos da página para aparecer o fundo do Velox por trás. */
+        const val JS_TRANSPARENTE = "(function(){try{var s=document.getElementById('velox-tema');if(!s){s=document.createElement('style');s.id='velox-tema';" +
+            "s.textContent='html,body{background:transparent!important;background-image:none!important}';(document.head||document.documentElement).appendChild(s);}" +
+            "var W=innerWidth,H=innerHeight;function l(e,d){if(!e||e.nodeType!==1||d>4)return;" +
+            "if(/^(IMG|VIDEO|CANVAS|SVG|IFRAME|INPUT|BUTTON|SELECT|TEXTAREA|SCRIPT|STYLE)\$/i.test(e.tagName))return;" +
+            "var c=getComputedStyle(e),r=e.getBoundingClientRect();" +
+            "if(r.width>=W*0.85&&r.height>=H*0.3&&c.backgroundImage==='none'){var m=c.backgroundColor.match(/[\\d.]+/g);" +
+            "if(m&&(m.length<4||+m[3]>0.5))e.style.setProperty('background-color','transparent','important');}" +
+            "var k=e.children;for(var i=0;i<k.length&&i<12;i++)l(k[i],d+1);}" +
+            "l(document.body,0);}catch(x){}})();"
     }
 }

@@ -12,23 +12,25 @@
   R.dataset.formato = P.get("fo") === "redondo" ? "redondo" : "futurista";
   R.dataset.anim = P.get("an") === "0" ? "0" : "1";
 
-  /* Monograma VGX com relevo: V, G e X em ângulos, empilhados para dar profundidade. */
-  var LETRAS = [
-    "M0 0L56 0L100 112L144 0L200 0L128 170L72 170Z",
-    "M232 0L392 0L392 42L250 42L250 128L334 128L334 104L296 104L296 70L392 70L392 170L232 170L192 130L192 40Z",
-    "M424 0L482 0L524 50.3L566 0L624 0L553 85L624 170L566 170L524 119.7L482 170L424 170L495 85Z"
-  ];
+  /* Marca VGX: V e G ligados e um X grande, em tubos de neon inclinados. */
+  var FORMAS = {
+    g: "M262.8 64.4 C251.2 47.9 232.2 38 212 38 C177.8 38 150 65.8 150 100 C150 134.2 177.8 162 212 162 C246.2 162 274 134.2 274 100 L226 100",
+    v: "M20 38 L84 160 L156 36", x1: "M312 6 L412 196", x2: "M412 6 L312 196"
+  };
   var contaVGX = 0;
   window.desenharVGX = function (alvo, opcoes) {
-    var k = ++contaVGX, o = opcoes || {}, camadas = o.camadas == null ? 11 : o.camadas, d = LETRAS.join(" ");
-    var uns = "";
-    for (var i = camadas; i >= 1; i--) uns += '<use href="#vgx-forma'+k+'" x="' + i + '" y="' + i + '" style="fill:color-mix(in srgb, var(--neon2) 38%, #04060d)"/>';
-    alvo.innerHTML = '<svg class="vgx" viewBox="-14 -14 668 210" role="img" aria-label="VGX">' +
-      '<defs><path id="vgx-forma'+k+'" d="' + d + '"/>' +
-      '<linearGradient id="vgx-g'+k+'" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="640" y2="170"><stop offset="0" style="stop-color:var(--neon)"/><stop offset="1" style="stop-color:var(--neon2)"/></linearGradient>' +
-      '<filter id="vgx-b'+k+'" x="-30%" y="-40%" width="160%" height="180%"><feGaussianBlur stdDeviation="10"/></filter></defs>' +
-      (o.brilho === false ? "" : '<use href="#vgx-forma'+k+'" style="fill:var(--neon)" filter="url(#vgx-b'+k+')" opacity=".55"/>') + uns +
-      '<use href="#vgx-forma'+k+'" fill="url(#vgx-g'+k+')" stroke="rgba(255,255,255,.55)" stroke-width="1.5"/></svg>';
+    var k = ++contaVGX, o = opcoes || {}, gid = "vgx-g" + k;
+    var tubo = function (d, w, halo) {
+      return (halo ? '<path d="' + d + '" stroke="rgba(3,5,12,.9)" stroke-width="' + (w + halo) + '"/>' : '') +
+        '<path d="' + d + '" stroke="url(#' + gid + ')" stroke-width="' + w + '"/><path d="' + d + '" stroke="#fff" stroke-opacity=".34" stroke-width="4"/>';
+    };
+    var todas = [FORMAS.g, FORMAS.v, FORMAS.x1, FORMAS.x2].map(function (d) { return '<path d="' + d + '"/>'; }).join("");
+    alvo.innerHTML = '<svg class="vgx" viewBox="-8 -22 480 246" role="img" aria-label="VGX">' +
+      '<defs><linearGradient id="' + gid + '" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="440" y2="200"><stop offset="0" style="stop-color:var(--neon)"/><stop offset="1" style="stop-color:var(--neon2)"/></linearGradient>' +
+      '<filter id="vgx-b' + k + '" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter></defs>' +
+      '<g transform="translate(14 0) skewX(-11)" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+      (o.brilho === false ? "" : '<g filter="url(#vgx-b' + k + ')" opacity=".6" style="stroke:var(--neon)" stroke-width="28">' + todas + '</g>') +
+      tubo(FORMAS.g, 28) + tubo(FORMAS.v, 28, 7) + tubo(FORMAS.x1, 34) + tubo(FORMAS.x2, 34, 7) + '</g></svg>';
   };
   document.querySelectorAll("[data-vgx]").forEach(function (el) { window.desenharVGX(el, { camadas: +(el.dataset.camadas || 11), brilho: el.dataset.brilho !== "0" }); });
   window.TEMA_PARAMS = P;
@@ -44,14 +46,16 @@ window.VGX = {
     ["noite", "Noite", "070b14", "0d1530", "141e40", "8fa0cf"], ["carvao", "Carvão", "0a0a0d", "15151a", "1f1f27", "9a9aa8"],
     ["vinho", "Vinho", "12060b", "230c15", "33111f", "c79aa8"], ["floresta", "Floresta", "05110d", "0b2119", "113026", "8fc7b0"]
   ],
+  ESTILOS: [["marca", "Cores da marca"], ["neon", "Neon do tema"], ["mono", "Branco"]],
+  PACOTES: [["linha", "Linha"], ["grossa", "Grossa"], ["duo", "Duplo"]],
   FUNDOS: [["aurora", "Aurora"], ["grade", "Grade"], ["circuito", "Circuito"], ["pontos", "Pontos"], ["liso", "Liso"]],
   mistura: function (hex) { var n = parseInt(hex, 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, h = function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }; return h(r * 0.55 + 10) + h(g * 0.5) + h(b * 0.7 + 20); },
   params: function (t) {
     var b = (this.BASES.filter(function (x) { return x[0] === t.base; })[0]) || this.BASES[0];
-    return new URLSearchParams({ c1: t.c1, c2: t.c2, bg: b[2], sup: b[3], campo: b[4], su: b[5], tx: "ffffff", br: String(t.br), fu: t.fu, fo: t.fo, an: t.an ? "1" : "0", base: t.base }).toString();
+    return new URLSearchParams({ c1: t.c1, c2: t.c2, bg: b[2], sup: b[3], campo: b[4], su: b[5], tx: "ffffff", br: String(t.br), fu: t.fu, fo: t.fo, an: t.an ? "1" : "0", base: t.base, ti: t.ti, pk: t.pk, dim: String(t.dim) }).toString();
   },
   doEndereco: function (P) {
     var g = function (k, d) { var v = P.get(k); return v == null ? d : v; };
-    return { c1: g("c1", "22d3ee"), c2: g("c2", "a78bfa"), base: g("base", "noite"), br: +g("br", "70"), fu: g("fu", "aurora"), fo: g("fo", "futurista"), an: g("an", "1") !== "0" };
+    return { c1: g("c1", "22d3ee"), c2: g("c2", "a78bfa"), base: g("base", "noite"), br: +g("br", "70"), fu: g("fu", "aurora"), fo: g("fo", "futurista"), an: g("an", "1") !== "0", ti: g("ti", "marca"), pk: g("pk", "linha"), dim: +g("dim", "35") };
   }
 };

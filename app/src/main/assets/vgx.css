@@ -55,11 +55,11 @@ html[data-formato="futurista"] .chip { border-radius: 4px; }
 html[data-formato="futurista"] .interruptor, html[data-formato="futurista"] .interruptor::after { border-radius: 3px; }
 
 /* ---------- marca VGX ---------- */
-.vgx { display: block; width: min(80vw, 380px); height: auto; overflow: visible; }
+.vgx { display: block; width: min(78vw, 360px); height: auto; overflow: visible; }
 .marca-luz { position: relative; display: inline-block; isolation: isolate; }
 .marca-luz::before { content: ""; position: absolute; left: 50%; top: 50%; width: 140%; height: 190%; transform: translate(-50%, -50%); z-index: -1; border-radius: 50%;
   background: radial-gradient(closest-side, rgba(var(--neon-rgb), calc(.28 + .5 * var(--brilho))), rgba(var(--neon-rgb), .1) 55%, transparent 75%); animation: respiro 4.8s ease-in-out infinite; }
 @keyframes respiro { 0%, 100% { opacity: .55; transform: translate(-50%, -50%) scale(.92); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } }
-.nome-marca { margin: 14px 0 0; text-align: center; font-weight: 800; letter-spacing: .34em; padding-left: .34em; font-size: clamp(15px, 4.4vw, 21px); color: #fff;
+.nome-marca { margin: 6px 0 0; text-align: center; font-weight: 800; letter-spacing: .34em; padding-left: .34em; font-size: clamp(15px, 4.4vw, 21px); color: #fff;
   text-shadow: 0 0 calc(4px + 14px * var(--brilho)) rgba(var(--neon-rgb), .9); }
 .nome-marca small { display: block; margin-top: 4px; font-weight: 600; letter-spacing: .6em; padding-left: .6em; font-size: .56em; color: var(--su); text-shadow: none; }

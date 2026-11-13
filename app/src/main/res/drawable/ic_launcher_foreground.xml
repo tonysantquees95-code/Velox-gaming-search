@@ -4,13 +4,15 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- VGX: monograma com relevo (camada escura atras) -->
-    <group android:scaleX="0.103" android:scaleY="0.103" android:translateX="20.5" android:translateY="45">
-        <group android:translateX="7" android:translateY="7">
-            <path android:fillColor="#1B2A63" android:pathData="M0,0 L56,0 L100,112 L144,0 L200,0 L128,170 L72,170 Z M232,0 L392,0 L392,42 L250,42 L250,128 L334,128 L334,104 L296,104 L296,70 L392,70 L392,170 L232,170 L192,130 L192,40 Z M424,0 L482,0 L524,50.3 L566,0 L624,0 L553,85 L624,170 L566,170 L524,119.7 L482,170 L424,170 L495,85 Z" />
-        </group>
-        <path android:fillColor="#22D3EE" android:pathData="M0,0 L56,0 L100,112 L144,0 L200,0 L128,170 L72,170 Z" />
-        <path android:fillColor="#5EB6F2" android:pathData="M232,0 L392,0 L392,42 L250,42 L250,128 L334,128 L334,104 L296,104 L296,70 L392,70 L392,170 L232,170 L192,130 L192,40 Z" />
-        <path android:fillColor="#A78BFA" android:pathData="M424,0 L482,0 L524,50.3 L566,0 L624,0 L553,85 L624,170 L566,170 L524,119.7 L482,170 L424,170 L495,85 Z" />
-    </group>
+    <!-- VGX: V e G ligados e um X grande, em tubos de neon -->
+    <path android:pathData="M59.38,48.90 C58.21,46.59 55.83,45.22 53.01,45.22 C48.24,45.22 43.61,49.09 42.68,53.86 C41.75,58.63 44.87,62.51 49.65,62.51 C54.42,62.51 59.05,58.63 59.97,53.86 L53.28,53.86" android:strokeColor="#5EB6F2" android:strokeWidth="3.91" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M59.38,48.90 C58.21,46.59 55.83,45.22 53.01,45.22 C48.24,45.22 43.61,49.09 42.68,53.86 C41.75,58.63 44.87,62.51 49.65,62.51 C54.42,62.51 59.05,58.63 59.97,53.86 L53.28,53.86" android:strokeColor="#57FFFFFF" android:strokeWidth="0.55" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M26.23,45.22 L31.85,62.23 L45.25,44.94" android:strokeColor="#070B14" android:strokeWidth="4.88" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M26.23,45.22 L31.85,62.23 L45.25,44.94" android:strokeColor="#22D3EE" android:strokeWidth="3.91" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M26.23,45.22 L31.85,62.23 L45.25,44.94" android:strokeColor="#57FFFFFF" android:strokeWidth="0.55" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M67.82,40.75 L76.62,67.25" android:strokeColor="#A78BFA" android:strokeWidth="4.75" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M67.82,40.75 L76.62,67.25" android:strokeColor="#57FFFFFF" android:strokeWidth="0.55" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M81.77,40.75 L62.67,67.25" android:strokeColor="#070B14" android:strokeWidth="5.72" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M81.77,40.75 L62.67,67.25" android:strokeColor="#A78BFA" android:strokeWidth="4.75" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <path android:pathData="M81.77,40.75 L62.67,67.25" android:strokeColor="#57FFFFFF" android:strokeWidth="0.55" android:strokeLineCap="round" android:strokeLineJoin="round" />
 </vector>

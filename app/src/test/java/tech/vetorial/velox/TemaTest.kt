@@ -37,6 +37,19 @@ class TemaTest {
         assertFalse(t.params().contains("script"))
     }
 
+    @Test fun leEstiloPacoteEEscurecimento() {
+        val t = Tema.daString("ti=neon&pk=duo&dim=60")
+        assertEquals("neon", t.atalhos)
+        assertEquals("duo", t.pacote)
+        assertEquals(60, t.escurecer)
+        assertTrue(t.params().contains("pk=duo"))
+        val ruim = Tema.daString("ti=x&pk=<b>&dim=abc")
+        assertEquals("marca", ruim.atalhos)
+        assertEquals("linha", ruim.pacote)
+        assertEquals(35, ruim.escurecer)
+        assertEquals(80, Tema.daString("dim=500").escurecer)
+    }
+
     @Test fun textoLegivelSobreDestaque() {
         assertEquals(0xFF06090F.toInt(), Tema.daString("c1=ffc21a").sobreDestaque) // dourado claro: texto escuro
         assertEquals(0xFFFFFFFF.toInt(), Tema.daString("c1=1b3dbd").sobreDestaque) // azul escuro: texto branco
@@ -65,5 +78,28 @@ class AtualizadorTest {
         assertFalse(Atualizador.precisaConferir(10 * h, 12 * h))
         assertTrue(Atualizador.precisaConferir(10 * h, 17 * h))
         assertTrue(Atualizador.precisaConferir(10 * h, 9 * h)) // relógio voltou
+    }
+}
+
+class ImagensTest {
+    @Test fun soAceitaHttps() {
+        assertTrue(Imagens.enderecoPermitido("https://exemplo.com/foto.jpg"))
+        assertFalse(Imagens.enderecoPermitido("http://exemplo.com/foto.jpg"))
+        assertFalse(Imagens.enderecoPermitido("file:///sdcard/x.jpg"))
+        assertFalse(Imagens.enderecoPermitido("javascript:alert(1)"))
+        assertFalse(Imagens.enderecoPermitido(""))
+        assertFalse(Imagens.enderecoPermitido(null))
+    }
+
+    @Test fun reduzSemPassarDoAlvo() {
+        assertEquals(1, Imagens.reducao(800, 600, 1600))
+        assertEquals(2, Imagens.reducao(4000, 3000, 1600))
+        assertEquals(4, Imagens.reducao(8000, 6000, 1600))
+    }
+
+    @Test fun slotsConhecidos() {
+        assertTrue(Imagens.slotValido("voltar"))
+        assertFalse(Imagens.slotValido("../x"))
+        assertFalse(Imagens.slotValido(null))
     }
 }

@@ -28,6 +28,11 @@ class Ajustes(contexto: Context) {
         get() = p.getBoolean("escuros", false)
         set(v) { p.edit().putBoolean("escuros", v).apply() }
 
+    /** Páginas ficam transparentes e mostram o fundo do Velox (ligado por padrão). */
+    var sitesNoTema: Boolean
+        get() = p.getBoolean("sites_no_tema", true)
+        set(v) { p.edit().putBoolean("sites_no_tema", v).apply() }
+
     var imersivo: Boolean
         get() = p.getBoolean("imersivo", false)
         set(v) { p.edit().putBoolean("imersivo", v).apply() }
