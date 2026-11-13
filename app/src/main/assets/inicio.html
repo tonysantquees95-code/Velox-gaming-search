@@ -11,7 +11,7 @@ html.com-foto .fundo { display: none; }
 body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 22px 18px 44px; }
 .topo { margin-top: 2vh; display: flex; flex-direction: column; align-items: center; }
 form { width: min(100%, 560px); margin-top: 20px; }
-.busca { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 8px 0 18px; border-radius: 28px; background: color-mix(in srgb, var(--campo) 88%, transparent); border: 1.5px solid var(--borda); backdrop-filter: blur(8px); transition: box-shadow .2s, border-color .2s; }
+.busca { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 8px 0 18px; border-radius: 28px; background: color-mix(in srgb, var(--bg) 38%, transparent); border: 1.5px solid var(--borda); backdrop-filter: blur(14px) saturate(1.2); transition: box-shadow .2s, border-color .2s; }
 .busca:focus-within { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(var(--neon-rgb), .2), 0 0 calc(10px + 26px * var(--brilho)) rgba(var(--neon-rgb), .35); }
 html[data-formato="futurista"] .busca { border-radius: 6px; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
 input[type="search"] { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--tx); font-size: 17px; height: 52px; }
@@ -22,6 +22,7 @@ html[data-formato="futurista"] .ir { border-radius: 4px; }
 .mot { margin: 8px 0 0; text-align: center; font-size: 12px; color: var(--su); letter-spacing: .08em; }
 .bloco { width: min(100%, 560px); margin-top: 22px; }
 .escudo { display: flex; gap: 8px; }
+.escudo .vidro, .prod { background: color-mix(in srgb, var(--bg) 42%, transparent); backdrop-filter: blur(12px) saturate(1.2); }
 .escudo .vidro { flex: 1; padding: 9px 6px; text-align: center; }
 .escudo b { display: block; font-size: 19px; font-variant-numeric: tabular-nums; text-shadow: 0 0 calc(4px + 12px * var(--brilho)) rgba(var(--neon-rgb), .85); }
 .escudo span { font-size: 10px; letter-spacing: .14em; color: var(--su); text-transform: uppercase; }
@@ -46,6 +47,18 @@ html[data-formato="futurista"] .sites .ic { border-radius: 5px; clip-path: polyg
 .edicao .item.mais .ic { animation: none; }
 @keyframes tremer { from { transform: rotate(-1.6deg); } to { transform: rotate(1.6deg); } }
 .edicao .item:not(.mais)::after { content: "✎"; position: absolute; top: -4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; background: var(--neon); color: var(--sobre); }
+
+.prods { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 2px 8px; margin: 0 -2px; scrollbar-width: none; }
+.prods::-webkit-scrollbar { display: none; }
+.prod { flex: 0 0 78%; max-width: 280px; scroll-snap-align: start; border: 1px solid var(--borda); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 4px; }
+html[data-formato="futurista"] .prod { border-radius: 4px; }
+.prod h3 { margin: 0; font-size: 18px; color: var(--neon); text-shadow: 0 0 calc(4px + 10px * var(--brilho)) rgba(var(--neon-rgb), .6); }
+.prod .papel { font-size: 10px; letter-spacing: .14em; color: var(--su); text-transform: uppercase; }
+.prod p { margin: 6px 0 10px; font-size: 13px; line-height: 1.4; color: var(--tx); flex: 1; }
+.prod .acoes-p { display: flex; gap: 8px; }
+.prod .acoes-p a { flex: 1; min-height: 40px; display: grid; place-items: center; border-radius: 999px; font-size: 13px; font-weight: 700; text-decoration: none; border: 1px solid var(--borda); color: var(--tx); }
+.prod .acoes-p a.exp { border-color: transparent; background: linear-gradient(90deg, var(--neon2), var(--neon)); color: var(--sobre); }
+.sub-p { margin: 2px 0 0; font-size: 11px; color: var(--su); }
 
 /* editor de atalho */
 .fundo-modal { position: fixed; inset: 0; z-index: 40; display: none; align-items: flex-end; background: rgba(2,3,8,.66); }
@@ -97,13 +110,18 @@ html.com-abertura .abertura { display: grid; }
     <div class="vidro"><b id="n3">ON</b><span>anúncios</span></div>
   </div>
 </section>
+<section class="bloco entrada" aria-label="Produtos da Vetorial Tech">
+  <div class="cab"><p class="rotulo">Da Vetorial Tech</p></div>
+  <div class="prods">
+    <article class="prod vidro"><span class="papel">Assistente de IA</span><h3>Vênus</h3><p>Fale ou escreva e ela controla o celular, cuida da sua loja e do catálogo, e abre jogos e otimiza o aparelho por você.</p><div class="acoes-p"><a class="exp" data-app="venus" href="apps.html#venus">Experimentar</a><a data-app="venus" href="apps.html#venus">Saiba mais</a></div></article>
+    <article class="prod vidro"><span class="papel">Jogos e emuladores</span><h3>Vortex</h3><p>Todos os seus jogos num só lugar, com emuladores embutidos, saves na nuvem e controles na tela.</p><div class="acoes-p"><a class="exp" data-app="vortex" href="apps.html#vortex">Experimentar</a><a data-app="vortex" href="apps.html#vortex">Saiba mais</a></div></article>
+    <article class="prod vidro"><span class="papel">Arquivos e cofre</span><h3>Vindex</h3><p>Diagnóstico e limpeza segura, organização automática de arquivos e um cofre protegido para documentos e senhas.</p><div class="acoes-p"><a class="exp" data-app="vindex" href="apps.html#vindex">Experimentar</a><a data-app="vindex" href="apps.html#vindex">Saiba mais</a></div></article>
+  </div>
+  <p class="sub-p">7 dias de teste grátis em cada app. O Velox continua grátis.</p>
+</section>
 <section class="bloco entrada" aria-label="Atalhos">
   <div class="cab"><p class="rotulo">Atalhos</p><button class="mini" id="editar" type="button">EDITAR</button></div>
   <nav class="sites" id="sites"></nav>
-</section>
-<section class="bloco entrada" aria-label="Apps da Vetorial Tech">
-  <div class="cab"><p class="rotulo">Da Vetorial Tech</p></div>
-  <a class="chip" id="apps-vt" href="apps.html" style="display:block;text-align:center;text-decoration:none;line-height:44px;min-height:48px">Conheça a Vênus, o Vortex e o Vindex</a>
 </section>
 
 <div class="fundo-modal" id="modal">
@@ -231,7 +249,7 @@ html.com-abertura .abertura { display: grid; }
   $("modal").addEventListener("click", function (e) { if (e.target === this) this.classList.remove("aberto"); });
   desenhar();
 })();
-  try { var al = document.getElementById('apps-vt'); if (al) al.href = 'apps.html' + location.search; } catch (e) {}
+  try { Array.prototype.forEach.call(document.querySelectorAll('a[data-app]'), function (al) { al.href = 'apps.html' + location.search + '#' + al.dataset.app; }); } catch (e) {}
 </script>
 </body>
 </html>

@@ -37,6 +37,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.EditText
+import android.widget.HorizontalScrollView
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -69,6 +70,10 @@ class MainActivity : Activity() {
     private lateinit var bVoltar: ImageView
     private lateinit var bAvancar: ImageView
     private var painel: WebView? = null
+    private lateinit var faixaFav: HorizontalScrollView
+    private lateinit var faixaConteudo: LinearLayout
+    private lateinit var bEstrelaCima: TextView
+    private lateinit var bEstrelaBaixo: TextView
 
     private val bloqueadosTotal = AtomicLong(0)
     private val bloqueadosSessao = AtomicLong(0)
@@ -88,6 +93,7 @@ class MainActivity : Activity() {
         montarTela()
         aplicarOpcoesSalvas()
         procurarAtualizacao(false)
+        raizApp.postDelayed({ perguntarNavegadorPrincipal() }, 2600)
         val pedido = intent?.dataString
         val salvas = ajustes.abas
         if (pedido != null) {
@@ -171,8 +177,17 @@ class MainActivity : Activity() {
                 } else false
             }
         }
+        bEstrelaCima = TextView(this).apply {
+            text = "★"
+            textSize = 22f
+            gravity = Gravity.CENTER
+            contentDescription = "Favoritos"
+            isClickable = true
+            setOnClickListener { abrirPainel("favoritos", true) }
+        }
         barraDeCima.addView(logo, LinearLayout.LayoutParams(dp(66), dp(34)).apply { rightMargin = dp(8) })
         barraDeCima.addView(campo, LinearLayout.LayoutParams(0, dp(44), 1f))
+        barraDeCima.addView(bEstrelaCima, LinearLayout.LayoutParams(dp(44), dp(44)).apply { leftMargin = dp(4) })
 
         barra = BarraNeon(this)
         conteudo = FrameLayout(this)
@@ -204,17 +219,30 @@ class MainActivity : Activity() {
             isFocusable = true
             setOnClickListener { abrirPainel("abas") }
         }
+        bEstrelaBaixo = TextView(this).apply {
+            text = "★"
+            textSize = 22f
+            gravity = Gravity.CENTER
+            contentDescription = "Faixa de favoritos"
+            isClickable = true
+            isFocusable = true
+            setOnClickListener { alternarFaixaFav() }
+        }
         val bPainel = botao("painel", "Painel do Velox: modo jogo, visual e mais") { abrirPainel("jogo") }
         val altura = dp(54)
         for (b in listOf(bVoltar, bAvancar, bInicio, bRecarregar)) barraDeBaixo.addView(b, LinearLayout.LayoutParams(0, altura, 1f))
         val caixaAbas = FrameLayout(this)
         caixaAbas.addView(contador, FrameLayout.LayoutParams(dp(32), dp(28), Gravity.CENTER))
+        barraDeBaixo.addView(bEstrelaBaixo, LinearLayout.LayoutParams(0, altura, 1f))
         barraDeBaixo.addView(caixaAbas, LinearLayout.LayoutParams(0, altura, 1f))
         barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1f))
 
         coluna.addView(barraDeCima, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         coluna.addView(barra, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3)))
         coluna.addView(conteudo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        faixaConteudo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), dp(6), dp(10), dp(6)) }
+        faixaFav = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; visibility = View.GONE; addView(faixaConteudo) }
+        coluna.addView(faixaFav, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         coluna.addView(barraDeBaixo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, altura).apply { setMargins(dp(10), dp(4), dp(10), dp(8)) })
 
         // no modo imersivo as barras somem; este botão pequeno traz o painel de volta
@@ -238,7 +266,7 @@ class MainActivity : Activity() {
 
     private fun pintarCampo() {
         val alfa = if (campo.hasFocus()) 0xFF else 0x80
-        campo.background = PainelCortado(tema.campo, (tema.destaque and 0x00FFFFFF) or (alfa shl 24), dp(if (campo.hasFocus()) 2 else 1).toFloat(),
+        campo.background = PainelCortado((tema.campo and 0x00FFFFFF) or 0x99000000.toInt(), (tema.destaque and 0x00FFFFFF) or (alfa shl 24), dp(if (campo.hasFocus()) 2 else 1).toFloat(),
             if (tema.redondo) dp(22).toFloat() else dp(10).toFloat(), tema.redondo)
     }
 
@@ -253,6 +281,10 @@ class MainActivity : Activity() {
         barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(a, b))
         barraDeBaixo.background = PainelCortado((tema.superficie and 0x00FFFFFF) or 0xF2000000.toInt(), (tema.destaque and 0x00FFFFFF) or 0xA0000000.toInt(),
             dp(1).toFloat() + 0.5f, if (tema.redondo) dp(28).toFloat() else dp(14).toFloat(), tema.redondo)
+        bEstrelaCima.setTextColor(tema.destaque)
+        bEstrelaBaixo.setTextColor(tema.destaque)
+        faixaFav.setBackgroundColor((tema.superficie and 0x00FFFFFF) or 0xE6000000.toInt())
+        desenharFaixaFav()
         campo.setTextColor(tema.texto)
         campo.setHintTextColor(tema.suave)
         pintarCampo()
@@ -372,6 +404,8 @@ class MainActivity : Activity() {
             .put("v", versao)
             .put("foto", fotoFundo != null)
             .put("vindex", vindexInstalado())
+            .put("fav", JSONArray(ajustes.favoritosJson))
+            .put("padrao", ehNavegadorPrincipal())
         fotoFundo?.let { o.put("fotoAmostra", Imagens.miniatura(it, 360, true)) }
         val ic = JSONObject()
         for (slot in Imagens.SLOTS) iconesProprios[slot]?.let { ic.put(slot, Imagens.miniatura(it, 72, false)) }
@@ -379,7 +413,7 @@ class MainActivity : Activity() {
         return Base64.encodeToString(o.toString().toByteArray(Charsets.UTF_8), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
     }
 
-    private fun abrirPainel(aba: String) {
+    private fun abrirPainel(aba: String, esquerda: Boolean = false) {
         fecharPainel()
         val wv = WebView(this)
         wv.setBackgroundColor(Color.TRANSPARENT)
@@ -393,7 +427,7 @@ class MainActivity : Activity() {
         painel = wv
         flutuante.visibility = View.GONE
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(campo.windowToken, 0)
-        wv.loadUrl("file:///android_asset/painel.html?aba=" + aba + "&" + tema.params() + "&s=" + estadoDoPainel())
+        wv.loadUrl("file:///android_asset/painel.html?aba=" + aba + (if (esquerda) "&lado=esq" else "") + "&" + tema.params() + "&s=" + estadoDoPainel())
     }
 
     private fun fecharPainel() {
@@ -428,6 +462,10 @@ class MainActivity : Activity() {
             "atualizar" -> procurarAtualizacao(true)
             "aviso" -> Toast.makeText(this, (u.getQueryParameter("m") ?: "").take(120), Toast.LENGTH_SHORT).show()
             "vindex" -> abrirVindex()
+            "fav-add" -> { favoritarPaginaAtual(); if (u.getQueryParameter("fica") != "1") fecharPainel() else abrirPainel("favoritos", true) }
+            "fav-del" -> { u.getQueryParameter("i")?.toIntOrNull()?.let { removerFavorito(it) }; abrirPainel("favoritos", true) }
+            "fav-abrir" -> { fecharPainel(); u.getQueryParameter("u")?.let { abrirTexto(it) } }
+            "padrao" -> { fecharPainel(); pedirNavegadorPrincipal() }
             "fundo-galeria" -> escolherImagem(PEDIDO_FUNDO)
             "fundo-remover" -> { Imagens.removerFundo(this); fotoFundo = null; depoisDeMudarFundo() }
             "fundo-url" -> imagemDaRede(u.getQueryParameter("u"), null)
@@ -454,6 +492,139 @@ class MainActivity : Activity() {
             }
             "pc" -> { ajustes.siteParaComputador = ligado; for (a in abas) aplicarModoComputador(a.webView); atual?.webView?.reload() }
         }
+    }
+
+    // ---------------------------------------------------------------- favoritos
+
+    private fun listaFavoritos(): MutableList<Pair<String, String>> {
+        val r = mutableListOf<Pair<String, String>>()
+        try {
+            val a = JSONArray(ajustes.favoritosJson)
+            for (i in 0 until a.length()) {
+                val o = a.getJSONObject(i)
+                r.add(Pair(o.optString("t"), o.optString("u")))
+            }
+        } catch (e: Exception) {
+            // lista estragada: recomeça vazia
+        }
+        return r
+    }
+
+    private fun gravarFavoritos(l: List<Pair<String, String>>) {
+        val a = JSONArray()
+        for ((t, u) in l) a.put(JSONObject().put("t", t).put("u", u))
+        ajustes.favoritosJson = a.toString()
+        desenharFaixaFav()
+    }
+
+    private fun favoritarPaginaAtual() {
+        val a = atual
+        val u = a?.url ?: ""
+        if (a == null || !(u.startsWith("http://") || u.startsWith("https://"))) {
+            Toast.makeText(this, "Abra uma página para favoritar.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val l = listaFavoritos()
+        if (l.any { it.second == u }) {
+            Toast.makeText(this, "Essa página já está nos favoritos.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val host = try { Uri.parse(u).host ?: u } catch (e: Exception) { u }
+        l.add(Pair(a.titulo.ifBlank { host }.take(60), u))
+        gravarFavoritos(l)
+        Toast.makeText(this, "Adicionada aos favoritos.", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun removerFavorito(i: Int) {
+        val l = listaFavoritos()
+        if (i in l.indices) {
+            l.removeAt(i)
+            gravarFavoritos(l)
+        }
+    }
+
+    private fun alternarFaixaFav() {
+        faixaFav.visibility = if (faixaFav.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+        desenharFaixaFav()
+    }
+
+    /** Faixa pequena que rola para o lado: primeiro "+" para favoritar a página, depois os favoritos. */
+    private fun desenharFaixaFav() {
+        if (!::faixaConteudo.isInitialized) return
+        faixaConteudo.removeAllViews()
+        fun chip(texto: String, destaque: Boolean, acao: () -> Unit, longo: (() -> Unit)? = null) {
+            val t = TextView(this).apply {
+                text = texto
+                textSize = 13f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTextColor(if (destaque) tema.sobreDestaque else tema.texto)
+                gravity = Gravity.CENTER
+                setPadding(dp(14), 0, dp(14), 0)
+                background = GradientDrawable().apply {
+                    cornerRadius = dp(18).toFloat()
+                    setColor(if (destaque) tema.destaque else (tema.campo and 0x00FFFFFF) or 0xCC000000.toInt())
+                    setStroke(dp(1), (tema.destaque and 0x00FFFFFF) or 0x80000000.toInt())
+                }
+                isClickable = true
+                setOnClickListener { acao() }
+                if (longo != null) setOnLongClickListener { longo(); true }
+            }
+            faixaConteudo.addView(t, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36)).apply { rightMargin = dp(8) })
+        }
+        chip("＋ Favoritar esta página", true, { favoritarPaginaAtual() })
+        val l = listaFavoritos()
+        if (l.isEmpty()) chip("Nenhum favorito ainda", false, {})
+        for ((i, f) in l.withIndex()) {
+            chip(f.first, false, { abrirTexto(f.second) }, {
+                Toast.makeText(this, "Favorito removido.", Toast.LENGTH_SHORT).show()
+                removerFavorito(i)
+            })
+        }
+    }
+
+    // ---------------------------------------------------------------- navegador principal
+
+    private fun ehNavegadorPrincipal(): Boolean {
+        return try {
+            val r = packageManager.resolveActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com")), android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)
+            r?.activityInfo?.packageName == packageName
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /** Pede ao Android para tornar o Velox o navegador principal (Android 10+); senão abre os apps padrão. */
+    private fun pedirNavegadorPrincipal() {
+        if (ehNavegadorPrincipal()) {
+            Toast.makeText(this, "O Velox já é o seu navegador principal.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                val rm = getSystemService(android.app.role.RoleManager::class.java)
+                if (rm != null && rm.isRoleAvailable(android.app.role.RoleManager.ROLE_BROWSER) && !rm.isRoleHeld(android.app.role.RoleManager.ROLE_BROWSER)) {
+                    startActivityForResult(rm.createRequestRoleIntent(android.app.role.RoleManager.ROLE_BROWSER), PEDIDO_PADRAO)
+                    return
+                }
+            }
+            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+            Toast.makeText(this, "Toque em \"App de navegador\" e escolha o Velox.", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            try { startActivity(Intent(android.provider.Settings.ACTION_SETTINGS)) } catch (e2: Exception) { /* sem tela de ajustes */ }
+        }
+    }
+
+    /** Só na primeira abertura: pergunta se o Velox deve ser o navegador principal. */
+    private fun perguntarNavegadorPrincipal() {
+        if (ajustes.perguntouPadrao || isFinishing || ehNavegadorPrincipal()) return
+        ajustes.perguntouPadrao = true
+        AlertDialog.Builder(this)
+            .setTitle("Usar o Velox como navegador principal?")
+            .setMessage("Os links que você abrir em outros apps vão abrir aqui, já com o bloqueio de anúncios. Você pode mudar isso depois em Painel > Mais.")
+            .setPositiveButton("Sim, usar") { _, _ -> pedirNavegadorPrincipal() }
+            .setNegativeButton("Agora não", null)
+            .show()
     }
 
     // ---------------------------------------------------------------- atualização do próprio Velox
@@ -910,6 +1081,7 @@ class MainActivity : Activity() {
         const val INICIO = "file:///android_asset/inicio.html"
         const val PEDIDO_ARQUIVO = 1
         const val PEDIDO_FUNDO = 2
+        const val PEDIDO_PADRAO = 9
         const val PEDIDO_ICONE = 3
         const val VINDEX = "tech.vetorial.vindex"
 

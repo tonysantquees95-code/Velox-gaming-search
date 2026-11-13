@@ -56,6 +56,16 @@ class Ajustes(contexto: Context) {
         get() = (p.getString("abas", "") ?: "").split('\n').filter { it.isNotBlank() }
         set(v) { p.edit().putString("abas", v.joinToString("\n")).apply() }
 
+    /** Favoritos: lista JSON de {t: título, u: endereço}. */
+    var favoritosJson: String
+        get() = p.getString("favoritos", "[]") ?: "[]"
+        set(v) { p.edit().putString("favoritos", v).apply() }
+
+    /** Já perguntou na primeira abertura se o Velox deve ser o navegador principal. */
+    var perguntouPadrao: Boolean
+        get() = p.getBoolean("perguntou_padrao", false)
+        set(v) { p.edit().putBoolean("perguntou_padrao", v).apply() }
+
     var abaAtual: Int
         get() = p.getInt("aba_atual", 0)
         set(v) { p.edit().putInt("aba_atual", v).apply() }
