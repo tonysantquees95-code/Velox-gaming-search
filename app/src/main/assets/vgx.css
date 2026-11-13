@@ -63,3 +63,16 @@ html[data-formato="futurista"] .interruptor, html[data-formato="futurista"] .int
 .nome-marca { margin: 6px 0 0; text-align: center; font-weight: 800; letter-spacing: .34em; padding-left: .34em; font-size: clamp(15px, 4.4vw, 21px); color: #fff;
   text-shadow: 0 0 calc(4px + 14px * var(--brilho)) rgba(var(--neon-rgb), .9); }
 .nome-marca small { display: block; margin-top: 4px; font-weight: 600; letter-spacing: .6em; padding-left: .6em; font-size: .56em; color: var(--su); text-shadow: none; }
+
+/* Marca VX: energia correndo nas trilhas e neons andando em volta das letras */
+@keyframes vx-corre { to { stroke-dashoffset: -100; } }
+@keyframes vx-gira { to { transform: rotate(360deg); } }
+.vgx .pulso { stroke-dasharray: 9 91; stroke-dashoffset: 0; animation: vx-corre 2.6s linear infinite; filter: drop-shadow(0 0 3px var(--neon)); }
+.vgx .corre { stroke-width: 5; stroke-dasharray: 13 87; stroke-dashoffset: 0; animation: vx-corre 3.4s linear infinite; }
+.vgx .corre.a { stroke: #fff; stroke-opacity: .95; }
+.vgx .corre.b { stroke: var(--neon2); stroke-width: 4; }
+.vgx .gira, .vgx .gira-r { transform-origin: 200px 95px; animation: vx-gira 60s linear infinite; }
+.vgx .gira-r { animation-duration: 90s; animation-direction: reverse; }
+html[data-anim="0"] .vgx .pulso, html[data-anim="0"] .vgx .corre, html[data-anim="0"] .vgx .gira, html[data-anim="0"] .vgx .gira-r { animation: none; }
+html[data-anim="0"] .vgx .pulso { display: none; }
+@media (prefers-reduced-motion: reduce) { .vgx .pulso, .vgx .corre, .vgx .gira, .vgx .gira-r { animation: none; } }

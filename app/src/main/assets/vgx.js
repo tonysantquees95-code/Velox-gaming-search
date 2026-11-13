@@ -25,16 +25,20 @@
     var fundo = "";
     if (emblema) {
       var ticks = ""; for (var i = 0; i < 36; i++) { var ang = i * 10 * Math.PI / 180, r1 = 214, r2 = i % 3 ? 220 : 228; ticks += '<line x1="' + (200 + r1 * Math.cos(ang)).toFixed(1) + '" y1="' + (95 + r1 * Math.sin(ang)).toFixed(1) + '" x2="' + (200 + r2 * Math.cos(ang)).toFixed(1) + '" y2="' + (95 + r2 * Math.sin(ang)).toFixed(1) + '"/>'; }
+      var trilhas = ["M-130 20 H-60 L-36 44 H40", "M-130 70 H-80 L-60 90 H20", "M-130 130 H-90 L-70 150 H0", "M540 -10 H470 L446 14 H380", "M540 40 H490 L470 60 H400", "M540 110 H500 L480 130 H410"];
+      var base = trilhas.map(function (d) { return '<path d="' + d + '"/>'; }).join("");
+      var pulsos = trilhas.map(function (d, j) { return '<path class="pulso" pathLength="100" d="' + d + '" style="animation-duration:' + (2.2 + (j % 3) * 0.7).toFixed(1) + 's;animation-delay:-' + (j * 0.6).toFixed(1) + 's"/>'; }).join("");
       fundo = '<g fill="none" style="stroke:var(--neon)" stroke-opacity=".3" stroke-width="1.6">' +
-        '<circle cx="200" cy="95" r="168"/><circle cx="200" cy="95" r="196" stroke-dasharray="120 26 40 26" stroke-opacity=".22"/>' + ticks +
-        '<path d="M-130 20 H-60 L-36 44 H40 M-130 70 H-80 L-60 90 H20 M-130 130 H-90 L-70 150 H0 M540 -10 H470 L446 14 H380 M540 40 H490 L470 60 H400 M540 110 H500 L480 130 H410"/></g>' +
+        '<g class="gira"><circle cx="200" cy="95" r="168" stroke-opacity=".3"/></g><g class="gira-r"><circle cx="200" cy="95" r="196" stroke-dasharray="120 26 40 26" stroke-opacity=".28"/>' + ticks + '</g>' + base + '</g>' +
         '<g fill="none" style="stroke:var(--neon)" stroke-opacity=".16" stroke-width="1"><path d="M-110 -40 V230 M-80 -40 V230 M-50 -40 V230 M-110 -20 H-20 M-110 10 H-20 M-110 40 H-20 M-110 170 H-20 M-110 200 H-20 M450 -40 V230 M480 -40 V230 M510 -40 V230 M410 -20 H520 M410 10 H520 M410 170 H520 M410 200 H520"/></g>' +
+        '<g fill="none" stroke-linecap="round" stroke-width="3.2" style="stroke:var(--neon)" class="pulsos">' + pulsos + '</g>' +
         '<g style="fill:var(--neon)" fill-opacity=".5"><circle cx="-36" cy="44" r="3.4"/><circle cx="20" cy="90" r="3.4"/><circle cx="446" cy="14" r="3.4"/><circle cx="470" cy="60" r="3.4"/></g>';
     }
     var vb = emblema ? "-140 -100 680 " + (texto ? 400 : 380) : "-14 -14 428 218";
     alvo.innerHTML = '<svg class="vgx" viewBox="' + vb + '" role="img" aria-label="VX">' +
       '<defs><linearGradient id="' + id + 'c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3f63"/><stop offset=".55" stop-color="#101a30"/><stop offset="1" stop-color="#070c18"/></linearGradient>' +
       '<clipPath id="' + id + 'k">' + poly("") + '</clipPath>' +
+      '<filter id="' + id + 'g" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="2.2" result="m"/><feMerge><feMergeNode in="m"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
       '<filter id="' + id + 'b" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter></defs>' +
       fundo +
       (o.brilho === false ? "" : '<g filter="url(#' + id + 'b)" opacity=".62" style="fill:var(--neon)">' + poly("") + '</g>') +
@@ -42,6 +46,8 @@
       '<g fill="#03050c" stroke="#03050c" stroke-width="16" stroke-linejoin="miter">' + poly("") + '</g>' +
       '<g fill="url(#' + id + 'c)">' + poly("") + '</g>' +
       '<g clip-path="url(#' + id + 'k)" fill="none" stroke-linejoin="miter"><g style="stroke:var(--neon)" stroke-width="9">' + poly("") + '</g><g stroke="#fff" stroke-opacity=".4" stroke-width="3">' + poly("") + '</g></g>' +
+      '<g class="corredores" fill="none" stroke-linejoin="round" stroke-linecap="round" filter="url(#' + id + 'g)">' +
+        [LETRAS.x1, LETRAS.x2, LETRAS.v].map(function (d, j) { return '<path class="corre a" pathLength="100" d="' + d + '" style="animation-delay:-' + (j * 0.9).toFixed(1) + 's"/><path class="corre b" pathLength="100" d="' + d + '" style="animation-delay:-' + (1.6 + j * 0.9).toFixed(1) + 's"/>'; }).join("") + '</g>' +
       '<path d="M16 14 L56 14 L100 130 M236 14 L260 14 L392 178" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="6"/>' +
       (texto ? '<text x="200" y="262" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-weight="800" font-size="50" letter-spacing="6" fill="#9fb0cc">VELOX GAMING</text><text x="200" y="300" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-weight="700" font-size="26" letter-spacing="14" fill="#8fa0cf">SEARCH</text>' : '') +
       '</svg>';
