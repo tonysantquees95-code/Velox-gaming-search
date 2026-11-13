@@ -4,15 +4,13 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- VX: o V e o X grandes, com relevo (camada escura atrás) -->
-    <group android:scaleX="0.15" android:scaleY="0.15" android:translateX="27" android:translateY="41">
+    <!-- VGX: monograma com relevo (camada escura atras) -->
+    <group android:scaleX="0.103" android:scaleY="0.103" android:translateX="20.5" android:translateY="45">
         <group android:translateX="7" android:translateY="7">
-            <path android:fillColor="#1B2A63" android:pathData="M0,0 L56,0 L100,112 L144,0 L200,0 L128,170 L72,170 Z" />
-            <path android:fillColor="#1B2A63" android:pathData="M162,0 L220,0 L362,170 L304,170 Z" />
-            <path android:fillColor="#1B2A63" android:pathData="M304,0 L362,0 L220,170 L162,170 Z" />
+            <path android:fillColor="#1B2A63" android:pathData="M0,0 L56,0 L100,112 L144,0 L200,0 L128,170 L72,170 Z M232,0 L392,0 L392,42 L250,42 L250,128 L334,128 L334,104 L296,104 L296,70 L392,70 L392,170 L232,170 L192,130 L192,40 Z M424,0 L482,0 L524,50.3 L566,0 L624,0 L553,85 L624,170 L566,170 L524,119.7 L482,170 L424,170 L495,85 Z" />
         </group>
         <path android:fillColor="#22D3EE" android:pathData="M0,0 L56,0 L100,112 L144,0 L200,0 L128,170 L72,170 Z" />
-        <path android:fillColor="#A78BFA" android:pathData="M162,0 L220,0 L362,170 L304,170 Z" />
-        <path android:fillColor="#A78BFA" android:pathData="M304,0 L362,0 L220,170 L162,170 Z" />
+        <path android:fillColor="#5EB6F2" android:pathData="M232,0 L392,0 L392,42 L250,42 L250,128 L334,128 L334,104 L296,104 L296,70 L392,70 L392,170 L232,170 L192,130 L192,40 Z" />
+        <path android:fillColor="#A78BFA" android:pathData="M424,0 L482,0 L524,50.3 L566,0 L624,0 L553,85 L624,170 L566,170 L524,119.7 L482,170 L424,170 L495,85 Z" />
     </group>
 </vector>

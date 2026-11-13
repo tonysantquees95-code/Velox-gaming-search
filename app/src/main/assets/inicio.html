@@ -4,61 +4,98 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Velox</title>
+<link rel="stylesheet" href="vgx.css">
 <style>
-:root { --bg:#070B14; --sup:#0D1530; --campo:#141E40; --c1:#22d3ee; --c2:#a78bfa; --tx:#fff; --su:#8fa0cf; }
-* { box-sizing: border-box; }
-html, body { margin: 0; min-height: 100%; }
-body { background: radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--c1) 22%, var(--bg)) 0%, var(--bg) 62%); color: var(--tx); font-family: system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 8vh 20px 40px; min-height: 100vh; }
-.marca { width: min(78vw, 340px); height: auto; filter: drop-shadow(0 0 18px color-mix(in srgb, var(--c1) 55%, transparent)); }
-h1 { margin: 6px 0 0; font-size: clamp(34px, 9vw, 54px); letter-spacing: .16em; padding-left: .16em; }
-.sub { margin: 4px 0 26px; letter-spacing: .6em; padding-left: .6em; font-size: 14px; color: var(--su); }
-form { width: min(100%, 560px); }
-input { width: 100%; min-height: 52px; border-radius: 26px; border: 1.5px solid color-mix(in srgb, var(--c1) 45%, transparent); background: var(--campo); color: var(--tx); font-size: 17px; padding: 0 22px; outline: none; }
-input:focus { border-color: var(--c1); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c1) 25%, transparent); }
+body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 26px 18px 40px; }
+.topo { margin-top: 4vh; display: flex; flex-direction: column; align-items: center; }
+.topo .vgx { width: min(74vw, 330px); }
+form { width: min(100%, 560px); margin-top: 26px; position: relative; }
+.busca { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 8px 0 18px; border-radius: 28px; background: var(--campo); border: 1.5px solid var(--borda); transition: box-shadow .2s, border-color .2s; }
+.busca:focus-within { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(var(--neon-rgb), .2), 0 0 calc(10px + 26px * var(--brilho)) rgba(var(--neon-rgb), .35); }
+html[data-formato="futurista"] .busca { border-radius: 6px; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
+input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--tx); font-size: 17px; height: 52px; }
 input::placeholder { color: var(--su); }
-.titulo { margin: 34px 0 12px; font-size: 13px; letter-spacing: .2em; color: var(--su); }
-.sites { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; width: min(100%, 460px); }
+.ir { width: 42px; height: 42px; border-radius: 50%; border: 0; display: grid; place-items: center; background: linear-gradient(135deg, var(--neon2), var(--neon)); color: var(--sobre); cursor: pointer; flex: none; box-shadow: 0 0 calc(8px + 14px * var(--brilho)) rgba(var(--neon-rgb), .5); }
+html[data-formato="futurista"] .ir { border-radius: 4px; }
+.ir svg { width: 20px; height: 20px; }
+.mot { margin: 10px 0 0; text-align: center; font-size: 12px; color: var(--su); letter-spacing: .08em; }
+.painel { width: min(100%, 560px); margin-top: 28px; }
+.status { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.status .vidro { padding: 12px 10px; text-align: center; }
+.status b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; color: #fff; text-shadow: 0 0 calc(4px + 12px * var(--brilho)) rgba(var(--neon-rgb), .85); }
+.status span { font-size: 11px; letter-spacing: .14em; color: var(--su); text-transform: uppercase; }
+.sites { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
 .sites a { display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--su); font-size: 12px; min-height: 44px; }
-.sites span { width: 58px; height: 58px; border-radius: 14px 4px 14px 4px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 22px; color: #fff; }
+.sites span { width: 60px; height: 60px; display: grid; place-items: center; font-weight: 900; font-size: 22px; color: #fff; border-radius: 16px;
+  background: linear-gradient(145deg, rgba(var(--neon2-rgb), .55), rgba(var(--neon-rgb), .22)); border: 1px solid var(--borda); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 0 calc(4px + 14px * var(--brilho)) rgba(var(--neon-rgb), .18); transition: transform .15s, box-shadow .15s; }
+html[data-formato="futurista"] .sites span { border-radius: 4px; clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px)); }
+.sites a:active span { transform: scale(.92); }
+.sites a:hover span { box-shadow: 0 0 22px rgba(var(--neon-rgb), .6); }
+.entrada > * { animation: sobe .5s cubic-bezier(.2,.8,.2,1) both; }
+.entrada > *:nth-child(2) { animation-delay: .06s } .entrada > *:nth-child(3) { animation-delay: .12s } .entrada > *:nth-child(4) { animation-delay: .18s }
+@keyframes sobe { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+/* abertura: o monograma surge com um clarão (só na primeira vez que o app abre) */
+.abertura { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; background: #000; animation: some .55s ease 1.55s forwards; }
+html.com-abertura .abertura { display: grid; }
+.abertura .vgx { width: min(78vw, 360px); opacity: 0; animation: surge 1.35s .1s cubic-bezier(.2,.9,.2,1) forwards; }
+.abertura::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 50%, rgba(var(--neon-rgb), .55), transparent 60%); opacity: 0; animation: clarao 1.4s .5s ease forwards; }
+@keyframes surge { 0% { opacity: 0; transform: scale(2.6); filter: blur(10px); } 60% { opacity: 1; } 100% { opacity: 1; transform: scale(1); filter: none; } }
+@keyframes clarao { 0% { opacity: 0 } 45% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes some { to { opacity: 0; visibility: hidden; } }
 </style>
 </head>
 <body>
-<svg class="marca" viewBox="-20 -20 400 220" role="img" aria-label="VX">
-<defs>
-<g id="vx"><path d="M0 0 L56 0 L100 112 L144 0 L200 0 L128 170 L72 170 Z"/><path d="M162 0 L220 0 L362 170 L304 170 Z"/><path d="M304 0 L362 0 L220 170 L162 170 Z"/></g>
-<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" id="s1" stop-color="#22d3ee"/><stop offset="1" id="s2" stop-color="#a78bfa"/></linearGradient>
-</defs>
-<g id="sombra" fill="#1b2a63"></g>
-<use href="#vx" fill="url(#g)" stroke="rgba(255,255,255,.5)" stroke-width="1.5"/>
-</svg>
-<h1>VELOX</h1>
-<div class="sub">SEARCH</div>
-<form id="f"><input id="q" type="search" placeholder="Pesquisar ou digitar endereço" autocomplete="off" aria-label="Pesquisar ou digitar endereço"></form>
-<div class="titulo">SITES</div>
-<nav class="sites" aria-label="Sites">
-<a href="https://www.reddit.com"><span style="background:#ff4500">R</span>Reddit</a>
-<a href="https://www.twitch.tv"><span style="background:#7b2fbe">T</span>Twitch</a>
-<a href="https://discord.com"><span style="background:#5865f2">D</span>Discord</a>
-<a href="https://www.youtube.com"><span style="background:#e00000">Y</span>YouTube</a>
-<a href="https://github.com"><span style="background:#24292f">G</span>GitHub</a>
-<a href="https://store.steampowered.com"><span style="background:#1b2838">S</span>Steam</a>
-<a href="https://www.wikipedia.org"><span style="background:#4a4a4a">W</span>Wikipédia</a>
-<a href="https://web.whatsapp.com"><span style="background:#1f9d55">W</span>WhatsApp</a>
-</nav>
+<div class="fundo"><i class="modelo"></i><i class="varredura"></i></div>
+<div class="abertura"><div data-vgx></div></div>
+<div class="topo entrada">
+  <div class="marca-luz" data-vgx></div>
+  <div class="nome-marca">VELOX<small>GAMING SEARCH</small></div>
+</div>
+<form id="f" class="entrada">
+  <div class="busca">
+    <input id="q" type="search" placeholder="Pesquisar ou digitar endereço" autocomplete="off" aria-label="Pesquisar ou digitar endereço">
+    <button class="ir" type="submit" aria-label="Pesquisar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+  </div>
+  <p class="mot" id="mot"></p>
+</form>
+<section class="painel entrada" aria-label="Escudo">
+  <p class="rotulo">Escudo</p>
+  <div class="status">
+    <div class="vidro"><b id="n1">0</b><span>nesta sessão</span></div>
+    <div class="vidro"><b id="n2">0</b><span>no total</span></div>
+    <div class="vidro"><b id="n3">ON</b><span>anúncios</span></div>
+  </div>
+</section>
+<section class="painel entrada" aria-label="Atalhos">
+  <p class="rotulo">Atalhos de jogo</p>
+  <nav class="sites">
+    <a href="https://store.steampowered.com"><span>S</span>Steam</a>
+    <a href="https://www.twitch.tv"><span>T</span>Twitch</a>
+    <a href="https://discord.com/app"><span>D</span>Discord</a>
+    <a href="https://www.youtube.com/gaming"><span>Y</span>YouTube</a>
+    <a href="https://store.epicgames.com"><span>E</span>Epic</a>
+    <a href="https://www.gog.com"><span>G</span>GOG</a>
+    <a href="https://itch.io"><span>i</span>itch.io</a>
+    <a href="https://www.reddit.com/r/gaming"><span>R</span>Reddit</a>
+    <a href="https://www.ign.com"><span>IGN</span>IGN</a>
+    <a href="https://github.com"><span>GH</span>GitHub</a>
+    <a href="https://www.wikipedia.org"><span>W</span>Wikipédia</a>
+    <a href="https://web.whatsapp.com"><span>Z</span>WhatsApp</a>
+  </nav>
+</section>
+<script src="vgx.js"></script>
 <script>
 (function () {
-  var p = new URLSearchParams(location.search), r = document.documentElement.style;
-  var m = { bg: '--bg', sup: '--sup', campo: '--campo', c1: '--c1', c2: '--c2', tx: '--tx', su: '--su' };
-  Object.keys(m).forEach(function (k) { var v = p.get(k); if (v && /^[0-9a-fA-F]{6}$/.test(v)) r.setProperty(m[k], '#' + v); });
-  if (/^[0-9a-fA-F]{6}$/.test(p.get('c1') || '')) document.getElementById('s1').setAttribute('stop-color', '#' + p.get('c1'));
-  if (/^[0-9a-fA-F]{6}$/.test(p.get('c2') || '')) document.getElementById('s2').setAttribute('stop-color', '#' + p.get('c2'));
-  var s = document.getElementById('sombra'), x = '';
-  for (var i = 9; i >= 1; i--) x += '<use href="#vx" x="' + i + '" y="' + i + '"/>';
-  s.innerHTML = x;
-  document.getElementById('f').addEventListener('submit', function (e) {
+  var P = window.TEMA_PARAMS;
+  if (P.get("ab") === "1" && P.get("an") !== "0") document.documentElement.classList.add("com-abertura");
+  document.getElementById("n1").textContent = P.get("n1") || "0";
+  document.getElementById("n2").textContent = P.get("n2") || "0";
+  document.getElementById("n3").textContent = P.get("ad") === "0" ? "OFF" : "ON";
+  document.getElementById("mot").textContent = P.get("bus") ? "Buscando com " + P.get("bus") : "";
+  document.getElementById("f").addEventListener("submit", function (e) {
     e.preventDefault();
-    var q = document.getElementById('q').value.trim();
-    if (q) location.href = 'velox://buscar?q=' + encodeURIComponent(q);
+    var q = document.getElementById("q").value.trim();
+    if (q) location.href = "velox://buscar?q=" + encodeURIComponent(q);
   });
 })();
 </script>

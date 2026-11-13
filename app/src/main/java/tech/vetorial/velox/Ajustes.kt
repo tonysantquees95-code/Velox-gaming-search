@@ -7,9 +7,10 @@ import android.content.SharedPreferences
 class Ajustes(contexto: Context) {
     private val p: SharedPreferences = contexto.getSharedPreferences("velox", Context.MODE_PRIVATE)
 
-    var tema: String
-        get() = p.getString("tema", "neon") ?: "neon"
-        set(v) { p.edit().putString("tema", v).apply() }
+    /** Texto do tema ("c1=..&c2=.."). Quem usava os temas antigos (neon/sol/cromado) volta ao padrão. */
+    var temaTexto: String
+        get() = p.getString("tema_texto", "") ?: ""
+        set(v) { p.edit().putString("tema_texto", v).apply() }
 
     var buscador: String
         get() = p.getString("buscador", "google") ?: "google"
@@ -22,6 +23,23 @@ class Ajustes(contexto: Context) {
     var siteParaComputador: Boolean
         get() = p.getBoolean("computador", false)
         set(v) { p.edit().putBoolean("computador", v).apply() }
+
+    var sitesEscuros: Boolean
+        get() = p.getBoolean("escuros", false)
+        set(v) { p.edit().putBoolean("escuros", v).apply() }
+
+    var imersivo: Boolean
+        get() = p.getBoolean("imersivo", false)
+        set(v) { p.edit().putBoolean("imersivo", v).apply() }
+
+    var telaLigada: Boolean
+        get() = p.getBoolean("tela_ligada", false)
+        set(v) { p.edit().putBoolean("tela_ligada", v).apply() }
+
+    /** Quantos anúncios e rastreadores o Velox já barrou desde que foi instalado. */
+    var bloqueadosTotal: Long
+        get() = p.getLong("bloqueados_total", 0L)
+        set(v) { p.edit().putLong("bloqueados_total", v).apply() }
 
     /** Endereços das abas abertas (sem as anônimas), separados por quebra de linha. */
     var abas: List<String>

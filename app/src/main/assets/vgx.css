@@ -1,0 +1,65 @@
+/* Visual gamer do Velox: usado pela página inicial e pelo painel. As cores vêm do tema (vgx.js troca as variáveis). */
+:root {
+  --neon: #22d3ee; --neon2: #a78bfa; --neon-rgb: 34, 211, 238; --neon2-rgb: 167, 139, 250;
+  --bg: #070b14; --sup: #0d1530; --campo: #141e40; --tx: #ffffff; --su: #8fa0cf; --sobre: #06121a;
+  --brilho: .7; --borda: rgba(var(--neon-rgb), .26);
+  --painel: color-mix(in srgb, var(--sup) 86%, transparent);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; min-height: 100%; }
+body { background: var(--bg); color: var(--tx); font-family: "Segoe UI", system-ui, sans-serif; overflow-x: hidden; }
+button { font: inherit; color: inherit; }
+
+/* ---------- fundo ---------- */
+.fundo { position: fixed; inset: 0; overflow: hidden; z-index: -1; background:
+  radial-gradient(900px 560px at 12% -8%, rgba(var(--neon2-rgb), .34), transparent 62%),
+  radial-gradient(760px 520px at 100% 8%, rgba(var(--neon-rgb), .20), transparent 60%), var(--bg); }
+.fundo > i { position: absolute; inset: 0; display: block; pointer-events: none; }
+.fundo .modelo { opacity: 0; }
+html[data-fundo="aurora"] .fundo .modelo { opacity: 1; inset: -10%; background:
+  radial-gradient(40% 50% at 20% 30%, rgba(var(--neon-rgb), .35), transparent 70%),
+  radial-gradient(35% 45% at 80% 25%, rgba(var(--neon2-rgb), .45), transparent 70%),
+  radial-gradient(45% 40% at 55% 85%, rgba(var(--neon-rgb), .22), transparent 70%);
+  animation: deriva 14s ease-in-out infinite alternate; }
+html[data-fundo="grade"] .fundo .modelo { opacity: 1; background-image: linear-gradient(rgba(var(--neon-rgb), .10) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--neon-rgb), .10) 1px, transparent 1px);
+  background-size: 44px 44px; -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 15%, transparent 78%); mask-image: radial-gradient(ellipse at 50% 30%, #000 15%, transparent 78%); animation: grade 9s linear infinite; }
+html[data-fundo="pontos"] .fundo .modelo { opacity: 1; background-image: radial-gradient(rgba(var(--neon-rgb), .5) 1.4px, transparent 1.7px); background-size: 26px 26px;
+  -webkit-mask-image: radial-gradient(ellipse at center, #000 18%, transparent 82%); mask-image: radial-gradient(ellipse at center, #000 18%, transparent 82%); }
+html[data-fundo="circuito"] .fundo .modelo { opacity: 1; background: rgba(var(--neon-rgb), .28); -webkit-mask-size: 160px 160px; mask-size: 160px 160px;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='white' stroke-width='1.4'%3E%3Cpath d='M0 40h50l14 14h40M160 100h-46l-14-14H60M80 0v36l12 12M40 160v-40l14-14M130 0v28l16 16h14M0 130h28l12 12'/%3E%3Ccircle cx='50' cy='40' r='3' fill='white'/%3E%3Ccircle cx='104' cy='54' r='3' fill='white'/%3E%3Ccircle cx='60' cy='86' r='3' fill='white'/%3E%3Ccircle cx='28' cy='130' r='3' fill='white'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160' fill='none' stroke='white' stroke-width='1.4'%3E%3Cpath d='M0 40h50l14 14h40M160 100h-46l-14-14H60M80 0v36l12 12M40 160v-40l14-14M130 0v28l16 16h14M0 130h28l12 12'/%3E%3Ccircle cx='50' cy='40' r='3' fill='white'/%3E%3Ccircle cx='104' cy='54' r='3' fill='white'/%3E%3Ccircle cx='60' cy='86' r='3' fill='white'/%3E%3Ccircle cx='28' cy='130' r='3' fill='white'/%3E%3C/svg%3E"); }
+html[data-fundo="liso"] .fundo { background: var(--bg); }
+/* linhas de varredura finas: dão cara de tela de jogo sem pesar */
+.fundo .varredura { background: repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0 1px, transparent 1px 3px); mix-blend-mode: overlay; }
+html[data-fundo="liso"] .fundo .varredura { display: none; }
+@keyframes deriva { from { transform: translate3d(-3%, -2%, 0) scale(1); } to { transform: translate3d(3%, 3%, 0) scale(1.12); } }
+@keyframes grade { to { background-position: 0 44px; } }
+html[data-anim="0"] *, html[data-anim="0"] *::before, html[data-anim="0"] *::after { animation: none !important; transition: none !important; }
+
+/* ---------- peças ---------- */
+.vidro { background: var(--painel); border: 1px solid var(--borda); border-radius: 16px; backdrop-filter: blur(6px); }
+.botao { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 46px; padding: 0 1.2rem; border-radius: 12px; border: 1px solid var(--borda); background: var(--painel); font-weight: 700; cursor: pointer; }
+.botao.primario { background: linear-gradient(90deg, var(--neon2), var(--neon)); color: var(--sobre); border-color: transparent; box-shadow: 0 0 calc(8px + 22px * var(--brilho)) rgba(var(--neon-rgb), calc(.15 + .4 * var(--brilho))); }
+.chip { display: inline-flex; align-items: center; min-height: 40px; padding: 0 1rem; border-radius: 999px; border: 1px solid var(--borda); background: var(--painel); font-size: .9rem; white-space: nowrap; color: var(--su); cursor: pointer; }
+.chip[data-ativa="true"] { color: #fff; background: linear-gradient(90deg, rgba(var(--neon2-rgb), .6), rgba(var(--neon-rgb), .45)); border-color: var(--neon); box-shadow: 0 0 calc(18px * var(--brilho)) rgba(var(--neon-rgb), .35); }
+.interruptor { width: 3rem; height: 1.7rem; border-radius: 999px; background: color-mix(in srgb, var(--su) 30%, var(--bg)); position: relative; flex: none; border: 0; padding: 0; transition: background .2s; }
+.interruptor::after { content: ""; position: absolute; top: .2rem; left: .2rem; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: #fff; transition: transform .2s; }
+.interruptor[data-lig="true"] { background: linear-gradient(90deg, var(--neon2), var(--neon)); box-shadow: 0 0 calc(14px * var(--brilho)) rgba(var(--neon-rgb), .5); }
+.interruptor[data-lig="true"]::after { transform: translateX(1.3rem); }
+.rotulo { font-size: 12px; letter-spacing: .22em; color: var(--su); text-transform: uppercase; margin: 0 0 10px; }
+
+/* formato futurista: cantos cortados, como painéis de jogo */
+html[data-formato="futurista"] .vidro, html[data-formato="futurista"] .botao { border-radius: 4px;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px)); }
+html[data-formato="futurista"] .chip { border-radius: 4px; }
+html[data-formato="futurista"] .interruptor, html[data-formato="futurista"] .interruptor::after { border-radius: 3px; }
+
+/* ---------- marca VGX ---------- */
+.vgx { display: block; width: min(80vw, 380px); height: auto; overflow: visible; }
+.marca-luz { position: relative; display: inline-block; isolation: isolate; }
+.marca-luz::before { content: ""; position: absolute; left: 50%; top: 50%; width: 140%; height: 190%; transform: translate(-50%, -50%); z-index: -1; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(var(--neon-rgb), calc(.28 + .5 * var(--brilho))), rgba(var(--neon-rgb), .1) 55%, transparent 75%); animation: respiro 4.8s ease-in-out infinite; }
+@keyframes respiro { 0%, 100% { opacity: .55; transform: translate(-50%, -50%) scale(.92); } 50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); } }
+.nome-marca { margin: 14px 0 0; text-align: center; font-weight: 800; letter-spacing: .34em; padding-left: .34em; font-size: clamp(15px, 4.4vw, 21px); color: #fff;
+  text-shadow: 0 0 calc(4px + 14px * var(--brilho)) rgba(var(--neon-rgb), .9); }
+.nome-marca small { display: block; margin-top: 4px; font-weight: 600; letter-spacing: .6em; padding-left: .6em; font-size: .56em; color: var(--su); text-shadow: none; }

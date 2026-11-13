@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Painel Velox</title>
+<link rel="stylesheet" href="vgx.css">
+<style>
+html, body { height: 100%; background: transparent; overflow: hidden; }
+.cena { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; }
+.veu { position: absolute; inset: 0; background: rgba(2, 3, 8, .62); animation: veu .25s ease both; }
+@keyframes veu { from { opacity: 0 } }
+.folha { position: relative; max-height: 86vh; display: flex; flex-direction: column; background: color-mix(in srgb, var(--bg) 94%, #000); border-top: 2px solid var(--neon);
+  border-radius: 22px 22px 0 0; box-shadow: 0 -10px calc(20px + 40px * var(--brilho)) rgba(var(--neon-rgb), calc(.1 + .25 * var(--brilho))); animation: sobe .32s cubic-bezier(.2,.8,.2,1) both; }
+html[data-formato="futurista"] .folha { border-radius: 0; clip-path: polygon(0 18px, 18px 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%); }
+@keyframes sobe { from { transform: translateY(40px); opacity: 0 } }
+.alca { width: 44px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.22); margin: 10px auto 2px; flex: none; }
+.abas { display: flex; gap: 8px; padding: 10px 14px 8px; overflow-x: auto; scrollbar-width: none; flex: none; }
+.abas::-webkit-scrollbar { display: none; }
+.corpo { overflow-y: auto; padding: 6px 16px calc(22px + env(safe-area-inset-bottom)); }
+.sec { display: none; } .sec.ativa { display: block; animation: entra .25s ease both; }
+@keyframes entra { from { opacity: 0; transform: translateY(8px); } }
+.grade-abas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cartao { position: relative; min-height: 76px; padding: 10px 34px 10px 12px; text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 2px; cursor: pointer; }
+.cartao[data-atual="true"] { border-color: var(--neon); box-shadow: 0 0 calc(8px + 18px * var(--brilho)) rgba(var(--neon-rgb), .35); }
+.cartao b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cartao small { color: var(--su); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cartao .x { position: absolute; top: 4px; right: 4px; width: 32px; height: 32px; display: grid; place-items: center; background: none; border: 0; color: var(--su); font-size: 18px; cursor: pointer; }
+.cartao .anon { color: var(--neon2); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+.dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.linha { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 14px; margin-bottom: 8px; min-height: 58px; }
+.linha b { display: block; font-size: 15px; } .linha small { color: var(--su); font-size: 12px; }
+.fileira { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.cor { width: 44px; height: 44px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); cursor: pointer; padding: 0; background: linear-gradient(135deg, var(--a), var(--b)); }
+.cor[data-ativa="true"] { border-color: #fff; box-shadow: 0 0 18px rgba(var(--neon-rgb), .8); }
+html[data-formato="futurista"] .cor { border-radius: 8px; }
+.cor-livre { position: relative; overflow: hidden; display: grid; place-items: center; background: conic-gradient(#f43f5e, #f59e0b, #22c55e, #06b6d4, #6366f1, #f43f5e); font-weight: 900; color: #fff; text-shadow: 0 1px 3px #000; }
+.cor-livre input { position: absolute; inset: -10px; width: 70px; height: 70px; opacity: 0; cursor: pointer; }
+input[type="range"] { width: 100%; accent-color: var(--neon); height: 34px; }
+.previa { padding: 14px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; }
+.previa .vgx { width: 120px; }
+.previa p { margin: 0; font-size: 12px; color: var(--su); }
+.pesos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.pesos .vidro { padding: 12px 6px; text-align: center; }
+.pesos b { display: block; font-size: 22px; text-shadow: 0 0 calc(4px + 12px * var(--brilho)) rgba(var(--neon-rgb), .85); }
+.pesos span { font-size: 11px; letter-spacing: .12em; color: var(--su); text-transform: uppercase; }
+.perigo { color: #ff8095; }
+.vazio { color: var(--su); text-align: center; padding: 24px 0; }
+</style>
+</head>
+<body>
+<div class="fundo" style="background:none;z-index:-2"></div>
+<div class="cena">
+  <div class="veu" id="veu"></div>
+  <div class="folha" role="dialog" aria-label="Painel do Velox">
+    <div class="alca"></div>
+    <div class="abas" id="abas"></div>
+    <div class="corpo">
+      <section class="sec" id="s-abas">
+        <div class="grade-abas" id="grade"></div>
+        <div class="dupla">
+          <button class="botao primario" id="nova">+ Nova aba</button>
+          <button class="botao" id="anonima">Aba anônima</button>
+        </div>
+      </section>
+      <section class="sec" id="s-jogo">
+        <div class="pesos">
+          <div class="vidro"><b id="bp">0</b><span>nesta página</span></div>
+          <div class="vidro"><b id="bt">0</b><span>no total</span></div>
+          <div class="vidro"><b id="bo">ON</b><span>escudo</span></div>
+        </div>
+        <div id="chaves"></div>
+      </section>
+      <section class="sec" id="s-visual">
+        <div class="vidro previa"><div data-vgx data-camadas="8" data-brilho="0"></div><p>Prévia ao vivo. O que você muda aqui vale na hora.</p></div>
+        <p class="rotulo">Cor de destaque</p><div class="fileira" id="cores"></div>
+        <p class="rotulo">Brilho neon</p><input type="range" id="brilho" min="0" max="100" aria-label="Brilho neon"><div style="height:14px"></div>
+        <p class="rotulo">Fundo animado</p><div class="fileira" id="fundos"></div>
+        <p class="rotulo">Base</p><div class="fileira" id="bases"></div>
+        <p class="rotulo">Formato</p><div class="fileira" id="formatos"></div>
+        <div class="vidro linha"><div><b>Animações</b><small>Fundo em movimento, brilhos e abertura</small></div><button class="interruptor" id="anim" aria-label="Animações"></button></div>
+        <button class="botao" id="padrao" style="width:100%;margin-top:6px">Voltar ao visual padrão</button>
+      </section>
+      <section class="sec" id="s-mais">
+        <p class="rotulo">Buscador</p><div class="fileira" id="buscadores"></div>
+        <div class="dupla" style="margin-top:0">
+          <button class="botao" id="compartilhar">Compartilhar página</button>
+          <button class="botao perigo" id="limpar">Limpar dados</button>
+        </div>
+        <div class="vidro linha" style="margin-top:14px"><div><b>Velox Gaming Search</b><small id="versao">Navegador gamer da Vetorial Tech</small></div></div>
+      </section>
+    </div>
+  </div>
+</div>
+<script src="vgx.js"></script>
+<script>
+(function () {
+  var P = window.TEMA_PARAMS, V = window.VGX;
+  var E = {};
+  try { E = JSON.parse(decodeURIComponent(escape(atob((P.get("s") || "").replace(/-/g, "+").replace(/_/g, "/"))))); } catch (e) { E = {}; }
+  E.abas = E.abas || []; E.op = E.op || {}; E.buscadores = E.buscadores || []; E.bl = E.bl || { p: 0, t: 0 };
+  var T = V.doEndereco(P);
+  var $ = function (id) { return document.getElementById(id); };
+  var ir = function (acao, ps) { location.href = "velox://" + acao + (ps ? "?" + new URLSearchParams(ps).toString() : ""); };
+  var el = function (tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; };
+
+  /* abas do painel */
+  var SECOES = [["abas", "Abas"], ["jogo", "Modo jogo"], ["visual", "Visual"], ["mais", "Mais"]];
+  var atual = SECOES.some(function (s) { return s[0] === P.get("aba"); }) ? P.get("aba") : "abas";
+  function mostrar(id) {
+    atual = id;
+    SECOES.forEach(function (s) { $("s-" + s[0]).classList.toggle("ativa", s[0] === id); });
+    Array.prototype.forEach.call($("abas").children, function (c) { c.dataset.ativa = String(c.dataset.id === id); });
+  }
+  SECOES.forEach(function (s) { var c = el("button", "chip", s[1]); c.dataset.id = s[0]; c.onclick = function () { mostrar(s[0]); }; $("abas").appendChild(c); });
+  $("veu").onclick = function () { ir("fechar"); };
+
+  /* abas do navegador */
+  function desenharAbas() {
+    var g = $("grade"); g.innerHTML = "";
+    if (!E.abas.length) { g.appendChild(el("p", "vazio", "Nenhuma aba aberta.")); return; }
+    E.abas.forEach(function (a, i) {
+      var c = el("div", "vidro cartao"); c.dataset.atual = String(!!a.c);
+      if (a.a) c.appendChild(el("span", "anon", "anônima"));
+      c.appendChild(el("b", "", a.t || "Nova aba")); c.appendChild(el("small", "", a.h || "página inicial"));
+      c.onclick = function () { ir("aba", { i: i }); };
+      var x = el("button", "x", "×"); x.setAttribute("aria-label", "Fechar aba"); x.onclick = function (ev) { ev.stopPropagation(); ir("fechar-aba", { i: i }); };
+      c.appendChild(x); g.appendChild(c);
+    });
+  }
+  $("nova").onclick = function () { ir("nova"); };
+  $("anonima").onclick = function () { ir("anonima"); };
+
+  /* modo jogo */
+  var CHAVES = [
+    ["ad", "Bloquear anúncios", "Barra anúncios e rastreadores"],
+    ["escuro", "Sites no escuro", "Força o modo escuro nas páginas"],
+    ["imersivo", "Tela cheia imersiva", "Esconde as barras para jogar e ver vídeo"],
+    ["tela", "Manter a tela ligada", "Não apaga a tela enquanto o Velox está aberto"],
+    ["pc", "Site para computador", "Pede a versão de PC das páginas"]
+  ];
+  function desenharChaves() {
+    var c = $("chaves"); c.innerHTML = "";
+    CHAVES.forEach(function (k) {
+      var l = el("div", "vidro linha"), t = el("div"); t.appendChild(el("b", "", k[1])); t.appendChild(el("small", "", k[2]));
+      var b = el("button", "interruptor"); b.setAttribute("aria-label", k[1]); b.dataset.lig = String(!!E.op[k[0]]);
+      b.onclick = function () { E.op[k[0]] = !E.op[k[0]]; b.dataset.lig = String(!!E.op[k[0]]); $("bo").textContent = E.op.ad ? "ON" : "OFF"; ir("opc", { k: k[0], v: E.op[k[0]] ? 1 : 0 }); };
+      l.appendChild(t); l.appendChild(b); c.appendChild(l);
+    });
+    $("bp").textContent = E.bl.p; $("bt").textContent = E.bl.t; $("bo").textContent = E.op.ad ? "ON" : "OFF";
+  }
+
+  /* visual */
+  var salvar = (function () { var tm; return function () { clearTimeout(tm); tm = setTimeout(function () { ir("tema", Object.fromEntries(new URLSearchParams(V.params(T)))); }, 250); }; })();
+  function aplicar() {
+    var q = new URLSearchParams(V.params(T)), S = document.documentElement.style, R = document.documentElement;
+    var mapa = { bg: "--bg", sup: "--sup", campo: "--campo", c1: "--neon", c2: "--neon2", su: "--su" };
+    Object.keys(mapa).forEach(function (k) { S.setProperty(mapa[k], "#" + q.get(k)); });
+    var rgb = function (h) { var n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(", "); };
+    S.setProperty("--neon-rgb", rgb(T.c1)); S.setProperty("--neon2-rgb", rgb(T.c2)); S.setProperty("--brilho", String(T.br / 100));
+    var n = parseInt(T.c1, 16); S.setProperty("--sobre", (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#06090f" : "#fff");
+    R.dataset.fundo = T.fu; R.dataset.formato = T.fo; R.dataset.anim = T.an ? "1" : "0";
+    document.querySelectorAll("[data-vgx]").forEach(function (e) { window.desenharVGX(e, { camadas: +(e.dataset.camadas || 11), brilho: e.dataset.brilho !== "0" }); });
+    desenharVisual();
+  }
+  function chips(alvo, lista, ativo, aoEscolher) {
+    alvo.innerHTML = "";
+    lista.forEach(function (x) { var c = el("button", "chip", x[1]); c.dataset.ativa = String(x[0] === ativo); c.onclick = function () { aoEscolher(x[0]); }; alvo.appendChild(c); });
+  }
+  function desenharVisual() {
+    var c = $("cores"); c.innerHTML = "";
+    var emUso = V.CORES.filter(function (x) { return x[2] === T.c1 && x[3] === T.c2; })[0];
+    V.CORES.forEach(function (x) {
+      var b = el("button", "cor"); b.style.setProperty("--a", "#" + x[2]); b.style.setProperty("--b", "#" + x[3]); b.dataset.ativa = String(emUso === x); b.setAttribute("aria-label", x[1]);
+      b.onclick = function () { T.c1 = x[2]; T.c2 = x[3]; aplicar(); salvar(); }; c.appendChild(b);
+    });
+    var livre = el("label", "cor cor-livre", "+"); livre.dataset.ativa = String(!emUso); livre.setAttribute("aria-label", "Cor personalizada");
+    var inp = el("input"); inp.type = "color"; inp.value = "#" + T.c1;
+    inp.oninput = function () { T.c1 = inp.value.slice(1); T.c2 = V.mistura(T.c1); aplicarSemRedesenharCor(); salvar(); };
+    livre.appendChild(inp); c.appendChild(livre);
+    chips($("fundos"), V.FUNDOS, T.fu, function (v) { T.fu = v; aplicar(); salvar(); });
+    chips($("bases"), V.BASES.map(function (b) { return [b[0], b[1]]; }), T.base, function (v) { T.base = v; aplicar(); salvar(); });
+    chips($("formatos"), [["futurista", "Futurista"], ["redondo", "Redondo"]], T.fo, function (v) { T.fo = v; aplicar(); salvar(); });
+    $("anim").dataset.lig = String(T.an);
+    $("brilho").value = T.br;
+  }
+  /* o seletor de cor livre não pode ser refeito durante o arraste, senão fecha */
+  function aplicarSemRedesenharCor() {
+    var q = new URLSearchParams(V.params(T)), S = document.documentElement.style;
+    S.setProperty("--neon", "#" + T.c1); S.setProperty("--neon2", "#" + T.c2);
+    var rgb = function (h) { var n = parseInt(h, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(", "); };
+    S.setProperty("--neon-rgb", rgb(T.c1)); S.setProperty("--neon2-rgb", rgb(T.c2));
+    var n = parseInt(T.c1, 16); S.setProperty("--sobre", (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#06090f" : "#fff");
+    document.querySelectorAll("[data-vgx]").forEach(function (e) { window.desenharVGX(e, { camadas: +(e.dataset.camadas || 11), brilho: e.dataset.brilho !== "0" }); });
+  }
+  $("brilho").oninput = function () { T.br = +this.value; document.documentElement.style.setProperty("--brilho", String(T.br / 100)); salvar(); };
+  $("anim").onclick = function () { T.an = !T.an; document.documentElement.dataset.anim = T.an ? "1" : "0"; this.dataset.lig = String(T.an); salvar(); };
+  $("padrao").onclick = function () { T = { c1: "22d3ee", c2: "a78bfa", base: "noite", br: 70, fu: "aurora", fo: "futurista", an: true }; aplicar(); salvar(); };
+
+  /* mais */
+  chips($("buscadores"), E.buscadores, E.bus, function (id) { E.bus = id; chips($("buscadores"), E.buscadores, E.bus, arguments.callee); ir("buscador", { id: id }); });
+  $("compartilhar").onclick = function () { ir("compartilhar"); };
+  var armado = false;
+  $("limpar").onclick = function () { if (!armado) { armado = true; this.textContent = "Toque de novo para apagar"; var b = this; setTimeout(function () { armado = false; b.textContent = "Limpar dados"; }, 3500); } else { ir("limpar"); this.textContent = "Dados apagados"; armado = false; } };
+  if (E.v) $("versao").textContent = "Versão " + E.v + " · Vetorial Tech";
+
+  desenharAbas(); desenharChaves(); aplicar(); mostrar(atual);
+})();
+</script>
+</body>
+</html>

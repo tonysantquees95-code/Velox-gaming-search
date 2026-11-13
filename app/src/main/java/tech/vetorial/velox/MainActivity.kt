@@ -1,7 +1,6 @@
 package tech.vetorial.velox
 
 import android.app.Activity
-import android.app.AlertDialog
 import android.app.DownloadManager
 import android.content.ActivityNotFoundException
 import android.content.Intent
@@ -9,6 +8,14 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
+import android.util.Base64
+import android.view.WindowManager
+import android.widget.ImageView
+import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewFeature
+import org.json.JSONArray
+import org.json.JSONObject
+import java.util.concurrent.atomic.AtomicLong
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -31,7 +38,6 @@ import android.webkit.WebViewClient
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import java.io.ByteArrayInputStream
@@ -44,12 +50,24 @@ class MainActivity : Activity() {
     private val abas = mutableListOf<Aba>()
     private var atual: Aba? = null
 
+    private lateinit var raizApp: FrameLayout
+    private lateinit var coluna: LinearLayout
     private lateinit var campo: EditText
-    private lateinit var progresso: ProgressBar
+    private lateinit var barra: BarraNeon
     private lateinit var conteudo: FrameLayout
     private lateinit var contador: TextView
     private lateinit var barraDeCima: LinearLayout
     private lateinit var barraDeBaixo: LinearLayout
+    private lateinit var logo: LogoVgx
+    private lateinit var flutuante: ImageView
+    private val icones = mutableListOf<ImageView>()
+    private lateinit var bVoltar: ImageView
+    private lateinit var bAvancar: ImageView
+    private var painel: WebView? = null
+
+    private val bloqueadosTotal = AtomicLong(0)
+    private val bloqueadosSessao = AtomicLong(0)
+    private var aberturaFeita = false
 
     private var envio: ValueCallback<Array<Uri>>? = null
     private var telaCheia: View? = null
@@ -60,8 +78,10 @@ class MainActivity : Activity() {
     override fun onCreate(estado: Bundle?) {
         super.onCreate(estado)
         ajustes = Ajustes(this)
-        tema = Tema.porId(ajustes.tema)
+        tema = Tema.daString(ajustes.temaTexto)
+        bloqueadosTotal.set(ajustes.bloqueadosTotal)
         montarTela()
+        aplicarOpcoesSalvas()
         val pedido = intent?.dataString
         val salvas = ajustes.abas
         if (pedido != null) {
@@ -86,6 +106,7 @@ class MainActivity : Activity() {
         ajustes.abas = normais.map { if (it.url.isEmpty()) INICIO else it.url }
         val a = atual
         ajustes.abaAtual = if (a == null) 0 else normais.indexOf(a).coerceAtLeast(0)
+        ajustes.bloqueadosTotal = bloqueadosTotal.get()
         atual?.webView?.onPause()
         CookieManager.getInstance().flush()
     }
@@ -93,9 +114,16 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         atual?.webView?.onResume()
+        aplicarImersivo()
+    }
+
+    override fun onWindowFocusChanged(temFoco: Boolean) {
+        super.onWindowFocusChanged(temFoco)
+        if (temFoco) aplicarImersivo()
     }
 
     override fun onDestroy() {
+        painel?.destroy()
         for (a in abas) a.webView.destroy()
         super.onDestroy()
     }
@@ -103,9 +131,9 @@ class MainActivity : Activity() {
     // ---------------------------------------------------------------- tela
 
     private fun montarTela() {
-        val raiz = LinearLayout(this).apply {
+        raizApp = FrameLayout(this)
+        coluna = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setBackgroundColor(tema.fundo)
             fitsSystemWindows = true
         }
 
@@ -113,33 +141,21 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(10), dp(8), dp(10), dp(8))
-            setBackgroundColor(tema.superficie)
         }
-        val marca = TextView(this).apply {
-            text = "VX"
-            setTextColor(tema.destaque)
-            setTypeface(typeface, Typeface.BOLD_ITALIC)
-            textSize = 18f
-            letterSpacing = 0.04f
-            setPadding(dp(4), 0, dp(10), 0)
+        logo = LogoVgx(this).apply {
             setOnClickListener { abrirTexto(INICIO) }
+            isClickable = true
             contentDescription = "Página inicial do Velox"
         }
         campo = EditText(this).apply {
             hint = "Pesquisar ou digitar endereço"
-            setHintTextColor(tema.suave)
-            setTextColor(tema.texto)
             textSize = 15f
             isSingleLine = true
             setSelectAllOnFocus(true)
             imeOptions = EditorInfo.IME_ACTION_GO
             inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_URI
             setPadding(dp(16), 0, dp(16), 0)
-            background = GradientDrawable().apply {
-                setColor(tema.campo)
-                cornerRadius = dp(22).toFloat()
-                setStroke(dp(1), (tema.destaque and 0x00FFFFFF) or 0x66000000)
-            }
+            setOnFocusChangeListener { _, _ -> pintarCampo() }
             setOnEditorActionListener { _, id, ev ->
                 if (id == EditorInfo.IME_ACTION_GO || (ev != null && ev.keyCode == KeyEvent.KEYCODE_ENTER && ev.action == KeyEvent.ACTION_DOWN)) {
                     abrirTexto(text.toString())
@@ -147,84 +163,254 @@ class MainActivity : Activity() {
                 } else false
             }
         }
-        barraDeCima.addView(marca, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(44)))
+        barraDeCima.addView(logo, LinearLayout.LayoutParams(dp(62), dp(30)).apply { rightMargin = dp(10) })
         barraDeCima.addView(campo, LinearLayout.LayoutParams(0, dp(44), 1f))
 
-        progresso = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100
-            progress = 0
-            visibility = View.GONE
-            progressDrawable.setTint(tema.destaque)
-        }
-
+        barra = BarraNeon(this)
         conteudo = FrameLayout(this)
 
         barraDeBaixo = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            setBackgroundColor(tema.superficie)
         }
-        fun botao(texto: String, descricao: String, acao: () -> Unit): TextView = TextView(this).apply {
-            text = texto
-            textSize = 22f
-            gravity = Gravity.CENTER
-            setTextColor(tema.texto)
+        fun botao(recurso: Int, descricao: String, acao: () -> Unit): ImageView = ImageView(this).apply {
+            setImageResource(recurso)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            setPadding(dp(15), dp(15), dp(15), dp(15))
             contentDescription = descricao
             isClickable = true
             isFocusable = true
             setOnClickListener { acao() }
+            icones.add(this)
         }
-        val bVoltar = botao("◀", "Voltar") { voltar() }
-        val bAvancar = botao("▶", "Avançar") { atual?.webView?.let { if (it.canGoForward()) it.goForward() } }
-        val bInicio = botao("⌂", "Início") { abrirTexto(INICIO) }
-        val bRecarregar = botao("↻", "Recarregar") { atual?.webView?.reload() }
+        bVoltar = botao(R.drawable.ic_voltar, "Voltar") { voltar() }
+        bAvancar = botao(R.drawable.ic_avancar, "Avançar") { atual?.webView?.let { if (it.canGoForward()) it.goForward() } }
+        val bInicio = botao(R.drawable.ic_inicio, "Início") { abrirTexto(INICIO) }
+        val bRecarregar = botao(R.drawable.ic_recarregar, "Recarregar") { atual?.webView?.reload() }
         contador = TextView(this).apply {
             textSize = 14f
             gravity = Gravity.CENTER
-            setTextColor(tema.destaque)
             setTypeface(typeface, Typeface.BOLD)
             contentDescription = "Abas"
             isClickable = true
             isFocusable = true
-            background = GradientDrawable().apply {
-                setColor(Color.TRANSPARENT)
-                cornerRadius = dp(6).toFloat()
-                setStroke(dp(2), tema.destaque)
-            }
-            setOnClickListener { mostrarAbas() }
+            setOnClickListener { abrirPainel("abas") }
         }
-        val bMenu = botao("⋮", "Menu") { mostrarMenu() }
-        val altura = dp(52)
+        val bPainel = botao(R.drawable.ic_painel, "Painel do Velox: modo jogo, visual e mais") { abrirPainel("jogo") }
+        val altura = dp(54)
         for (b in listOf(bVoltar, bAvancar, bInicio, bRecarregar)) barraDeBaixo.addView(b, LinearLayout.LayoutParams(0, altura, 1f))
         val caixaAbas = FrameLayout(this)
-        caixaAbas.addView(contador, FrameLayout.LayoutParams(dp(30), dp(28), Gravity.CENTER))
+        caixaAbas.addView(contador, FrameLayout.LayoutParams(dp(32), dp(28), Gravity.CENTER))
         barraDeBaixo.addView(caixaAbas, LinearLayout.LayoutParams(0, altura, 1f))
-        barraDeBaixo.addView(bMenu, LinearLayout.LayoutParams(0, altura, 1f))
+        barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1f))
 
-        raiz.addView(barraDeCima, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        raiz.addView(progresso, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3)))
-        raiz.addView(conteudo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
-        raiz.addView(barraDeBaixo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, altura))
-        setContentView(raiz)
+        coluna.addView(barraDeCima, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        coluna.addView(barra, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3)))
+        coluna.addView(conteudo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        coluna.addView(barraDeBaixo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, altura))
 
+        // no modo imersivo as barras somem; este botão pequeno traz o painel de volta
+        flutuante = ImageView(this).apply {
+            setImageResource(R.drawable.ic_painel)
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            setPadding(dp(11), dp(11), dp(11), dp(11))
+            contentDescription = "Abrir o painel do Velox"
+            visibility = View.GONE
+            isClickable = true
+            setOnClickListener { abrirPainel("jogo") }
+        }
+        raizApp.addView(coluna, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        raizApp.addView(flutuante, FrameLayout.LayoutParams(dp(44), dp(44), Gravity.BOTTOM or Gravity.END).apply { rightMargin = dp(14); bottomMargin = dp(70) })
+        setContentView(raizApp)
+        aplicarCores()
+    }
+
+    private fun raio(): Float = if (tema.redondo) dp(22).toFloat() else dp(7).toFloat()
+
+    private fun pintarCampo() {
+        campo.background = GradientDrawable().apply {
+            setColor(tema.campo)
+            cornerRadius = raio()
+            val alfa = if (campo.hasFocus()) 0xFF else 0x73
+            setStroke(dp(if (campo.hasFocus()) 2 else 1), (tema.destaque and 0x00FFFFFF) or (alfa shl 24))
+        }
+    }
+
+    /** Aplica as cores do tema em tudo que já está na tela (vale na hora, sem reiniciar). */
+    private fun aplicarCores() {
+        coluna.setBackgroundColor(tema.fundo)
+        conteudo.setBackgroundColor(tema.fundo)
+        val degrau = intArrayOf(tema.superficie, LogoVgx.misturar(tema.superficie, tema.fundo, 0.55f))
+        barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, degrau)
+        barraDeBaixo.background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, degrau)
+        campo.setTextColor(tema.texto)
+        campo.setHintTextColor(tema.suave)
+        pintarCampo()
+        logo.cores(tema.destaque, tema.secundaria)
+        barra.cores(tema.destaque, tema.secundaria)
+        for (i in icones) i.setColorFilter(tema.texto)
+        contador.setTextColor(tema.destaque)
+        contador.background = GradientDrawable().apply {
+            setColor(Color.TRANSPARENT)
+            cornerRadius = if (tema.redondo) dp(10).toFloat() else dp(3).toFloat()
+            setStroke(dp(2), tema.destaque)
+        }
+        flutuante.setColorFilter(tema.sobreDestaque)
+        flutuante.background = GradientDrawable().apply {
+            shape = if (tema.redondo) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
+            cornerRadius = dp(8).toFloat()
+            setColor((tema.destaque and 0x00FFFFFF) or 0xD9000000.toInt())
+        }
         window.statusBarColor = tema.superficie
         window.navigationBarColor = tema.superficie
-        if (Build.VERSION.SDK_INT >= 30) {
-            val flags = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS or android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS
-            window.insetsController?.setSystemBarsAppearance(if (tema.claro) flags else 0, flags)
-        } else if (tema.claro) {
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+        for (a in abas) a.webView.setBackgroundColor(tema.fundo)
+        atualizarSetas()
+    }
+
+    private fun atualizarSetas() {
+        val wv = atual?.webView
+        bVoltar.alpha = if (wv != null && wv.canGoBack()) 1f else 0.35f
+        bAvancar.alpha = if (wv != null && wv.canGoForward()) 1f else 0.35f
+    }
+
+    // ---------------------------------------------------------------- modo jogo (opções)
+
+    private fun aplicarOpcoesSalvas() {
+        aplicarTela()
+        aplicarImersivo()
+    }
+
+    private fun aplicarTela() {
+        if (ajustes.telaLigada) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun aplicarImersivo() {
+        if (telaCheia != null) return
+        val ligado = ajustes.imersivo
+        barraDeCima.visibility = if (ligado) View.GONE else View.VISIBLE
+        barraDeBaixo.visibility = if (ligado) View.GONE else View.VISIBLE
+        barra.visibility = if (ligado) View.GONE else View.VISIBLE
+        flutuante.visibility = if (ligado && painel == null) View.VISIBLE else View.GONE
+        window.decorView.systemUiVisibility = if (ligado) {
+            View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+        } else View.SYSTEM_UI_FLAG_VISIBLE
+    }
+
+    @Suppress("DEPRECATION")
+    private fun aplicarEscuro(wv: WebView) {
+        val ligar = ajustes.sitesEscuros
+        try {
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(wv.settings, ligar)
+            } else if (Build.VERSION.SDK_INT >= 29) {
+                wv.settings.forceDark = if (ligar) WebSettings.FORCE_DARK_ON else WebSettings.FORCE_DARK_OFF
+            }
+        } catch (e: Exception) {
+            // WebView antigo: fica sem o modo escuro forçado
         }
+    }
+
+    // ---------------------------------------------------------------- painel (HTML por cima do navegador)
+
+    private fun estadoDoPainel(): String {
+        val lista = JSONArray()
+        for (a in abas) {
+            val host = try { Uri.parse(a.url).host ?: "" } catch (e: Exception) { "" }
+            lista.put(JSONObject().put("t", a.titulo.ifBlank { "Nova aba" }).put("h", host).put("a", a.anonima).put("c", a === atual))
+        }
+        val bus = JSONArray()
+        for (b in Buscador.values()) bus.put(JSONArray().put(b.id).put(b.nome))
+        val versao = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
+        val o = JSONObject()
+            .put("abas", lista)
+            .put("op", JSONObject().put("ad", ajustes.bloquearAnuncios).put("escuro", ajustes.sitesEscuros).put("imersivo", ajustes.imersivo)
+                .put("tela", ajustes.telaLigada).put("pc", ajustes.siteParaComputador))
+            .put("bus", ajustes.buscador).put("buscadores", bus)
+            .put("bl", JSONObject().put("p", atual?.bloqueados?.get() ?: 0).put("t", bloqueadosTotal.get()))
+            .put("v", versao)
+        return Base64.encodeToString(o.toString().toByteArray(Charsets.UTF_8), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
+    }
+
+    private fun abrirPainel(aba: String) {
+        fecharPainel()
+        val wv = WebView(this)
+        wv.setBackgroundColor(Color.TRANSPARENT)
+        wv.settings.javaScriptEnabled = true
+        wv.settings.allowFileAccess = false
+        wv.settings.allowContentAccess = false
+        wv.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean = acaoDoPainel(req.url)
+        }
+        raizApp.addView(wv, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        painel = wv
+        flutuante.visibility = View.GONE
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(campo.windowToken, 0)
+        wv.loadUrl("file:///android_asset/painel.html?aba=" + aba + "&" + tema.params() + "&s=" + estadoDoPainel())
+    }
+
+    private fun fecharPainel() {
+        val wv = painel ?: return
+        raizApp.removeView(wv)
+        wv.destroy()
+        painel = null
+        aplicarImersivo()
+    }
+
+    private fun acaoDoPainel(u: Uri): Boolean {
+        if (u.scheme != "velox") return true
+        when (u.host) {
+            "fechar" -> fecharPainel()
+            "nova" -> { fecharPainel(); novaAba(null, false) }
+            "anonima" -> { fecharPainel(); novaAba(null, true) }
+            "aba" -> {
+                val i = u.getQueryParameter("i")?.toIntOrNull()
+                fecharPainel()
+                if (i != null && i in abas.indices) mostrar(abas[i])
+            }
+            "fechar-aba" -> {
+                val i = u.getQueryParameter("i")?.toIntOrNull()
+                if (i != null && i in abas.indices) fecharAba(abas[i])
+                abrirPainel("abas")
+            }
+            "opc" -> opcao(u.getQueryParameter("k"), u.getQueryParameter("v") == "1")
+            "tema" -> mudarTema(u.encodedQuery)
+            "buscador" -> Buscador.values().firstOrNull { it.id == u.getQueryParameter("id") }?.let { ajustes.buscador = it.id }
+            "compartilhar" -> { fecharPainel(); compartilhar() }
+            "limpar" -> limparDados()
+        }
+        return true
+    }
+
+    private fun opcao(chave: String?, ligado: Boolean) {
+        when (chave) {
+            "ad" -> { ajustes.bloquearAnuncios = ligado; atual?.webView?.reload() }
+            "escuro" -> { ajustes.sitesEscuros = ligado; for (a in abas) aplicarEscuro(a.webView); atual?.webView?.reload() }
+            "imersivo" -> { ajustes.imersivo = ligado; aplicarImersivo() }
+            "tela" -> { ajustes.telaLigada = ligado; aplicarTela() }
+            "pc" -> { ajustes.siteParaComputador = ligado; for (a in abas) aplicarModoComputador(a.webView); atual?.webView?.reload() }
+        }
+    }
+
+    private fun mudarTema(consulta: String?) {
+        tema = Tema.daString(consulta)
+        ajustes.temaTexto = tema.params()
+        aplicarCores()
     }
 
     // ---------------------------------------------------------------- abas
 
-    private fun enderecoInicial(): String =
-        INICIO + "?bg=" + tema.semJogo(tema.fundo) + "&sup=" + tema.semJogo(tema.superficie) + "&campo=" + tema.semJogo(tema.campo) +
-            "&c1=" + tema.semJogo(tema.destaque) + "&c2=" + tema.semJogo(tema.secundaria) + "&tx=" + tema.semJogo(tema.texto) + "&su=" + tema.semJogo(tema.suave)
+    private fun enderecoInicial(): String {
+        val abertura = if (aberturaFeita) "" else "&ab=1"
+        aberturaFeita = true
+        return INICIO + "?" + tema.params() + "&n1=" + bloqueadosSessao.get() + "&n2=" + bloqueadosTotal.get() +
+            "&ad=" + (if (ajustes.bloquearAnuncios) 1 else 0) + "&bus=" + Uri.encode(Buscador.porId(ajustes.buscador).nome) + abertura
+    }
 
     private fun configurar(wv: WebView, anonima: Boolean) {
         wv.setBackgroundColor(tema.fundo)
+        aplicarEscuro(wv)
         val s = wv.settings
         s.javaScriptEnabled = true
         s.domStorageEnabled = !anonima
@@ -278,8 +464,9 @@ class MainActivity : Activity() {
         atual = aba
         conteudo.addView(aba.webView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         campo.setText(Enderecos.paraMostrar(aba.url))
-        progresso.visibility = View.GONE
+        barra.progresso = 0
         atualizarContador()
+        atualizarSetas()
     }
 
     private fun atualizarContador() {
@@ -308,17 +495,6 @@ class MainActivity : Activity() {
         android.webkit.WebStorage.getInstance().deleteAllData()
     }
 
-    private fun mostrarAbas() {
-        val nomes = abas.map { (if (it.anonima) "🕶 " else "") + (it.titulo.ifBlank { "Nova aba" }) + (if (it === atual) "  ●" else "") }.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("Abas (${abas.size})")
-            .setItems(nomes) { _, i -> mostrar(abas[i]) }
-            .setPositiveButton("Nova aba") { _, _ -> novaAba(null, false) }
-            .setNeutralButton("Aba anônima") { _, _ -> novaAba(null, true) }
-            .setNegativeButton("Fechar esta aba") { _, _ -> atual?.let { fecharAba(it) } }
-            .show()
-    }
-
     // ---------------------------------------------------------------- navegação
 
     private fun abrirTexto(texto: String) {
@@ -342,6 +518,10 @@ class MainActivity : Activity() {
 
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
+        if (painel != null) {
+            fecharPainel()
+            return
+        }
         if (telaCheia != null) {
             fecharTelaCheia()
             return
@@ -368,6 +548,8 @@ class MainActivity : Activity() {
         override fun shouldInterceptRequest(view: WebView, req: WebResourceRequest): WebResourceResponse? {
             if (ajustes.bloquearAnuncios && ListaDeAnuncios.bloqueia(req.url.host)) {
                 aba.bloqueados.incrementAndGet()
+                bloqueadosSessao.incrementAndGet()
+                bloqueadosTotal.incrementAndGet()
                 return WebResourceResponse("text/plain", "utf-8", ByteArrayInputStream(ByteArray(0)))
             }
             return null
@@ -383,7 +565,8 @@ class MainActivity : Activity() {
             if (!url.startsWith("file:///android_asset/")) aba.url = url
             if (aba === atual) {
                 campo.setText(Enderecos.paraMostrar(aba.url))
-                progresso.visibility = View.GONE
+                barra.progresso = 0
+                atualizarSetas()
             }
         }
     }
@@ -407,8 +590,8 @@ class MainActivity : Activity() {
     private fun cromo(aba: Aba) = object : WebChromeClient() {
         override fun onProgressChanged(view: WebView, novo: Int) {
             if (aba !== atual) return
-            progresso.progress = novo
-            progresso.visibility = if (novo in 1..99) View.VISIBLE else View.GONE
+            barra.progresso = if (novo >= 100) 0 else novo
+            atualizarSetas()
         }
 
         override fun onReceivedTitle(view: WebView, titulo: String?) {
@@ -450,7 +633,7 @@ class MainActivity : Activity() {
         telaCheia = null
         telaCheiaRetorno?.onCustomViewHidden()
         telaCheiaRetorno = null
-        window.decorView.systemUiVisibility = if (tema.claro && Build.VERSION.SDK_INT < 30) View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else View.SYSTEM_UI_FLAG_VISIBLE
+        aplicarImersivo()
     }
 
     @Deprecated("Deprecated in Java")
@@ -480,58 +663,7 @@ class MainActivity : Activity() {
         }
     }
 
-    // ---------------------------------------------------------------- menu
-
-    private fun mostrarMenu() {
-        val aba = atual
-        val bloqueados = aba?.bloqueados?.get() ?: 0
-        val itens = arrayOf(
-            "Aba nova",
-            "Aba anônima",
-            "Tema: ${tema.nome}",
-            "Buscador: ${Buscador.porId(ajustes.buscador).nome}",
-            "Bloquear anúncios: ${if (ajustes.bloquearAnuncios) "ligado" else "desligado"} ($bloqueados nesta página)",
-            "Site para computador: ${if (ajustes.siteParaComputador) "ligado" else "desligado"}",
-            "Compartilhar esta página",
-            "Limpar histórico, cookies e dados",
-            "Sobre o Velox"
-        )
-        AlertDialog.Builder(this)
-            .setTitle("Velox")
-            .setItems(itens) { _, i ->
-                when (i) {
-                    0 -> novaAba(null, false)
-                    1 -> novaAba(null, true)
-                    2 -> escolherTema()
-                    3 -> escolherBuscador()
-                    4 -> { ajustes.bloquearAnuncios = !ajustes.bloquearAnuncios; aba?.webView?.reload() }
-                    5 -> { ajustes.siteParaComputador = !ajustes.siteParaComputador; for (a in abas) aplicarModoComputador(a.webView); aba?.webView?.reload() }
-                    6 -> compartilhar()
-                    7 -> limparTudo()
-                    8 -> sobre()
-                }
-            }
-            .show()
-    }
-
-    private fun escolherTema() {
-        val nomes = Tema.TODOS.map { it.nome }.toTypedArray()
-        AlertDialog.Builder(this)
-            .setTitle("Tema")
-            .setItems(nomes) { _, i ->
-                ajustes.tema = Tema.TODOS[i].id
-                recreate()
-            }
-            .show()
-    }
-
-    private fun escolherBuscador() {
-        val lista = Buscador.values()
-        AlertDialog.Builder(this)
-            .setTitle("Buscador")
-            .setItems(lista.map { it.nome }.toTypedArray()) { _, i -> ajustes.buscador = lista[i].id }
-            .show()
-    }
+    // ---------------------------------------------------------------- compartilhar e limpar
 
     private fun compartilhar() {
         val u = atual?.url ?: ""
@@ -540,26 +672,10 @@ class MainActivity : Activity() {
         startActivity(Intent.createChooser(i, "Compartilhar"))
     }
 
-    private fun limparTudo() {
-        AlertDialog.Builder(this)
-            .setTitle("Limpar dados?")
-            .setMessage("Apaga histórico, cookies, cache e dados dos sites. Você sai das contas em que estiver.")
-            .setPositiveButton("Limpar") { _, _ ->
-                limparRastros()
-                for (a in abas) { a.webView.clearHistory(); a.webView.clearCache(true); a.webView.clearFormData() }
-                Toast.makeText(this, "Dados apagados.", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-
-    private fun sobre() {
-        val versao = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
-        AlertDialog.Builder(this)
-            .setTitle("Velox Search $versao")
-            .setMessage("Navegador da Vetorial Tech.\nBloqueio de anúncios: ${ListaDeAnuncios.tamanho()} domínios.\nAba anônima: não guarda histórico nem cache e apaga cookies quando a última anônima fecha.")
-            .setPositiveButton("Ok", null)
-            .show()
+    private fun limparDados() {
+        limparRastros()
+        for (a in abas) { a.webView.clearHistory(); a.webView.clearCache(true); a.webView.clearFormData() }
+        Toast.makeText(this, "Dados apagados.", Toast.LENGTH_SHORT).show()
     }
 
     companion object {
