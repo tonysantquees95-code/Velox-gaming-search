@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'">
+<title>Velox</title>
+<link rel="stylesheet" href="barra.css">
+</head>
+<body>
+<div id="fundo"></div>
+<div id="abas"></div>
+<div id="ferramentas">
+  <button id="voltar" title="Voltar (Alt+←)" aria-label="Voltar">‹</button>
+  <button id="avancar" title="Avançar (Alt+→)" aria-label="Avançar">›</button>
+  <button id="recarregar" title="Recarregar (F5)" aria-label="Recarregar">⟳</button>
+  <button id="inicio" title="Início" aria-label="Início">⌂</button>
+  <input id="endereco" type="text" spellcheck="false" autocomplete="off" placeholder="Pesquise ou digite um endereço">
+  <button id="estrela" title="Favoritar (Ctrl+D)" aria-label="Favoritar">☆</button>
+  <button id="baixados" title="Downloads (Ctrl+J)" aria-label="Downloads">⤓</button>
+  <button id="menu" title="Mais" aria-label="Mais opções">⋮</button>
+</div>
+<div id="gaveta" hidden>
+  <h3>Aparência</h3>
+  <div class="linha"><button id="g-fundo">Escolher fundo…</button><button id="g-sem-fundo">Remover</button></div>
+  <label class="linha">Transparência da barra <input id="g-trans" type="range" min="0" max="80"></label>
+  <h3>Buscador</h3>
+  <select id="g-bus"><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option><option value="bing">Bing</option></select>
+  <h3>Abas</h3>
+  <div class="linha"><button id="g-anonima">Nova aba anônima</button></div>
+</div>
+<script src="barra.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Downloads</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'">
+<style>
+html,body{margin:0;background:#070b14;color:#fff;font:14px "Segoe UI",system-ui,sans-serif}
+main{max-width:760px;margin:0 auto;padding:22px 16px}
+h1{font-size:22px;margin:0 0 4px;color:#22d3ee}
+.topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+button{background:#141e40;color:#fff;border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:6px 12px;cursor:pointer;font:inherit}
+button:hover{border-color:#22d3ee}
+.item{background:#0d1530;border:1px solid rgba(34,211,238,.25);border-radius:12px;padding:12px 14px;margin:10px 0}
+.nome{font-weight:600;word-break:break-all}.info{color:#8fa0cf;font-size:12px;margin:4px 0 8px}
+.barra{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}.barra i{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#a78bfa)}
+.acoes{display:flex;gap:8px;margin-top:10px}.vazio{color:#8fa0cf;text-align:center;padding:40px 0}
+</style></head><body><main>
+<div class="topo"><div><h1>Downloads</h1><div class="info" style="margin:0">Arquivos baixados no Velox</div></div><button id="limpar">Limpar lista</button></div>
+<div id="lista"></div></main>
+<script>
+var V = window.velox;
+function mb(n){return n>=1048576?(n/1048576).toFixed(1)+" MB":(n/1024).toFixed(0)+" KB"}
+function desenhar(l){
+  var el=document.getElementById("lista"); el.textContent="";
+  if(!l.length){var v=document.createElement("div");v.className="vazio";v.textContent="Nenhum download ainda.";el.appendChild(v);return}
+  l.forEach(function(d){
+    var c=document.createElement("div");c.className="item";
+    var n=document.createElement("div");n.className="nome";n.textContent=d.nome;c.appendChild(n);
+    var i=document.createElement("div");i.className="info";
+    var pct=d.total?Math.round(d.recebido*100/d.total):0;
+    i.textContent=d.estado==="baixando"?mb(d.recebido)+(d.total?" de "+mb(d.total)+" · "+pct+"%":"")+" · "+mb(d.velocidade||0)+"/s":d.estado==="pronto"?mb(d.recebido)+" · pronto":d.estado;
+    c.appendChild(i);
+    if(d.estado==="baixando"){var b=document.createElement("div");b.className="barra";var f=document.createElement("i");f.style.width=(d.total?pct:30)+"%";b.appendChild(f);c.appendChild(b)}
+    var a=document.createElement("div");a.className="acoes";
+    function bt(t,fn){var x=document.createElement("button");x.textContent=t;x.onclick=fn;a.appendChild(x)}
+    if(d.estado==="pronto"){bt("Executar",function(){V.enviar("download-abrir",d.id)});bt("Mostrar na pasta",function(){V.enviar("download-pasta",d.id)})}
+    if(d.estado==="baixando")bt("Cancelar",function(){V.enviar("download-cancelar",d.id)});
+    c.appendChild(a);el.appendChild(c);
+  });
+}
+V.ouvir("downloads",desenhar);V.chamar("downloads-lista").then(desenhar);
+document.getElementById("limpar").onclick=function(){V.enviar("download-limpar")};
+</script></body></html>

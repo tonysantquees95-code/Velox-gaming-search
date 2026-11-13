@@ -1,0 +1,22 @@
+{
+  "name": "velox-windows",
+  "productName": "Velox",
+  "version": "1.0.0",
+  "description": "Velox Search para Windows",
+  "main": "main.js",
+  "author": "Vetorial Tech",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "preparar": "node preparar.js",
+    "dist": "node preparar.js && electron-builder --win portable nsis --publish never"
+  },
+  "build": {
+    "appId": "tech.vetorial.velox.windows",
+    "productName": "Velox",
+    "files": ["main.js", "preload.js", "ui/**", "inicio/**", "package.json"],
+    "win": { "target": ["nsis", "portable"], "artifactName": "Velox-${version}-${os}.${ext}" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false }
+  },
+  "devDependencies": { "electron": "33.2.1", "electron-builder": "25.1.8" }
+}

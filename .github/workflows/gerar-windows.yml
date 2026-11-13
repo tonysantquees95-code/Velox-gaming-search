@@ -1,0 +1,60 @@
+name: Gerar Velox para Windows
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "windows/**"
+      - "app/src/main/assets/**"
+      - ".github/workflows/gerar-windows.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: windows
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Conferir a sintaxe
+        run: |
+          node --check main.js
+          node --check preload.js
+          node --check ui/barra.js
+
+      - name: Instalar dependências
+        run: npm install --no-audit --no-fund
+
+      - name: Gerar o instalador e a versão portátil
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: |
+          node preparar.js
+          npx electron-builder --win nsis portable --publish never -c.extraMetadata.version=1.${{ github.run_number }}.0
+
+      - name: Listar o que saiu
+        run: ls -la dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: velox-windows
+          path: |
+            windows/dist/*.exe
+          if-no-files-found: error
+
+      - name: Publicar a versão
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd dist
+          gh release create "windows-1.${{ github.run_number }}" *.exe --title "Velox para Windows 1.${{ github.run_number }}" --notes "Velox Search para Windows, versão 1.${{ github.run_number }}. Instalador (Setup) ou versão portátil (sem instalar)." --latest=false

@@ -1,0 +1,30 @@
+:root { --c1:#22d3ee; --c2:#a78bfa; --bg:#070b14; --sup:#0d1530; --campo:#141e40; --su:#8fa0cf; --tx:#fff; --alfa:.7; }
+* { box-sizing: border-box; }
+html, body { margin:0; height:100%; background:var(--bg); color:var(--tx); font:14px "Segoe UI", system-ui, sans-serif; overflow:hidden; user-select:none; }
+#fundo { position:fixed; inset:0; background-size:cover; background-position:center; }
+#fundo::after { content:""; position:absolute; inset:0; background:rgba(7,11,20,.35); }
+#abas, #ferramentas { position:relative; display:flex; align-items:center; background:rgba(13,21,48,var(--alfa)); }
+#abas { height:38px; padding:6px 8px 0; gap:4px; border-bottom:1px solid rgba(255,255,255,.06); overflow-x:auto; overflow-y:hidden; }
+#abas::-webkit-scrollbar { display:none; }
+.aba { flex:0 1 200px; min-width:90px; height:32px; display:flex; align-items:center; gap:6px; padding:0 8px 0 12px; border-radius:10px 10px 0 0; background:rgba(255,255,255,.05); color:var(--su); cursor:default; border:1px solid transparent; border-bottom:0; }
+.aba.ativa { background:rgba(20,30,64,.95); color:var(--tx); border-color:rgba(34,211,238,.45); box-shadow:0 -2px 12px rgba(34,211,238,.25); }
+.aba span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.aba b { width:20px; height:20px; border-radius:50%; text-align:center; line-height:20px; font-weight:400; }
+.aba b:hover { background:rgba(255,255,255,.15); }
+.aba.carregando span::before { content:"◌ "; color:var(--c1); }
+#mais { flex:0 0 32px; height:28px; border-radius:8px; background:transparent; color:var(--c1); border:0; font-size:20px; }
+#mais:hover { background:rgba(255,255,255,.1); }
+#ferramentas { height:46px; padding:0 8px; gap:4px; }
+#ferramentas button { width:34px; height:34px; border-radius:10px; border:0; background:transparent; color:var(--tx); font-size:20px; cursor:pointer; }
+#ferramentas button:hover:not(:disabled) { background:rgba(255,255,255,.1); }
+#ferramentas button:disabled { opacity:.3; cursor:default; }
+#estrela.cheia { color:var(--c1); text-shadow:0 0 8px var(--c1); }
+#endereco { flex:1; height:34px; border-radius:17px; border:1px solid rgba(34,211,238,.35); background:rgba(20,30,64,.85); color:var(--tx); padding:0 16px; font-size:14px; outline:none; user-select:text; }
+#endereco:focus { border-color:var(--c1); box-shadow:0 0 0 2px rgba(34,211,238,.25); }
+#gaveta { position:absolute; top:84px; right:10px; width:290px; padding:12px 14px; background:rgba(13,21,48,.97); border:1px solid rgba(34,211,238,.4); border-radius:14px; z-index:5; box-shadow:0 10px 30px rgba(0,0,0,.5); }
+#gaveta[hidden] { display:none; }
+#gaveta h3 { margin:10px 0 6px; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--c1); }
+#gaveta h3:first-child { margin-top:0; }
+#gaveta .linha { display:flex; gap:8px; margin:6px 0; align-items:center; color:var(--su); font-size:13px; }
+#gaveta button, #gaveta select { background:var(--campo); color:var(--tx); border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:7px 10px; cursor:pointer; font:inherit; }
+#gaveta input[type=range] { flex:1; }

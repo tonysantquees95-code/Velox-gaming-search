@@ -19,3 +19,8 @@ Navegador Android da Vetorial Tech, com visual gamer: abas, bloqueio de anúncio
 - **Sites no tema**: as páginas ficam transparentes e mostram o seu fundo, em vez de uma tela preta ou branca.
 - **Barra de baixo**: três pacotes de ícones (linha, grossa, duplo) e foto própria em cada botão.
 - **Vindex**: o botão "Abrir" na gaveta lança o Vindex (`tech.vetorial.vindex`) se estiver instalado.
+
+## Velox para Windows
+
+Pasta `windows/`: navegador desktop (Electron/Chromium) com abas, favoritos, página inicial igual à do Android, downloads, fundo e transparência da barra. Compila no GitHub Actions (`Gerar Velox para Windows`) e publica o instalador e a versão portátil em Releases (`windows-1.N`).
+Atalhos: Ctrl+T nova aba, Ctrl+W fecha, Ctrl+L endereço, Ctrl+D favoritar, Ctrl+J downloads, F5 recarrega.
