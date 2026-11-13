@@ -4,15 +4,14 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- VGX: V e G ligados e um X grande, em tubos de neon -->
-    <path android:pathData="M59.38,48.90 C58.21,46.59 55.83,45.22 53.01,45.22 C48.24,45.22 43.61,49.09 42.68,53.86 C41.75,58.63 44.87,62.51 49.65,62.51 C54.42,62.51 59.05,58.63 59.97,53.86 L53.28,53.86" android:strokeColor="#5EB6F2" android:strokeWidth="3.91" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M59.38,48.90 C58.21,46.59 55.83,45.22 53.01,45.22 C48.24,45.22 43.61,49.09 42.68,53.86 C41.75,58.63 44.87,62.51 49.65,62.51 C54.42,62.51 59.05,58.63 59.97,53.86 L53.28,53.86" android:strokeColor="#57FFFFFF" android:strokeWidth="0.55" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M26.23,45.22 L31.85,62.23 L45.25,44.94" android:strokeColor="#070B14" android:strokeWidth="4.88" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M26.23,45.22 L31.85,62.23 L45.25,44.94" android:strokeColor="#22D3EE" android:strokeWidth="3.91" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M26.23,45.22 L31.85,62.23 L45.25,44.94" android:strokeColor="#57FFFFFF" android:strokeWidth="0.55" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M67.82,40.75 L76.62,67.25" android:strokeColor="#A78BFA" android:strokeWidth="4.75" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M67.82,40.75 L76.62,67.25" android:strokeColor="#57FFFFFF" android:strokeWidth="0.55" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M81.77,40.75 L62.67,67.25" android:strokeColor="#070B14" android:strokeWidth="5.72" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M81.77,40.75 L62.67,67.25" android:strokeColor="#A78BFA" android:strokeWidth="4.75" android:strokeLineCap="round" android:strokeLineJoin="round" />
-    <path android:pathData="M81.77,40.75 L62.67,67.25" android:strokeColor="#57FFFFFF" android:strokeWidth="0.55" android:strokeLineCap="round" android:strokeLineJoin="round" />
+    <!-- VX: letras chanfradas com borda interna acesa e luz laranja -->
+    <group android:translateX="21.80" android:translateY="40.48" android:scaleX="0.155" android:scaleY="0.155">
+        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#FF8A1F" android:strokeColor="#FF8A1F" android:strokeWidth="4" />
+    </group>
+    <group android:translateX="23.00" android:translateY="39.27" android:scaleX="0.155" android:scaleY="0.155">
+        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#03050C" android:strokeColor="#03050C" android:strokeWidth="16" />
+        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#142038" />
+        <clip-path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" />
+        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:strokeColor="#22D3EE" android:strokeWidth="9" />
+    </group>
 </vector>

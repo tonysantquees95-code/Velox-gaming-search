@@ -14,53 +14,50 @@ import android.graphics.Path
 import android.graphics.Shader
 import android.view.View
 
-/** Marca VGX: V e G ligados e um X grande, em tubos de neon inclinados (mesmo desenho da página inicial). */
+/** Marca VX: V e X em letras chanfradas (corpo escuro, borda interna acesa e uma luz na segunda cor do tema), igual à página inicial. */
 class LogoVgx(contexto: Context) : View(contexto) {
     private var c1 = 0xFF22D3EE.toInt()
     private var c2 = 0xFFA78BFA.toInt()
-    private val tubo = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND }
-    private val brilho = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND; color = 0x57FFFFFF; strokeWidth = 4f }
-    private val contorno = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeJoin = Paint.Join.ROUND; color = 0xE603050C.toInt() }
-    private val g = Path().apply {
-        moveTo(262.8f, 64.4f)
-        cubicTo(251.2f, 47.9f, 232.2f, 38f, 212f, 38f)
-        cubicTo(177.8f, 38f, 150f, 65.8f, 150f, 100f)
-        cubicTo(150f, 134.2f, 177.8f, 162f, 212f, 162f)
-        cubicTo(246.2f, 162f, 274f, 134.2f, 274f, 100f)
-        lineTo(226f, 100f)
-    }
-    private val v = Path().apply { moveTo(20f, 38f); lineTo(84f, 160f); lineTo(156f, 36f) }
-    private val x1 = Path().apply { moveTo(312f, 6f); lineTo(412f, 196f) }
-    private val x2 = Path().apply { moveTo(412f, 6f); lineTo(312f, 196f) }
+    private val v = Path().apply { moveTo(0f, 0f); lineTo(64f, 0f); lineTo(110f, 124f); lineTo(156f, 0f); lineTo(220f, 0f); lineTo(142f, 190f); lineTo(78f, 190f); close() }
+    private val x1 = Path().apply { moveTo(190f, 0f); lineTo(254f, 0f); lineTo(400f, 190f); lineTo(336f, 190f); close() }
+    private val x2 = Path().apply { moveTo(336f, 0f); lineTo(400f, 0f); lineTo(254f, 190f); lineTo(190f, 190f); close() }
+    private val pincel = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val letras = Path().apply { addPath(x1); addPath(x2); addPath(v) }
 
     fun cores(destaque: Int, secundaria: Int) {
         c1 = destaque
         c2 = secundaria
-        tubo.shader = LinearGradient(0f, 0f, 440f, 200f, c1, c2, Shader.TileMode.CLAMP)
         invalidate()
     }
 
-    private fun traco(canvas: Canvas, caminho: Path, largura: Float, halo: Float) {
-        if (halo > 0f) { contorno.strokeWidth = largura + halo; canvas.drawPath(caminho, contorno) }
-        tubo.strokeWidth = largura
-        canvas.drawPath(caminho, tubo)
-        canvas.drawPath(caminho, brilho)
-    }
+    private fun todas(canvas: Canvas, f: (Path) -> Unit) { f(x1); f(x2); f(v) }
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        if (tubo.shader == null) tubo.shader = LinearGradient(0f, 0f, 440f, 200f, c1, c2, Shader.TileMode.CLAMP)
-        val s = minOf(width / 480f, height / 246f)
+        val s = minOf(width / 428f, height / 218f)
         canvas.save()
-        canvas.translate((width - 480f * s) / 2f, (height - 246f * s) / 2f)
+        canvas.translate((width - 428f * s) / 2f, (height - 218f * s) / 2f)
         canvas.scale(s, s)
-        canvas.translate(8f, 22f)
-        canvas.translate(14f, 0f)
-        canvas.skew(-0.1944f, 0f)
-        traco(canvas, g, 28f, 0f)
-        traco(canvas, v, 28f, 7f)
-        traco(canvas, x1, 34f, 0f)
-        traco(canvas, x2, 34f, 7f)
+        canvas.translate(14f, 14f)
+        // luz da segunda cor, deslocada para baixo e para a esquerda
+        canvas.save(); canvas.translate(-8f, 8f)
+        pincel.style = Paint.Style.FILL_AND_STROKE; pincel.color = c2; pincel.strokeWidth = 4f; pincel.strokeJoin = Paint.Join.MITER; pincel.shader = null
+        todas(canvas) { canvas.drawPath(it, pincel) }
+        canvas.restore()
+        // moldura escura
+        pincel.color = 0xFF03050C.toInt(); pincel.strokeWidth = 16f
+        todas(canvas) { canvas.drawPath(it, pincel) }
+        // corpo
+        pincel.style = Paint.Style.FILL; pincel.shader = LinearGradient(0f, 0f, 0f, 190f, intArrayOf(0xFF2A3F63.toInt(), 0xFF101A30.toInt(), 0xFF070C18.toInt()), floatArrayOf(0f, 0.55f, 1f), Shader.TileMode.CLAMP)
+        todas(canvas) { canvas.drawPath(it, pincel) }
+        pincel.shader = null
+        // borda interna acesa
+        canvas.save(); canvas.clipPath(letras)
+        pincel.style = Paint.Style.STROKE; pincel.color = c1; pincel.strokeWidth = 9f
+        todas(canvas) { canvas.drawPath(it, pincel) }
+        pincel.color = 0x66FFFFFF; pincel.strokeWidth = 3f
+        todas(canvas) { canvas.drawPath(it, pincel) }
+        canvas.restore()
         canvas.restore()
     }
 

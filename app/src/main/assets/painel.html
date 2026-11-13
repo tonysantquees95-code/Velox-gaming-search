@@ -226,7 +226,7 @@ input[type="range"] { width: 100%; accent-color: var(--neon); height: 34px; }
     S.setProperty("--neon-rgb", rgb(T.c1)); S.setProperty("--neon2-rgb", rgb(T.c2)); S.setProperty("--brilho", String(T.br / 100));
     var n = parseInt(T.c1, 16); S.setProperty("--sobre", (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#06090f" : "#fff");
     R.dataset.fundo = T.fu; R.dataset.formato = T.fo; R.dataset.anim = T.an ? "1" : "0";
-    document.querySelectorAll("[data-vgx]").forEach(function (e) { window.desenharVGX(e, { brilho: e.dataset.brilho !== "0" }); });
+    document.querySelectorAll("[data-vgx]").forEach(function (e) { window.desenharVGX(e, { brilho: e.dataset.brilho !== "0", emblema: e.dataset.emblema === "1", texto: e.dataset.texto === "1" }); });
   }
   function chips(alvo, lista, ativo, aoEscolher) {
     alvo.innerHTML = "";

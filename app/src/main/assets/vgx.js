@@ -1,4 +1,4 @@
-/* Tema e marca VGX do Velox (compartilhado pelas páginas). Lê o tema do endereço (?c1=..&c2=..) e aplica nas variáveis de CSS. */
+/* Tema e marca VX do Velox (compartilhado pelas páginas). Lê o tema do endereço (?c1=..&c2=..) e aplica nas variáveis de CSS. */
 (function () {
   var P = new URLSearchParams(location.search), R = document.documentElement, S = R.style;
   var hex = function (v) { return /^[0-9a-fA-F]{6}$/.test(v || ""); };
@@ -12,27 +12,41 @@
   R.dataset.formato = P.get("fo") === "redondo" ? "redondo" : "futurista";
   R.dataset.anim = P.get("an") === "0" ? "0" : "1";
 
-  /* Marca VGX: V e G ligados e um X grande, em tubos de neon inclinados. */
-  var FORMAS = {
-    g: "M262.8 64.4 C251.2 47.9 232.2 38 212 38 C177.8 38 150 65.8 150 100 C150 134.2 177.8 162 212 162 C246.2 162 274 134.2 274 100 L226 100",
-    v: "M20 38 L84 160 L156 36", x1: "M312 6 L412 196", x2: "M412 6 L312 196"
+  /* Marca VX: V e X em letras chanfradas (corpo escuro, borda interna acesa e uma luz na segunda cor do tema). */
+  var LETRAS = {
+    v: "M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z",
+    x1: "M190 0 L254 0 L400 190 L336 190 Z", x2: "M336 0 L400 0 L254 190 L190 190 Z"
   };
   var contaVGX = 0;
   window.desenharVGX = function (alvo, opcoes) {
-    var k = ++contaVGX, o = opcoes || {}, gid = "vgx-g" + k;
-    var tubo = function (d, w, halo) {
-      return (halo ? '<path d="' + d + '" stroke="rgba(3,5,12,.9)" stroke-width="' + (w + halo) + '"/>' : '') +
-        '<path d="' + d + '" stroke="url(#' + gid + ')" stroke-width="' + w + '"/><path d="' + d + '" stroke="#fff" stroke-opacity=".34" stroke-width="4"/>';
-    };
-    var todas = [FORMAS.g, FORMAS.v, FORMAS.x1, FORMAS.x2].map(function (d) { return '<path d="' + d + '"/>'; }).join("");
-    alvo.innerHTML = '<svg class="vgx" viewBox="-8 -22 480 246" role="img" aria-label="VGX">' +
-      '<defs><linearGradient id="' + gid + '" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="440" y2="200"><stop offset="0" style="stop-color:var(--neon)"/><stop offset="1" style="stop-color:var(--neon2)"/></linearGradient>' +
-      '<filter id="vgx-b' + k + '" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9"/></filter></defs>' +
-      '<g transform="translate(14 0) skewX(-11)" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
-      (o.brilho === false ? "" : '<g filter="url(#vgx-b' + k + ')" opacity=".6" style="stroke:var(--neon)" stroke-width="28">' + todas + '</g>') +
-      tubo(FORMAS.g, 28) + tubo(FORMAS.v, 28, 7) + tubo(FORMAS.x1, 34) + tubo(FORMAS.x2, 34, 7) + '</g></svg>';
+    var k = ++contaVGX, o = opcoes || {}, id = "vx" + k;
+    var emblema = o.emblema === true, texto = o.texto === true;
+    var poly = function (att) { return [LETRAS.x1, LETRAS.x2, LETRAS.v].map(function (d) { return '<path d="' + d + '" ' + att + '/>'; }).join(""); };
+    var fundo = "";
+    if (emblema) {
+      var ticks = ""; for (var i = 0; i < 36; i++) { var ang = i * 10 * Math.PI / 180, r1 = 214, r2 = i % 3 ? 220 : 228; ticks += '<line x1="' + (200 + r1 * Math.cos(ang)).toFixed(1) + '" y1="' + (95 + r1 * Math.sin(ang)).toFixed(1) + '" x2="' + (200 + r2 * Math.cos(ang)).toFixed(1) + '" y2="' + (95 + r2 * Math.sin(ang)).toFixed(1) + '"/>'; }
+      fundo = '<g fill="none" style="stroke:var(--neon)" stroke-opacity=".3" stroke-width="1.6">' +
+        '<circle cx="200" cy="95" r="168"/><circle cx="200" cy="95" r="196" stroke-dasharray="120 26 40 26" stroke-opacity=".22"/>' + ticks +
+        '<path d="M-130 20 H-60 L-36 44 H40 M-130 70 H-80 L-60 90 H20 M-130 130 H-90 L-70 150 H0 M540 -10 H470 L446 14 H380 M540 40 H490 L470 60 H400 M540 110 H500 L480 130 H410"/></g>' +
+        '<g fill="none" style="stroke:var(--neon)" stroke-opacity=".16" stroke-width="1"><path d="M-110 -40 V230 M-80 -40 V230 M-50 -40 V230 M-110 -20 H-20 M-110 10 H-20 M-110 40 H-20 M-110 170 H-20 M-110 200 H-20 M450 -40 V230 M480 -40 V230 M510 -40 V230 M410 -20 H520 M410 10 H520 M410 170 H520 M410 200 H520"/></g>' +
+        '<g style="fill:var(--neon)" fill-opacity=".5"><circle cx="-36" cy="44" r="3.4"/><circle cx="20" cy="90" r="3.4"/><circle cx="446" cy="14" r="3.4"/><circle cx="470" cy="60" r="3.4"/></g>';
+    }
+    var vb = emblema ? "-140 -100 680 " + (texto ? 400 : 380) : "-14 -14 428 218";
+    alvo.innerHTML = '<svg class="vgx" viewBox="' + vb + '" role="img" aria-label="VX">' +
+      '<defs><linearGradient id="' + id + 'c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3f63"/><stop offset=".55" stop-color="#101a30"/><stop offset="1" stop-color="#070c18"/></linearGradient>' +
+      '<clipPath id="' + id + 'k">' + poly("") + '</clipPath>' +
+      '<filter id="' + id + 'b" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="12"/></filter></defs>' +
+      fundo +
+      (o.brilho === false ? "" : '<g filter="url(#' + id + 'b)" opacity=".62" style="fill:var(--neon)">' + poly("") + '</g>') +
+      '<g transform="translate(-8 8)" style="fill:var(--neon2);stroke:var(--neon2)" stroke-width="4" stroke-linejoin="miter" opacity=".95">' + poly("") + '</g>' +
+      '<g fill="#03050c" stroke="#03050c" stroke-width="16" stroke-linejoin="miter">' + poly("") + '</g>' +
+      '<g fill="url(#' + id + 'c)">' + poly("") + '</g>' +
+      '<g clip-path="url(#' + id + 'k)" fill="none" stroke-linejoin="miter"><g style="stroke:var(--neon)" stroke-width="9">' + poly("") + '</g><g stroke="#fff" stroke-opacity=".4" stroke-width="3">' + poly("") + '</g></g>' +
+      '<path d="M16 14 L56 14 L100 130 M236 14 L260 14 L392 178" fill="none" stroke="#fff" stroke-opacity=".12" stroke-width="6"/>' +
+      (texto ? '<text x="200" y="262" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-weight="800" font-size="50" letter-spacing="6" fill="#9fb0cc">VELOX GAMING</text><text x="200" y="300" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-weight="700" font-size="26" letter-spacing="14" fill="#8fa0cf">SEARCH</text>' : '') +
+      '</svg>';
   };
-  document.querySelectorAll("[data-vgx]").forEach(function (el) { window.desenharVGX(el, { camadas: +(el.dataset.camadas || 11), brilho: el.dataset.brilho !== "0" }); });
+  document.querySelectorAll("[data-vgx]").forEach(function (el) { window.desenharVGX(el, { brilho: el.dataset.brilho !== "0", emblema: el.dataset.emblema === "1", texto: el.dataset.texto === "1" }); });
   window.TEMA_PARAMS = P;
 })();
 
