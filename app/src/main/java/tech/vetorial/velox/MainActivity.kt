@@ -74,6 +74,8 @@ class MainActivity : Activity() {
     private lateinit var faixaConteudo: LinearLayout
     private lateinit var bEstrelaCima: TextView
     private lateinit var bEstrelaBaixo: TextView
+    private lateinit var bDownload: BotaoDownload
+    private val baixando = HashSet<Long>()
 
     private val bloqueadosTotal = AtomicLong(0)
     private val bloqueadosSessao = AtomicLong(0)
@@ -188,6 +190,12 @@ class MainActivity : Activity() {
         barraDeCima.addView(logo, LinearLayout.LayoutParams(dp(66), dp(34)).apply { rightMargin = dp(8) })
         barraDeCima.addView(campo, LinearLayout.LayoutParams(0, dp(44), 1f))
         barraDeCima.addView(bEstrelaCima, LinearLayout.LayoutParams(dp(44), dp(44)).apply { leftMargin = dp(4) })
+        bDownload = BotaoDownload(this).apply {
+            contentDescription = "Downloads"
+            isClickable = true
+            setOnClickListener { abrirVindex() }
+        }
+        barraDeCima.addView(bDownload, LinearLayout.LayoutParams(dp(44), dp(44)))
 
         barra = BarraNeon(this)
         conteudo = FrameLayout(this)
@@ -282,6 +290,7 @@ class MainActivity : Activity() {
         barraDeBaixo.background = PainelCortado((tema.superficie and 0x00FFFFFF) or 0xF2000000.toInt(), (tema.destaque and 0x00FFFFFF) or 0xA0000000.toInt(),
             dp(1).toFloat() + 0.5f, if (tema.redondo) dp(28).toFloat() else dp(14).toFloat(), tema.redondo)
         bEstrelaCima.setTextColor(tema.destaque)
+        bDownload.cor(tema.destaque)
         bEstrelaBaixo.setTextColor(tema.destaque)
         faixaFav.setBackgroundColor((tema.superficie and 0x00FFFFFF) or 0xE6000000.toInt())
         desenharFaixaFav()
@@ -1084,11 +1093,53 @@ class MainActivity : Activity() {
             if (!userAgent.isNullOrEmpty()) pedido.addRequestHeader("User-Agent", userAgent)
             pedido.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
             pedido.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, nome)
-            (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).enqueue(pedido)
+            val id = (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).enqueue(pedido)
+            baixando.add(id)
+            acompanharDownloads()
             Toast.makeText(this, "Baixando $nome na pasta Download", Toast.LENGTH_LONG).show()
         } catch (e: Exception) {
             Toast.makeText(this, "Não consegui baixar: ${e.message ?: "erro"}", Toast.LENGTH_LONG).show()
         }
+    }
+
+    private var acompanhando = false
+
+    /** Confere de tempos em tempos os downloads em andamento e deixa o botão do topo girando enquanto houver algum. */
+    private fun acompanharDownloads() {
+        if (acompanhando) return
+        acompanhando = true
+        val tarefa = object : Runnable {
+            override fun run() {
+                val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+                var total = 0L; var feito = 0L; var concluidos = 0
+                val acabou = mutableListOf<Long>()
+                try {
+                    for (id in baixando.toList()) {
+                        dm.query(DownloadManager.Query().setFilterById(id))?.use { c ->
+                            if (!c.moveToFirst()) { acabou.add(id); return@use }
+                            val st = c.getInt(c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                            if (st == DownloadManager.STATUS_SUCCESSFUL || st == DownloadManager.STATUS_FAILED) {
+                                acabou.add(id)
+                                if (st == DownloadManager.STATUS_SUCCESSFUL) concluidos++
+                            } else {
+                                total += c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)).coerceAtLeast(0)
+                                feito += c.getLong(c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)).coerceAtLeast(0)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    // sem acesso ao gerenciador: para de acompanhar
+                    baixando.clear()
+                }
+                baixando.removeAll(acabou.toSet())
+                if (concluidos > 0) Toast.makeText(this@MainActivity, "Download concluído. Toque na seta do topo para ver.", Toast.LENGTH_LONG).show()
+                bDownload.ativo = baixando.isNotEmpty()
+                bDownload.progresso = if (baixando.isNotEmpty() && total > 0) (feito * 100 / total).toInt() else -1
+                if (baixando.isEmpty()) acompanhando = false else bDownload.postDelayed(this, 600)
+            }
+        }
+        bDownload.ativo = true
+        bDownload.post(tarefa)
     }
 
     // ---------------------------------------------------------------- compartilhar e limpar

@@ -13,6 +13,10 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Shader
 import android.view.View
+import android.animation.ValueAnimator
+import android.graphics.DashPathEffect
+import android.graphics.PathMeasure
+import android.view.animation.LinearInterpolator
 
 /** Marca VX: V e X em letras chanfradas (corpo escuro, borda interna acesa e uma luz na segunda cor do tema), igual à página inicial. */
 class LogoVgx(contexto: Context) : View(contexto) {
@@ -28,6 +32,41 @@ class LogoVgx(contexto: Context) : View(contexto) {
         c1 = destaque
         c2 = secundaria
         invalidate()
+    }
+
+    /** Neons andando em volta das letras (como na página inicial). */
+    private var fase = 0f
+    private var anim: ValueAnimator? = null
+    private val comprimentos = floatArrayOf(x1, x2, v).map { PathMeasure(it, true).length }.toFloatArray()
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        anim = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 3400; repeatCount = ValueAnimator.INFINITE; interpolator = LinearInterpolator()
+            addUpdateListener { fase = it.animatedValue as Float; invalidate() }
+            start()
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        anim?.cancel(); anim = null
+        super.onDetachedFromWindow()
+    }
+
+    private fun corredores(canvas: Canvas) {
+        val ps = arrayOf(x1, x2, v)
+        pincel.style = Paint.Style.STROKE; pincel.shader = null; pincel.strokeJoin = Paint.Join.ROUND; pincel.strokeCap = Paint.Cap.ROUND
+        for (volta in 0..1) {
+            for (i in ps.indices) {
+                val l = comprimentos[i]
+                val atraso = (if (volta == 0) i * 0.26f else 0.47f + i * 0.26f)
+                val deslocamento = ((fase + atraso) % 1f) * l
+                pincel.pathEffect = DashPathEffect(floatArrayOf(l * 0.13f, l * 0.87f), -deslocamento)
+                if (volta == 0) { pincel.color = 0xF2FFFFFF.toInt(); pincel.strokeWidth = 5f } else { pincel.color = c2; pincel.strokeWidth = 4f }
+                canvas.drawPath(ps[i], pincel)
+            }
+        }
+        pincel.pathEffect = null; pincel.strokeCap = Paint.Cap.BUTT; pincel.strokeJoin = Paint.Join.MITER
     }
 
     private fun todas(canvas: Canvas, f: (Path) -> Unit) { f(x1); f(x2); f(v) }
@@ -58,6 +97,7 @@ class LogoVgx(contexto: Context) : View(contexto) {
         pincel.color = 0x66FFFFFF; pincel.strokeWidth = 3f
         todas(canvas) { canvas.drawPath(it, pincel) }
         canvas.restore()
+        corredores(canvas)
         canvas.restore()
     }
 
@@ -217,5 +257,59 @@ class IconeTraco(private val tracos: List<Path>, private val pontos: List<FloatA
                 p { moveTo(6.5f, 12f); lineTo(9.5f, 12f) }),
                 listOf(floatArrayOf(16f, 11.5f), floatArrayOf(18f, 13f)))
         }
+    }
+}
+
+
+/** Botão de downloads: seta que balança e anel que gira (ou enche) enquanto algo está baixando; parado, fica discreto. */
+class BotaoDownload(contexto: Context) : View(contexto) {
+    private val pincel = Paint(Paint.ANTI_ALIAS_FLAG)
+    private var cor = 0xFF22D3EE.toInt()
+    private var fase = 0f
+    private var anim: ValueAnimator? = null
+    var ativo = false
+        set(v) { if (field != v) { field = v; if (v) iniciar() else parar(); invalidate() } }
+    /** -1 = não sei (anel girando); 0..100 = anel enchendo. */
+    var progresso = -1
+        set(v) { field = v; invalidate() }
+
+    fun cor(c: Int) { cor = c; invalidate() }
+
+    private fun iniciar() {
+        if (anim != null) return
+        anim = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 1100; repeatCount = ValueAnimator.INFINITE; interpolator = LinearInterpolator()
+            addUpdateListener { fase = it.animatedValue as Float; invalidate() }
+            start()
+        }
+    }
+
+    private fun parar() { anim?.cancel(); anim = null; fase = 0f }
+
+    override fun onDetachedFromWindow() { parar(); super.onDetachedFromWindow() }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val d = minOf(width, height).toFloat()
+        val cx = width / 2f; val cy = height / 2f
+        val raio = d * 0.36f
+        pincel.style = Paint.Style.STROKE; pincel.strokeCap = Paint.Cap.ROUND
+        pincel.strokeWidth = d * 0.07f
+        pincel.color = (cor and 0x00FFFFFF) or (if (ativo) 0x55000000 else 0x40000000)
+        canvas.drawCircle(cx, cy, raio, pincel)
+        val caixa = RectF(cx - raio, cy - raio, cx + raio, cy + raio)
+        if (ativo) {
+            pincel.color = cor
+            if (progresso in 0..100) canvas.drawArc(caixa, -90f, 360f * progresso / 100f, false, pincel)
+            else canvas.drawArc(caixa, fase * 360f, 100f, false, pincel)
+        }
+        // seta para baixo; balança enquanto baixa
+        val balanco = if (ativo) Math.sin(fase * 2 * Math.PI).toFloat() * d * 0.05f else 0f
+        pincel.color = if (ativo) cor else (cor and 0x00FFFFFF) or 0xB0000000.toInt()
+        pincel.strokeWidth = d * 0.085f
+        val topo = cy - d * 0.14f + balanco; val base = cy + d * 0.14f + balanco
+        canvas.drawLine(cx, topo, cx, base, pincel)
+        val p = Path().apply { moveTo(cx - d * 0.11f, base - d * 0.11f); lineTo(cx, base); lineTo(cx + d * 0.11f, base - d * 0.11f) }
+        canvas.drawPath(p, pincel)
     }
 }
