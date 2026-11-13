@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Downloads</title>
+<link rel="stylesheet" href="vgx.css">
+<style>
+html, body { height: 100%; }
+body { display: flex; flex-direction: column; padding: 0; }
+.topo-d { display: flex; align-items: center; gap: 10px; padding: 14px 14px 8px; flex: none; }
+.topo-d h1 { margin: 0; flex: 1; font-size: 20px; letter-spacing: .1em; text-transform: uppercase; text-shadow: 0 0 calc(4px + 12px * var(--brilho)) rgba(var(--neon-rgb), .7); }
+.fechar { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--borda); background: none; color: var(--su); font-size: 20px; cursor: pointer; }
+.resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 14px 8px; flex: none; }
+.resumo .vidro { padding: 9px 4px; text-align: center; }
+.resumo b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; text-shadow: 0 0 calc(4px + 10px * var(--brilho)) rgba(var(--neon-rgb), .8); }
+.resumo span { font-size: 10px; letter-spacing: .12em; color: var(--su); text-transform: uppercase; }
+.lista { flex: 1; overflow-y: auto; padding: 4px 14px calc(20px + env(safe-area-inset-bottom)); }
+.item-d { padding: 12px; margin-bottom: 10px; }
+.item-d .nome { font-weight: 700; font-size: 14px; word-break: break-all; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.item-d .info { margin-top: 4px; font-size: 12px; color: var(--su); font-variant-numeric: tabular-nums; }
+.barra-d { height: 8px; border-radius: 99px; background: rgba(255,255,255,.1); overflow: hidden; margin-top: 8px; }
+.barra-d i { display: block; height: 100%; width: 0; border-radius: 99px; background: linear-gradient(90deg, var(--neon2), var(--neon)); box-shadow: 0 0 calc(6px + 10px * var(--brilho)) rgba(var(--neon-rgb), .6); transition: width .5s linear; }
+.barra-d.indef i { width: 35% !important; animation: vai 1.2s ease-in-out infinite alternate; }
+@keyframes vai { from { margin-left: 0 } to { margin-left: 65% } }
+.estado-ok { color: #6ee7a0; } .estado-erro { color: #ff8095; }
+.acoes-d { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.acoes-d .botao { min-height: 40px; padding: 0 14px; font-size: 13px; }
+.vazio { color: var(--su); text-align: center; padding: 40px 0; }
+</style>
+</head>
+<body>
+<div class="fundo"><i class="modelo"></i></div>
+<div class="topo-d"><h1>Downloads</h1><button class="fechar" id="fechar" aria-label="Fechar">×</button></div>
+<div class="resumo">
+  <div class="vidro"><b id="r-ativos">0</b><span>baixando</span></div>
+  <div class="vidro"><b id="r-vel">0 KB/s</b><span>velocidade</span></div>
+  <div class="vidro"><b id="r-feitos">0</b><span>concluídos</span></div>
+</div>
+<div class="lista" id="lista"><p class="vazio">Nenhum download ainda.</p></div>
+<script src="vgx.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var ir = function (a, p) { location.href = "velox://" + a + (p ? "?" + new URLSearchParams(p).toString() : ""); };
+  var el = function (t, c, x) { var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; };
+  var fmt = function (b) { if (b < 1024) return b + " B"; if (b < 1048576) return (b / 1024).toFixed(0) + " KB"; if (b < 1073741824) return (b / 1048576).toFixed(1) + " MB"; return (b / 1073741824).toFixed(2) + " GB"; };
+  var tempo = function (s) { if (!isFinite(s) || s < 0) return ""; if (s < 60) return Math.ceil(s) + " s"; if (s < 3600) return Math.floor(s / 60) + " min " + Math.round(s % 60) + " s"; return Math.floor(s / 3600) + " h " + Math.round((s % 3600) / 60) + " min"; };
+  var armado = {};
+  $("fechar").onclick = function () { ir("fechar"); };
+  var ultima = "";
+  window.vxAtualizar = function (b64) {
+    var D; try { D = JSON.parse(decodeURIComponent(escape(atob(b64)))); } catch (e) { return; }
+    var chave = JSON.stringify(D.itens.map(function (i) { return [i.id, i.s, i.b, i.tot, i.v]; }));
+    if (chave === ultima) return; ultima = chave;
+    var ativos = 0, feitos = 0, vel = 0;
+    D.itens.forEach(function (i) { if (i.s === 0 || i.s === 1) ativos++; if (i.s === 2) feitos++; if (i.s === 0) vel += i.v; });
+    $("r-ativos").textContent = ativos; $("r-feitos").textContent = feitos; $("r-vel").textContent = fmt(vel) + "/s";
+    var g = $("lista"); g.innerHTML = "";
+    if (!D.itens.length) { g.appendChild(el("p", "vazio", "Nenhum download ainda.")); return; }
+    D.itens.forEach(function (i) {
+      var c = el("div", "vidro item-d");
+      c.appendChild(el("div", "nome", i.t || "arquivo"));
+      var info = el("div", "info"), pct = i.tot > 0 ? Math.min(100, i.b * 100 / i.tot) : -1;
+      if (i.s === 0 || i.s === 1) {
+        var txt = i.tot > 0 ? fmt(i.b) + " de " + fmt(i.tot) + " (" + Math.round(pct) + "%)" : fmt(i.b) + " baixados";
+        if (i.s === 0 && i.v > 0) { txt += " · " + fmt(i.v) + "/s"; if (i.tot > 0) txt += " · faltam " + tempo((i.tot - i.b) / i.v); }
+        if (i.s === 1) txt += " · aguardando" + (i.q ? " (" + i.q + ")" : "");
+        info.textContent = txt;
+        var br = el("div", "barra-d" + (pct < 0 ? " indef" : "")), bi = el("i"); bi.style.width = (pct < 0 ? 35 : pct) + "%"; br.appendChild(bi);
+        c.appendChild(info); c.appendChild(br);
+      } else if (i.s === 2) { info.innerHTML = '<span class="estado-ok">Concluído</span> · ' + fmt(i.tot > 0 ? i.tot : i.b); c.appendChild(info); }
+      else { info.innerHTML = '<span class="estado-erro">Falhou</span>' + (i.q ? " · " + i.q : ""); c.appendChild(info); }
+      var ac = el("div", "acoes-d");
+      if (i.s === 2) {
+        var a1 = el("button", "botao primario", "Abrir arquivo"); a1.onclick = function () { ir("dl-abrir", { id: i.id }); }; ac.appendChild(a1);
+        var a2 = el("button", "botao", "Abrir pasta"); a2.onclick = function () { ir("dl-pasta", { id: i.id }); }; ac.appendChild(a2);
+      }
+      var rot = (i.s === 2) ? "Apagar" : "Cancelar";
+      var a3 = el("button", "botao", armado[i.id] ? "Toque de novo" : rot); if (i.s !== 2) { a3.className = "botao"; }
+      a3.onclick = function () {
+        if (!armado[i.id]) { armado[i.id] = true; a3.textContent = "Toque de novo"; setTimeout(function () { armado[i.id] = false; ultima = ""; }, 3000); return; }
+        armado[i.id] = false; ir("dl-apagar", { id: i.id });
+      };
+      ac.appendChild(a3);
+      c.appendChild(ac); g.appendChild(c);
+    });
+  };
+  ir("dl-pronto");
+})();
+</script>
+</body>
+</html>

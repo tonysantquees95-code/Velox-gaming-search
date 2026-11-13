@@ -194,7 +194,7 @@ class MainActivity : Activity() {
         bDownload = BotaoDownload(this).apply {
             contentDescription = "Downloads"
             isClickable = true
-            setOnClickListener { abrirVindex() }
+            setOnClickListener { abrirDownloads() }
         }
         barraDeCima.addView(bDownload, LinearLayout.LayoutParams(dp(44), dp(44)))
 
@@ -452,6 +452,7 @@ class MainActivity : Activity() {
 
     private fun fecharPainel() {
         val wv = painel ?: return
+        if (paginaDownloads === wv) paginaDownloads = null
         raizApp.removeView(wv)
         wv.destroy()
         painel = null
@@ -481,7 +482,11 @@ class MainActivity : Activity() {
             "limpar" -> limparDados()
             "atualizar" -> procurarAtualizacao(true)
             "aviso" -> Toast.makeText(this, (u.getQueryParameter("m") ?: "").take(120), Toast.LENGTH_SHORT).show()
-            "vindex" -> abrirVindex()
+            "vindex" -> abrirDownloads()
+            "dl-pronto" -> enviarDownloads()
+            "dl-abrir" -> u.getQueryParameter("id")?.toLongOrNull()?.let { abrirArquivoBaixado(it) }
+            "dl-pasta" -> abrirVindex()
+            "dl-apagar" -> { u.getQueryParameter("id")?.toLongOrNull()?.let { id -> try { (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).remove(id); baixando.remove(id) } catch (e: Exception) { /* já não existe */ }; enviarDownloads() } }
             "fav-add" -> { favoritarPaginaAtual(); if (u.getQueryParameter("fica") != "1") fecharPainel() else abrirPainel("favoritos", true) }
             "fav-del" -> { u.getQueryParameter("i")?.toIntOrNull()?.let { removerFavorito(it) }; abrirPainel("favoritos", true) }
             "fav-abrir" -> { fecharPainel(); u.getQueryParameter("u")?.let { abrirTexto(it) } }
@@ -1081,6 +1086,108 @@ class MainActivity : Activity() {
     // ---------------------------------------------------------------- Vindex (outro app da Vetorial Tech)
 
     private fun vindexInstalado(): Boolean = try { packageManager.getLaunchIntentForPackage(VINDEX) != null } catch (e: Exception) { false }
+
+    // ---- página de downloads (dentro do Velox)
+
+    private var paginaDownloads: WebView? = null
+    private val velocidadeAnterior = HashMap<Long, Triple<Long, Long, Float>>() // id -> (bytes, instante, velocidade suavizada)
+
+    private fun abrirDownloads() {
+        fecharPainel()
+        val wv = WebView(this)
+        wv.settings.javaScriptEnabled = true
+        wv.settings.allowFileAccess = false
+        wv.settings.allowContentAccess = false
+        wv.setBackgroundColor(tema.fundo)
+        wv.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, req: WebResourceRequest): Boolean = acaoDoPainel(req.url)
+        }
+        raizApp.addView(wv, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        painel = wv
+        paginaDownloads = wv
+        flutuante.visibility = View.GONE
+        (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(campo.windowToken, 0)
+        wv.loadUrl("file:///android_asset/downloads.html?" + tema.params())
+        val tick = object : Runnable {
+            override fun run() {
+                if (paginaDownloads !== wv || painel !== wv) return
+                enviarDownloads()
+                wv.postDelayed(this, 800)
+            }
+        }
+        wv.postDelayed(tick, 800)
+    }
+
+    /** Lê os downloads do aparelho feitos pelo Velox e manda para a página (progresso, tamanho e velocidade). */
+    private fun enviarDownloads() {
+        val wv = paginaDownloads ?: return
+        if (painel !== wv) return
+        val itens = JSONArray()
+        val agora = System.currentTimeMillis()
+        try {
+            val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            dm.query(DownloadManager.Query())?.use { c ->
+                val iId = c.getColumnIndexOrThrow(DownloadManager.COLUMN_ID)
+                val iT = c.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE)
+                val iS = c.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)
+                val iTot = c.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                val iB = c.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                val iR = c.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON)
+                var n = 0
+                while (c.moveToNext() && n < 60) {
+                    n++
+                    val id = c.getLong(iId)
+                    val st = c.getInt(iS)
+                    val bytes = c.getLong(iB).coerceAtLeast(0)
+                    var vel = 0f
+                    if (st == DownloadManager.STATUS_RUNNING) {
+                        val ant = velocidadeAnterior[id]
+                        if (ant != null && agora > ant.second) {
+                            val inst = (bytes - ant.first) * 1000f / (agora - ant.second)
+                            vel = if (ant.third > 0f) ant.third * 0.6f + inst.coerceAtLeast(0f) * 0.4f else inst.coerceAtLeast(0f)
+                        }
+                        velocidadeAnterior[id] = Triple(bytes, agora, vel)
+                    } else velocidadeAnterior.remove(id)
+                    val estado = when (st) {
+                        DownloadManager.STATUS_RUNNING -> 0
+                        DownloadManager.STATUS_SUCCESSFUL -> 2
+                        DownloadManager.STATUS_FAILED -> 3
+                        else -> 1
+                    }
+                    val motivo = c.getInt(iR)
+                    val q = when {
+                        estado == 1 && motivo == DownloadManager.PAUSED_WAITING_FOR_NETWORK -> "sem rede"
+                        estado == 1 && motivo == DownloadManager.PAUSED_QUEUED_FOR_WIFI -> "esperando Wi-Fi"
+                        estado == 1 && motivo == DownloadManager.PAUSED_WAITING_TO_RETRY -> "tentando de novo"
+                        estado == 3 && motivo == DownloadManager.ERROR_INSUFFICIENT_SPACE -> "sem espaço no aparelho"
+                        estado == 3 && motivo == DownloadManager.ERROR_CANNOT_RESUME -> "não deu para continuar"
+                        estado == 3 && motivo >= 400 -> "erro do site ($motivo)"
+                        else -> ""
+                    }
+                    itens.put(JSONObject().put("id", id).put("t", c.getString(iT) ?: "").put("s", estado).put("b", bytes)
+                        .put("tot", c.getLong(iTot).coerceAtLeast(0)).put("v", vel.toLong()).put("q", q))
+                }
+            }
+        } catch (e: Exception) {
+            // sem acesso: mostra lista vazia
+        }
+        val b64 = Base64.encodeToString(JSONObject().put("itens", itens).toString().toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+        wv.evaluateJavascript("window.vxAtualizar && window.vxAtualizar('$b64')", null)
+    }
+
+    private fun abrirArquivoBaixado(id: Long) {
+        try {
+            val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            val uri = dm.getUriForDownloadedFile(id)
+            val tipo = dm.getMimeTypeForDownloadedFile(id)
+            if (uri == null) { Toast.makeText(this, "O arquivo não está mais lá.", Toast.LENGTH_LONG).show(); return }
+            startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, tipo ?: "*/*").addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, "Nenhum app abre esse tipo de arquivo. Use \"Abrir pasta\".", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Não consegui abrir o arquivo.", Toast.LENGTH_LONG).show()
+        }
+    }
 
     /** Abre os downloads no gerenciador que a pessoa usa (Vindex, Arquivos do Google ou outro); sem um padrão, o Android pergunta. */
     private fun abrirVindex() {
