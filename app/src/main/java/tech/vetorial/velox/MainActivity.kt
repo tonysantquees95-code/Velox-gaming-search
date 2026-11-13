@@ -275,7 +275,7 @@ class MainActivity : Activity() {
 
     private fun pintarCampo() {
         val alfa = if (campo.hasFocus()) 0xFF else 0x80
-        campo.background = PainelCortado((tema.campo and 0x00FFFFFF) or 0x99000000.toInt(), (tema.destaque and 0x00FFFFFF) or (alfa shl 24), dp(if (campo.hasFocus()) 2 else 1).toFloat(),
+        campo.background = PainelCortado((tema.campo and 0x00FFFFFF) or ((200 - (tema.transparencia * 1.6f).toInt()).coerceIn(30, 255) shl 24), (tema.destaque and 0x00FFFFFF) or (alfa shl 24), dp(if (campo.hasFocus()) 2 else 1).toFloat(),
             if (tema.redondo) dp(22).toFloat() else dp(10).toFloat(), tema.redondo)
     }
 
@@ -284,16 +284,17 @@ class MainActivity : Activity() {
         val comFoto = fotoFundo != null
         coluna.setBackgroundColor(Color.TRANSPARENT)
         conteudo.setBackgroundColor(Color.TRANSPARENT)
-        val alfa = if (comFoto) 0xE6000000.toInt() else 0xFF000000.toInt()
+        val tr = tema.transparencia
+        val alfa = (255 - (tr * 1.6f).toInt()).coerceIn(60, 255) shl 24
         val a = (tema.superficie and 0x00FFFFFF) or alfa
         val b = (LogoVgx.misturar(tema.superficie, tema.fundo, 0.55f) and 0x00FFFFFF) or alfa
         barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(a, b))
-        barraDeBaixo.background = PainelCortado((tema.superficie and 0x00FFFFFF) or 0xF2000000.toInt(), (tema.destaque and 0x00FFFFFF) or 0xA0000000.toInt(),
+        barraDeBaixo.background = PainelCortado((tema.superficie and 0x00FFFFFF) or ((255 - (tr * 1.5f).toInt()).coerceIn(70, 255) shl 24), (tema.destaque and 0x00FFFFFF) or 0xA0000000.toInt(),
             dp(1).toFloat() + 0.5f, if (tema.redondo) dp(28).toFloat() else dp(14).toFloat(), tema.redondo)
         bEstrelaCima.setTextColor(tema.destaque)
         bDownload.cor(tema.destaque)
         bEstrelaBaixo.setTextColor(tema.destaque)
-        faixaFav.setBackgroundColor((tema.superficie and 0x00FFFFFF) or 0xE6000000.toInt())
+        faixaFav.setBackgroundColor((tema.superficie and 0x00FFFFFF) or ((255 - (tema.transparencia * 1.6f).toInt()).coerceIn(60, 255) shl 24))
         desenharFaixaFav()
         campo.setTextColor(tema.texto)
         campo.setHintTextColor(tema.suave)

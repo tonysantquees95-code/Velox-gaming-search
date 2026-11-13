@@ -11,7 +11,7 @@ html.com-foto .fundo { display: none; }
 body { min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 22px 18px 44px; }
 .topo { margin-top: 2vh; display: flex; flex-direction: column; align-items: center; }
 form { width: min(100%, 560px); margin-top: 20px; }
-.busca { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 8px 0 18px; border-radius: 28px; background: color-mix(in srgb, var(--bg) 38%, transparent); border: 1.5px solid var(--borda); backdrop-filter: blur(14px) saturate(1.2); transition: box-shadow .2s, border-color .2s; }
+.busca { display: flex; align-items: center; gap: 10px; min-height: 54px; padding: 0 8px 0 18px; border-radius: 28px; background: color-mix(in srgb, var(--bg) var(--vi, 38%), transparent); border: 1.5px solid var(--borda); backdrop-filter: blur(14px) saturate(1.2); transition: box-shadow .2s, border-color .2s; }
 .busca:focus-within { border-color: var(--neon); box-shadow: 0 0 0 3px rgba(var(--neon-rgb), .2), 0 0 calc(10px + 26px * var(--brilho)) rgba(var(--neon-rgb), .35); }
 html[data-formato="futurista"] .busca { border-radius: 6px; clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px)); }
 input[type="search"] { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--tx); font-size: 17px; height: 52px; }
@@ -22,7 +22,7 @@ html[data-formato="futurista"] .ir { border-radius: 4px; }
 .mot { margin: 8px 0 0; text-align: center; font-size: 12px; color: var(--su); letter-spacing: .08em; }
 .bloco { width: min(100%, 560px); margin-top: 22px; }
 .escudo { display: flex; gap: 8px; }
-.escudo .vidro, .prod { background: color-mix(in srgb, var(--bg) 42%, transparent); backdrop-filter: blur(12px) saturate(1.2); }
+.escudo .vidro, .prod { background: color-mix(in srgb, var(--bg) var(--vi, 42%), transparent); backdrop-filter: blur(12px) saturate(1.2); }
 .escudo .vidro { flex: 1; padding: 9px 6px; text-align: center; }
 .escudo b { display: block; font-size: 19px; font-variant-numeric: tabular-nums; text-shadow: 0 0 calc(4px + 12px * var(--brilho)) rgba(var(--neon-rgb), .85); }
 .escudo span { font-size: 10px; letter-spacing: .14em; color: var(--su); text-transform: uppercase; }

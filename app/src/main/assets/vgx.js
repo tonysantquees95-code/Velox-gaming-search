@@ -9,6 +9,9 @@
   if (hex(P.get("c2"))) S.setProperty("--neon2-rgb", rgb(P.get("c2")));
   var br = parseInt(P.get("br"), 10); if (br >= 0 && br <= 100) S.setProperty("--brilho", String(br / 100));
   var fu = P.get("fu"); if (/^(aurora|grade|circuito|pontos|liso)$/.test(fu || "")) R.dataset.fundo = fu; else R.dataset.fundo = "aurora";
+  var tr = parseInt(P.get("tr"), 10); if (!(tr >= 0 && tr <= 100)) tr = 30;
+  S.setProperty("--painel", "color-mix(in srgb, var(--sup) " + Math.max(30, Math.round(104 - tr * 0.6)) + "%, transparent)");
+  S.setProperty("--vi", Math.max(4, Math.round(66 - tr * 0.9)) + "%");
   R.dataset.formato = P.get("fo") === "redondo" ? "redondo" : "futurista";
   R.dataset.anim = P.get("an") === "0" ? "0" : "1";
 
@@ -72,10 +75,10 @@ window.VGX = {
   mistura: function (hex) { var n = parseInt(hex, 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, h = function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }; return h(r * 0.55 + 10) + h(g * 0.5) + h(b * 0.7 + 20); },
   params: function (t) {
     var b = (this.BASES.filter(function (x) { return x[0] === t.base; })[0]) || this.BASES[0];
-    return new URLSearchParams({ c1: t.c1, c2: t.c2, bg: b[2], sup: b[3], campo: b[4], su: b[5], tx: "ffffff", br: String(t.br), fu: t.fu, fo: t.fo, an: t.an ? "1" : "0", base: t.base, ti: t.ti, pk: t.pk, dim: String(t.dim) }).toString();
+    return new URLSearchParams({ c1: t.c1, c2: t.c2, bg: b[2], sup: b[3], campo: b[4], su: b[5], tx: "ffffff", br: String(t.br), tr: String(t.tr), fu: t.fu, fo: t.fo, an: t.an ? "1" : "0", base: t.base, ti: t.ti, pk: t.pk, dim: String(t.dim) }).toString();
   },
   doEndereco: function (P) {
     var g = function (k, d) { var v = P.get(k); return v == null ? d : v; };
-    return { c1: g("c1", "22d3ee"), c2: g("c2", "a78bfa"), base: g("base", "noite"), br: +g("br", "70"), fu: g("fu", "aurora"), fo: g("fo", "futurista"), an: g("an", "1") !== "0", ti: g("ti", "marca"), pk: g("pk", "linha"), dim: +g("dim", "35") };
+    return { c1: g("c1", "22d3ee"), c2: g("c2", "a78bfa"), base: g("base", "noite"), br: +g("br", "70"), tr: +g("tr", "30"), fu: g("fu", "aurora"), fo: g("fo", "futurista"), an: g("an", "1") !== "0", ti: g("ti", "marca"), pk: g("pk", "linha"), dim: +g("dim", "35") };
   }
 };
