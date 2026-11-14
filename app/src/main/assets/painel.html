@@ -179,6 +179,10 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
           </div>
           <div id="c-dentro" style="display:none">
             <div class="vidro linha"><div><b id="c-quem">Conectado</b><small id="c-ultimo">Favoritos sincronizados</small></div></div>
+            <p class="rotulo" style="margin-top:14px">O que sincronizar neste aparelho</p>
+            <label class="vidro linha"><div><b>Favoritos</b></div><input type="checkbox" id="si-f"></label>
+            <label class="vidro linha"><div><b>Tema</b><small>Cores, ícones e fundo animado (a foto de fundo não vai junto)</small></div><input type="checkbox" id="si-t"></label>
+            <label class="vidro linha"><div><b>Senhas</b><small>Cifradas; precisa da mesma senha mestra nos dois aparelhos e do cofre aberto</small></div><input type="checkbox" id="si-s"></label>
             <div class="dupla"><button class="botao primario" id="c-agora">Sincronizar agora</button><button class="botao perigo" id="c-sair">Sair</button></div>
           </div>
         </section>
@@ -294,11 +298,15 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     $("c-fora").style.display = dentro ? "none" : "block"; $("c-dentro").style.display = dentro ? "block" : "none";
     if (dentro) {
       $("c-quem").textContent = E.sync.email || "Conectado";
+      var it = E.sync.itens || { f: true, t: true, s: false };
+      $("si-f").checked = !!it.f; $("si-t").checked = !!it.t; $("si-s").checked = !!it.s;
       $("c-ultimo").textContent = E.sync.ultimo ? "Última sincronização: " + new Date(E.sync.ultimo).toLocaleString("pt-BR") : "Ainda não sincronizou";
     }
     if (atual === "conta") aviso("c-msg");
   }
   $("c-entrar").onclick = function () { this.textContent = "Entrando…"; ir("sync-entrar", { e: $("c-email").value.trim(), s: $("c-senha").value }); };
+  function salvarItens() { ir("sync-itens", { f: $("si-f").checked ? "1" : "0", t: $("si-t").checked ? "1" : "0", s: $("si-s").checked ? "1" : "0" }); }
+  ["si-f", "si-t", "si-s"].forEach(function (id) { $(id).onchange = salvarItens; });
   $("c-agora").onclick = function () { this.textContent = "Sincronizando…"; ir("sync-agora"); };
   $("c-sair").onclick = function () { ir("sync-sair"); };
 

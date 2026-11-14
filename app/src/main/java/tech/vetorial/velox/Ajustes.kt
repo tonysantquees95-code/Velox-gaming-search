@@ -12,6 +12,24 @@ class Ajustes(contexto: Context) {
         get() = p.getString("tema_texto", "") ?: ""
         set(v) { p.edit().putString("tema_texto", v).apply() }
 
+    /** Quando o tema foi mexido pela última vez (milissegundos): a sincronização fica com o mais recente. */
+    var temaT: Long
+        get() = p.getLong("tema_t", 0L)
+        set(v) { p.edit().putLong("tema_t", v).apply() }
+
+    /** O que este aparelho sincroniza com a conta. */
+    var syncFavoritos: Boolean
+        get() = p.getBoolean("sync_favoritos", true)
+        set(v) { p.edit().putBoolean("sync_favoritos", v).apply() }
+
+    var syncTema: Boolean
+        get() = p.getBoolean("sync_tema", true)
+        set(v) { p.edit().putBoolean("sync_tema", v).apply() }
+
+    var syncSenhas: Boolean
+        get() = p.getBoolean("sync_senhas", false)
+        set(v) { p.edit().putBoolean("sync_senhas", v).apply() }
+
     var buscador: String
         get() = p.getString("buscador", "google") ?: "google"
         set(v) { p.edit().putString("buscador", v).apply() }

@@ -107,4 +107,119 @@ object Sync {
         }
         throw Falha(409, "Outro aparelho está mudando os favoritos agora. Tente de novo.")
     }
+
+    // ---------------------------------------------------------------- tema (um documento por assunto)
+    class SenhaDiferente : Exception("A senha mestra deste aparelho é diferente da do outro. Use a mesma nos dois para sincronizar as senhas.")
+
+    data class TemaRes(val mudouLocal: Boolean, val t: Long, val tema: String)
+
+    private fun docRemoto(token: String, chave: String): Pair<JSONObject?, Int> {
+        val lista = chamar(token, "GET", "/id/sync", null)
+        val docs = lista.optJSONArray("docs")
+        if (docs != null) for (i in 0 until docs.length()) {
+            val d = docs.optJSONObject(i) ?: continue
+            if (d.optString("chave") == chave) return Pair(d.optJSONObject("valor"), d.optInt("versao", 0))
+        }
+        return Pair(null, 0)
+    }
+
+    /** Vence a mudança mais recente. t = quando a pessoa mexeu no tema pela última vez (milissegundos). */
+    fun sincronizarTema(token: String, t: Long, tema: String): TemaRes {
+        for (tentativa in 0..1) {
+            val (valor, versao) = docRemoto(token, "velox-tema")
+            val rTema = valor?.optString("tema").orEmpty()
+            val rT = valor?.optLong("t", 0L) ?: 0L
+            val remotoOk = valor != null && rTema.isNotBlank()
+            if (remotoOk && rT > t) return TemaRes(true, rT, rTema)
+            if (remotoOk && rT == t) return TemaRes(false, rT, rTema)
+            if (t <= 0L || tema.isBlank()) return TemaRes(false, t, tema)
+            try {
+                chamar(token, "PUT", "/id/sync/velox-tema", JSONObject().put("valor", JSONObject().put("t", t).put("tema", tema)).put("versao", versao))
+                return TemaRes(false, t, tema)
+            } catch (e: Falha) {
+                if (e.status != 409) throw e
+            }
+        }
+        throw Falha(409, "Outro aparelho está mudando o tema agora. Tente de novo.")
+    }
+
+    // ---------------------------------------------------------------- senhas (cifradas aqui; o servidor só guarda texto embaralhado)
+    data class SenhaItem(val origem: String, val usuario: String, val senha: String, val atualizado: Long)
+    data class SenhaDoc(val itens: List<SenhaItem>, val apagados: Map<String, Long>)
+
+    private fun chaveItem(i: SenhaItem) = i.origem + "\n" + i.usuario
+
+    fun mesclarSenhas(local: SenhaDoc, remoto: SenhaDoc?, agora: Long = System.currentTimeMillis()): SenhaDoc {
+        val apagados = HashMap<String, Long>()
+        for ((k, v) in (remoto?.apagados ?: emptyMap())) apagados[k] = maxOf(apagados[k] ?: 0L, v)
+        for ((k, v) in local.apagados) apagados[k] = maxOf(apagados[k] ?: 0L, v)
+        val por = LinkedHashMap<String, SenhaItem>()
+        for (i in (remoto?.itens ?: emptyList()) + local.itens) {
+            val k = chaveItem(i)
+            val a = por[k]
+            if (a == null || i.atualizado >= a.atualizado) por[k] = i
+        }
+        val vivos = por.values.filter { i -> val a = apagados[chaveItem(i)]; a == null || a < i.atualizado }.sortedBy { chaveItem(it) }
+        return SenhaDoc(vivos, apagados.filterValues { it >= agora - SESSENTA_DIAS })
+    }
+
+    private fun igualSenhas(a: SenhaDoc, b: SenhaDoc) =
+        a.itens.sortedBy { chaveItem(it) } == b.itens.sortedBy { chaveItem(it) } && a.apagados == b.apagados
+
+    private fun senhasParaJson(d: SenhaDoc): JSONObject {
+        val a = JSONArray()
+        for (i in d.itens) a.put(JSONObject().put("origem", i.origem).put("usuario", i.usuario).put("senha", i.senha).put("atualizado", i.atualizado))
+        val ap = JSONObject()
+        for ((k, v) in d.apagados) ap.put(k, v)
+        return JSONObject().put("itens", a).put("apagados", ap)
+    }
+
+    private fun senhasDeJson(o: JSONObject): SenhaDoc {
+        val lista = mutableListOf<SenhaItem>()
+        val a = o.optJSONArray("itens")
+        if (a != null) for (i in 0 until a.length()) {
+            val x = a.optJSONObject(i) ?: continue
+            val origem = x.optString("origem")
+            if (origem.isBlank() || !x.has("senha")) continue
+            lista.add(SenhaItem(origem, x.optString("usuario"), x.optString("senha"), x.optLong("atualizado", 0L)))
+        }
+        val mapa = HashMap<String, Long>()
+        val ap = o.optJSONObject("apagados")
+        if (ap != null) for (k in ap.keys()) mapa[k] = ap.optLong(k, 0L)
+        return SenhaDoc(lista, mapa)
+    }
+
+    /** Devolve (documento final, mudou o local?). Lança SenhaDiferente se a senha mestra daqui não abre o que o outro aparelho guardou. */
+    fun sincronizarSenhas(token: String, local: SenhaDoc, senhaMestra: String): Pair<SenhaDoc, Boolean> {
+        val b64 = java.util.Base64.getEncoder()
+        val d64 = java.util.Base64.getDecoder()
+        for (tentativa in 0..1) {
+            val (valor, versao) = docRemoto(token, "velox-senhas")
+            var remoto: SenhaDoc? = null
+            var sal: ByteArray? = null
+            if (valor != null && valor.optString("dados").isNotBlank()) {
+                try {
+                    val s = d64.decode(valor.getString("sal"))
+                    val claro = Cofre.decifrar(Cofre.derivar(senhaMestra, s), d64.decode(valor.getString("dados")))
+                    remoto = senhasDeJson(JSONObject(String(claro, Charsets.UTF_8)))
+                    sal = s
+                } catch (e: Exception) {
+                    throw SenhaDiferente()
+                }
+            }
+            val final = mesclarSenhas(local, remoto)
+            val mudouLocal = !igualSenhas(final, local)
+            if (remoto != null && igualSenhas(final, remoto)) return Pair(final, mudouLocal)
+            val salUsado = sal ?: ByteArray(16).also { java.security.SecureRandom().nextBytes(it) }
+            val dados = Cofre.cifrar(Cofre.derivar(senhaMestra, salUsado), senhasParaJson(final).toString().toByteArray(Charsets.UTF_8))
+            val pacote = JSONObject().put("v", 1).put("sal", b64.encodeToString(salUsado)).put("dados", b64.encodeToString(dados))
+            try {
+                chamar(token, "PUT", "/id/sync/velox-senhas", JSONObject().put("valor", pacote).put("versao", versao))
+                return Pair(final, mudouLocal)
+            } catch (e: Falha) {
+                if (e.status != 409) throw e
+            }
+        }
+        throw Falha(409, "Outro aparelho está mudando as senhas agora. Tente de novo.")
+    }
 }

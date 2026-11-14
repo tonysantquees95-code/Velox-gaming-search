@@ -23,6 +23,10 @@ class Cofre(private val arquivo: File, private val minutosAteTravar: Long = 15) 
     private var sal: ByteArray? = null
     private var itens = mutableListOf<Item>()
     private var nunca = mutableSetOf<String>()
+    /** "origem\nusuario" -> quando foi apagado (a sincronização usa para apagar nos outros aparelhos). */
+    private var apagados = mutableMapOf<String, Long>()
+    /** Só enquanto aberto: a sincronização das senhas cifra com ela. */
+    private var senhaMem: String? = null
     private var ultimoUso = 0L
 
     fun existe() = arquivo.exists()
@@ -41,8 +45,10 @@ class Cofre(private val arquivo: File, private val minutosAteTravar: Long = 15) 
     fun travar() {
         chave = null
         sal = null
+        senhaMem = null
         itens = mutableListOf()
         nunca = mutableSetOf()
+        apagados = mutableMapOf()
     }
 
     fun criar(senha: String) {
@@ -51,8 +57,10 @@ class Cofre(private val arquivo: File, private val minutosAteTravar: Long = 15) 
         val s = ByteArray(16).also { SecureRandom().nextBytes(it) }
         sal = s
         chave = derivar(senha, s)
+        senhaMem = senha
         itens = mutableListOf()
         nunca = mutableSetOf()
+        apagados = mutableMapOf()
         ultimoUso = System.currentTimeMillis()
         gravar()
     }
@@ -72,10 +80,15 @@ class Cofre(private val arquivo: File, private val minutosAteTravar: Long = 15) 
         val n = mutableSetOf<String>()
         val na = d.optJSONArray("nunca") ?: JSONArray()
         for (i in 0 until na.length()) n.add(na.getString(i))
+        val ap = mutableMapOf<String, Long>()
+        val apObj = d.optJSONObject("apagados")
+        if (apObj != null) for (k2 in apObj.keys()) ap[k2] = apObj.optLong(k2, 0L)
         sal = s
         chave = k
+        senhaMem = senha
         itens = lista
         nunca = n
+        apagados = ap
         ultimoUso = System.currentTimeMillis()
     }
 
@@ -83,7 +96,9 @@ class Cofre(private val arquivo: File, private val minutosAteTravar: Long = 15) 
         val d = JSONObject()
         val a = JSONArray()
         for (i in itens) a.put(JSONObject().put("id", i.id).put("origem", i.origem).put("usuario", i.usuario).put("senha", i.senha).put("atualizado", i.atualizado))
-        d.put("itens", a).put("nunca", JSONArray(nunca.toList()))
+        val apJson = JSONObject()
+        for ((k, v) in apagados) apJson.put(k, v)
+        d.put("itens", a).put("nunca", JSONArray(nunca.toList())).put("apagados", apJson)
         val pacote = JSONObject().put("v", 1)
             .put("sal", Base64.getEncoder().encodeToString(sal))
             .put("dados", Base64.getEncoder().encodeToString(cifrar(chave!!, d.toString().toByteArray(Charsets.UTF_8))))
@@ -117,7 +132,29 @@ class Cofre(private val arquivo: File, private val minutosAteTravar: Long = 15) 
         return "novo"
     }
 
-    fun apagar(id: String) { exigir(); itens.removeAll { it.id == id }; gravar() }
+    fun apagar(id: String) {
+        exigir()
+        itens.firstOrNull { it.id == id }?.let { apagados[it.origem + "\n" + it.usuario] = System.currentTimeMillis() }
+        itens.removeAll { it.id == id }
+        gravar()
+    }
+
+    /** Para a sincronização (com as senhas; só com o cofre aberto). */
+    fun paraSincronia(): Pair<List<Item>, Map<String, Long>> { exigir(); return Pair(itens.toList(), apagados.toMap()) }
+
+    fun senhaMestra(): String { exigir(); return senhaMem ?: throw IllegalStateException("O cofre está trancado.") }
+
+    /** Troca o conteúdo pelo resultado da mescla, mantendo os ids dos itens que já existiam. */
+    fun aplicarSincronia(novos: List<Item>, ap: Map<String, Long>) {
+        exigir()
+        val antes = itens.associate { (it.origem + "\n" + it.usuario) to it.id }
+        itens = novos.map { n ->
+            val id = antes[n.origem + "\n" + n.usuario] ?: ByteArray(8).also { SecureRandom().nextBytes(it) }.joinToString("") { b -> "%02x".format(b) }
+            Item(id, n.origem, n.usuario, n.senha, n.atualizado)
+        }.toMutableList()
+        apagados = ap.toMutableMap()
+        gravar()
+    }
 
     fun jaPerguntou(origem: String): Boolean { exigir(); return origem in nunca }
     fun nuncaOferecer(origem: String) { exigir(); if (nunca.add(origem)) gravar() }

@@ -687,7 +687,8 @@ class MainActivity : Activity() {
             .put("walls", JSONArray(Imagens.listarWallpapers(this)))
             .put("fav", JSONArray(ajustes.favoritosJson))
             .put("padrao", ehNavegadorPrincipal())
-            .put("sync", JSONObject().put("email", ajustes.syncEmail).put("logado", ajustes.syncToken.isNotBlank()).put("ultimo", ajustes.syncUltimo))
+            .put("sync", JSONObject().put("email", ajustes.syncEmail).put("logado", ajustes.syncToken.isNotBlank()).put("ultimo", ajustes.syncUltimo)
+                .put("itens", JSONObject().put("f", ajustes.syncFavoritos).put("t", ajustes.syncTema).put("s", ajustes.syncSenhas)))
             .put("cofre", estadoDoCofre())
             .put("sites", sitesDoPainel())
             .put("hist", historicoDoPainel())
@@ -803,10 +804,17 @@ class MainActivity : Activity() {
             "sync-entrar" -> entrarNoVetorialId(u.getQueryParameter("e") ?: "", u.getQueryParameter("s") ?: "")
             "sync-sair" -> { ajustes.syncToken = ""; ajustes.syncEmail = ""; reabrirPainel("conta", "Você saiu do Vetorial ID.") }
             "sync-agora" -> sincronizarAgora(true)
+            "sync-itens" -> {
+                ajustes.syncFavoritos = u.getQueryParameter("f") == "1"
+                ajustes.syncTema = u.getQueryParameter("t") == "1"
+                ajustes.syncSenhas = u.getQueryParameter("s") == "1"
+                sincronizarDepois()
+                reabrirPainel("conta")
+            }
             "cofre-criar" -> criarCofre { reabrirPainel("senhas") }
             "cofre-abrir" -> abrirCofre("Digite a senha mestra para ver o cofre.") { reabrirPainel("senhas") }
             "cofre-travar" -> { cofre.travar(); reabrirPainel("senhas") }
-            "cofre-apagar" -> { try { u.getQueryParameter("id")?.let { cofre.apagar(it) } } catch (e: Exception) { /* trancado */ }; reabrirPainel("senhas") }
+            "cofre-apagar" -> { try { u.getQueryParameter("id")?.let { cofre.apagar(it) }; sincronizarDepois() } catch (e: Exception) { /* trancado */ }; reabrirPainel("senhas") }
             "cofre-copiar" -> u.getQueryParameter("id")?.let { copiarSenha(it) }
             "senha-preencher" -> { fecharPainel(); preencherPaginaAtual() }
             "site-del" -> {
@@ -929,15 +937,63 @@ class MainActivity : Activity() {
         val token = ajustes.syncToken
         if (token.isBlank() || sincronizando) return
         sincronizando = true
+        val comFav = ajustes.syncFavoritos
+        val comTema = ajustes.syncTema
+        val comSenhas = ajustes.syncSenhas
         val local = docLocal()
+        val temaT = if (ajustes.temaT > 0L) ajustes.temaT else if (ajustes.temaTexto.isNotBlank()) 1L else 0L
+        val temaLocal = if (ajustes.temaTexto.isNotBlank()) tema.params() else ""
+        var senhasLocal: Sync.SenhaDoc? = null
+        var senhaMestra = ""
+        var avisoSenhas = ""
+        if (comSenhas) {
+            if (cofre.aberto()) {
+                try {
+                    val (itens, ap) = cofre.paraSincronia()
+                    senhasLocal = Sync.SenhaDoc(itens.map { Sync.SenhaItem(it.origem, it.usuario, it.senha, it.atualizado) }, ap)
+                    senhaMestra = cofre.senhaMestra()
+                } catch (e: Exception) { avisoSenhas = "senhas: abra o cofre para sincronizar" }
+            } else avisoSenhas = "senhas: abra o cofre para sincronizar"
+        }
         Thread {
+            val avisos = mutableListOf<String>()
+            if (avisoSenhas.isNotEmpty()) avisos.add(avisoSenhas)
             try {
-                val (doc, mudou) = Sync.sincronizar(token, local)
+                var docFinal: Sync.Doc? = null
+                var mudouFav = false
+                if (comFav) {
+                    val (doc, mudou) = Sync.sincronizar(token, local)
+                    docFinal = doc; mudouFav = mudou
+                }
+                var temaRes: Sync.TemaRes? = null
+                if (comTema) {
+                    try { temaRes = Sync.sincronizarTema(token, temaT, temaLocal) }
+                    catch (e: Sync.Falha) { if (e.status == 401) throw e; avisos.add("tema: " + (e.message ?: "falhou")) }
+                    catch (e: Exception) { avisos.add("tema: " + (e.message ?: "falhou")) }
+                }
+                var senhasRes: Pair<Sync.SenhaDoc, Boolean>? = null
+                val sl = senhasLocal
+                if (sl != null) {
+                    try { senhasRes = Sync.sincronizarSenhas(token, sl, senhaMestra) }
+                    catch (e: Sync.Falha) { if (e.status == 401) throw e; avisos.add("senhas: " + (e.message ?: "falhou")) }
+                    catch (e: Exception) { avisos.add("senhas: " + (e.message ?: "falhou")) }
+                }
+                val df = docFinal
+                val mf = mudouFav
                 runOnUiThread {
                     sincronizando = false
-                    if (mudou) aplicarDoc(doc)
+                    if (df != null && mf) aplicarDoc(df)
+                    val tr = temaRes
+                    if (tr != null) {
+                        if (tr.mudouLocal) { mudarTema(tr.tema, false); ajustes.temaT = tr.t }
+                        else if (ajustes.temaT == 0L && temaT > 0L) ajustes.temaT = temaT
+                    }
+                    val sr = senhasRes
+                    if (sr != null && sr.second) {
+                        try { cofre.aplicarSincronia(sr.first.itens.map { Cofre.Item("", it.origem, it.usuario, it.senha, it.atualizado) }, sr.first.apagados) } catch (e: Exception) { /* trancou no meio */ }
+                    }
                     ajustes.syncUltimo = System.currentTimeMillis()
-                    if (avisar) reabrirPainel("conta", "Favoritos sincronizados (" + doc.favoritos.size + ").")
+                    if (avisar) reabrirPainel("conta", "Sincronizado" + (if (df != null) " (" + df.favoritos.size + " favoritos)" else "") + "." + (if (avisos.isNotEmpty()) " " + avisos.joinToString("; ") else ""))
                 }
             } catch (e: Exception) {
                 runOnUiThread {
@@ -986,7 +1042,7 @@ class MainActivity : Activity() {
         pedirCampos("Criar o cofre de senhas", "Crie uma senha mestra. Ela protege as suas senhas neste aparelho e não pode ser recuperada se você esquecer.", listOf("Senha mestra (mínimo 6 caracteres)", "Repita a senha mestra"), "Criar cofre") { v ->
             if (v[0] != v[1]) Toast.makeText(this, "As senhas mestras não são iguais.", Toast.LENGTH_LONG).show()
             else Thread {
-                try { cofre.criar(v[0]); runOnUiThread { depois() } }
+                try { cofre.criar(v[0]); runOnUiThread { sincronizarDepois(); depois() } }
                 catch (e: Exception) { runOnUiThread { Toast.makeText(this, e.message ?: "Não consegui criar o cofre.", Toast.LENGTH_LONG).show() } }
             }.start()
         }
@@ -996,7 +1052,7 @@ class MainActivity : Activity() {
         if (cofre.aberto()) { depois(); return }
         pedirCampos("Cofre de senhas", motivo, listOf("Senha mestra"), "Abrir") { v ->
             Thread {
-                try { cofre.abrir(v[0]); runOnUiThread { depois() } }
+                try { cofre.abrir(v[0]); runOnUiThread { sincronizarDepois(); depois() } }
                 catch (e: Exception) { runOnUiThread { Toast.makeText(this, "Senha mestra incorreta.", Toast.LENGTH_LONG).show() } }
             }.start()
         }
@@ -1038,7 +1094,7 @@ class MainActivity : Activity() {
             val quem = if (usuario.isBlank()) "(sem usuário)" else usuario
             AlertDialog.Builder(this).setTitle("Salvar senha?")
                 .setMessage(if (existente != null) "Atualizar a senha de “$quem” em $host?" else "Salvar o login de “$quem” em $host?")
-                .setPositiveButton(if (existente != null) "Atualizar" else "Salvar") { _, _ -> try { cofre.salvar(origem, usuario, senha) } catch (e: Exception) { /* trancou no meio */ } }
+                .setPositiveButton(if (existente != null) "Atualizar" else "Salvar") { _, _ -> try { cofre.salvar(origem, usuario, senha); sincronizarDepois() } catch (e: Exception) { /* trancou no meio */ } }
                 .setNeutralButton("Nunca neste site") { _, _ -> try { cofre.nuncaOferecer(origem) } catch (e: Exception) { /* trancou no meio */ } }
                 .setNegativeButton("Agora não", null)
                 .show()
@@ -1350,12 +1406,13 @@ class MainActivity : Activity() {
         wv.setBackgroundColor(if (ajustes.sitesNoTema || (inicio && fotoFundo != null)) Color.TRANSPARENT else tema.fundo)
     }
 
-    private fun mudarTema(consulta: String?) {
+    private fun mudarTema(consulta: String?, doUsuario: Boolean = true) {
         val antes = tema
         tema = Tema.daString(consulta)
         ajustes.temaTexto = tema.params()
+        if (doUsuario) { ajustes.temaT = System.currentTimeMillis(); sincronizarDepois() }
         aplicarCores()
-        if (antes.atalhos != tema.atalhos) recarregarInicios()
+        if (antes.atalhos != tema.atalhos || antes.pacote != tema.pacote) recarregarInicios()
     }
 
     // ---------------------------------------------------------------- abas
