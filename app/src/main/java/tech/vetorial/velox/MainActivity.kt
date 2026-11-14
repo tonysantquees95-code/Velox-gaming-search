@@ -7,7 +7,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Typeface
-import android.app.AlertDialog
+import android.content.DialogInterface
 import android.graphics.drawable.GradientDrawable
 import android.util.Base64
 import android.view.WindowManager
@@ -184,7 +184,7 @@ class MainActivity : Activity() {
     private fun pedirJanelinha() {
         if (System.currentTimeMillis() - perguntouJanelinha < 5000) return
         perguntouJanelinha = System.currentTimeMillis()
-        AlertDialog.Builder(this)
+        CaixaVelox(this, tema)
             .setTitle("Ligar a janelinha de vídeo")
             .setMessage("Para o vídeo do YouTube continuar numa janela pequena quando você sair do Velox, o Android precisa que a permissão “Picture-in-picture” esteja ligada para o Velox.")
             .setPositiveButton("Abrir configuração") { _, _ ->
@@ -1049,7 +1049,7 @@ class MainActivity : Activity() {
             col.addView(e)
             e
         }
-        AlertDialog.Builder(this).setTitle(titulo).setMessage(texto).setView(col)
+        CaixaVelox(this, tema).setTitle(titulo).setMessage(texto).setView(col)
             .setPositiveButton(ok) { _, _ -> aoOk(campos.map { it.text.toString() }) }
             .setNegativeButton("Cancelar", null)
             .show()
@@ -1109,7 +1109,7 @@ class MainActivity : Activity() {
             val existente = cofre.doSite(origem).firstOrNull { it.usuario == usuario }
             if (existente != null && existente.senha == senha) return@garantirCofre
             val quem = if (usuario.isBlank()) "(sem usuário)" else usuario
-            AlertDialog.Builder(this).setTitle("Salvar senha?")
+            CaixaVelox(this, tema).setTitle("Salvar senha?")
                 .setMessage(if (existente != null) "Atualizar a senha de “$quem” em $host?" else "Salvar o login de “$quem” em $host?")
                 .setPositiveButton(if (existente != null) "Atualizar" else "Salvar") { _, _ -> try { cofre.salvar(origem, usuario, senha); sincronizarDepois() } catch (e: Exception) { /* trancou no meio */ } }
                 .setNeutralButton("Nunca neste site") { _, _ -> try { cofre.nuncaOferecer(origem) } catch (e: Exception) { /* trancou no meio */ } }
@@ -1127,7 +1127,7 @@ class MainActivity : Activity() {
             when {
                 logins.isEmpty() -> Toast.makeText(this, "Não há senha salva para este site.", Toast.LENGTH_SHORT).show()
                 logins.size == 1 -> preencher(a, logins[0])
-                else -> AlertDialog.Builder(this).setTitle("Qual login usar?")
+                else -> CaixaVelox(this, tema).setTitle("Qual login usar?")
                     .setItems(logins.map { if (it.usuario.isBlank()) "(sem usuário)" else it.usuario }.toTypedArray()) { _, i -> preencher(a, logins[i]) }
                     .show()
             }
@@ -1172,7 +1172,7 @@ class MainActivity : Activity() {
         if (decididos.any { it == "bloquear" }) { resposta(false); return }
         val nomes = recs.map { when (it) { "camera" -> "a câmera"; "microfone" -> "o microfone"; else -> "a sua localização" } }
         val host = Uri.parse(origem).host ?: origem
-        AlertDialog.Builder(this).setTitle("Permissão do site")
+        CaixaVelox(this, tema).setTitle("Permissão do site")
             .setMessage(host + " quer usar " + nomes.joinToString(" e ") + ".")
             .setPositiveButton("Permitir") { _, _ -> for (r in recs) guardarPermissao(origem, r, "permitir"); resposta(true) }
             .setNegativeButton("Bloquear") { _, _ -> for (r in recs) guardarPermissao(origem, r, "bloquear"); resposta(false) }
@@ -1235,16 +1235,16 @@ class MainActivity : Activity() {
         entrada.hint = "Buscar na página"
         entrada.setSingleLine()
         val col = LinearLayout(this).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(entrada) }
-        val d = AlertDialog.Builder(this).setTitle("Buscar na página").setView(col)
+        val d = CaixaVelox(this, tema).setTitle("Buscar na página").setView(col)
             .setPositiveButton("Próximo", null).setNeutralButton("Anterior", null)
             .setNegativeButton("Fechar", null).create()
         val ultima = arrayOf("")
         d.setOnShowListener {
-            d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            d.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                 val q = entrada.text.toString()
                 if (q.isNotBlank()) { if (ultima[0] != q) { ultima[0] = q; wv.findAllAsync(q) } else wv.findNext(true) }
             }
-            d.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener { wv.findNext(false) }
+            d.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener { wv.findNext(false) }
         }
         d.setOnDismissListener { wv.clearMatches() }
         d.show()
@@ -1391,7 +1391,7 @@ class MainActivity : Activity() {
         if (isFinishing) return
         val p = Apresentacao.TOUR[i]
         val ultimo = i == Apresentacao.TOUR.size - 1
-        val b = AlertDialog.Builder(this).setCancelable(!primeira)
+        val b = CaixaVelox(this, tema).setCancelable(!primeira)
             .setTitle("${p.icone}  ${p.titulo}")
             .setView(caixaDeTexto(p.texto + "\n\n(${i + 1} de ${Apresentacao.TOUR.size})"))
             .setPositiveButton(if (ultimo) (if (primeira) "Continuar" else "Fechar") else "Próximo") { _, _ -> if (ultimo) depois() else mostrarTour(i + 1, primeira, depois) }
@@ -1402,7 +1402,7 @@ class MainActivity : Activity() {
 
     private fun mostrarPermissoes(depois: () -> Unit) {
         if (isFinishing) return
-        AlertDialog.Builder(this).setCancelable(false)
+        CaixaVelox(this, tema).setCancelable(false)
             .setTitle("🔐  Permissões")
             .setView(caixaDeTexto(Apresentacao.PERMISSOES))
             .setPositiveButton("Entendi") { _, _ -> depois() }
@@ -1413,7 +1413,7 @@ class MainActivity : Activity() {
     private fun mostrarTermos(obrigatorio: Boolean, depois: () -> Unit) {
         if (isFinishing) return
         val texto = Apresentacao.TERMOS.joinToString("\n\n") { (t, c) -> "$t\n$c" }
-        val b = AlertDialog.Builder(this).setCancelable(!obrigatorio)
+        val b = CaixaVelox(this, tema).setCancelable(!obrigatorio)
             .setTitle("Termos de uso do Velox")
             .setView(caixaDeTexto(texto))
         if (obrigatorio) {
@@ -1427,7 +1427,7 @@ class MainActivity : Activity() {
         if (isFinishing) return
         val versao = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
         val texto = itens.joinToString("\n\n") { "[${Apresentacao.rotulo(it.tipo)}] ${it.titulo}\n${it.texto}" }
-        AlertDialog.Builder(this).setCancelable(false)
+        CaixaVelox(this, tema).setCancelable(false)
             .setTitle("O que há de novo" + if (!versao.isNullOrBlank()) " · $versao" else "")
             .setView(caixaDeTexto(texto))
             .setPositiveButton("Entendi") { _, _ -> ajustes.novidadesVistas = Apresentacao.ultimoId(); depois() }
@@ -1437,7 +1437,7 @@ class MainActivity : Activity() {
     private fun perguntarNavegadorPrincipal() {
         if (ajustes.perguntouPadrao || isFinishing || ehNavegadorPrincipal()) return
         ajustes.perguntouPadrao = true
-        AlertDialog.Builder(this)
+        CaixaVelox(this, tema)
             .setTitle("Usar o Velox como navegador principal?")
             .setMessage("Os links que você abrir em outros apps vão abrir aqui, já com o bloqueio de anúncios. Você pode mudar isso depois em Painel > Mais.")
             .setPositiveButton("Sim, usar") { _, _ -> pedirNavegadorPrincipal() }
@@ -1883,7 +1883,7 @@ class MainActivity : Activity() {
     private fun pedirSegundoPlanoParaJanelinha() {
         if (!ajustes.janelinha || ajustes.segundoPlano || perguntouSegundoPlano || isFinishing) return
         perguntouSegundoPlano = true
-        AlertDialog.Builder(this)
+        CaixaVelox(this, tema)
             .setTitle("Ativar o segundo plano?")
             .setMessage("Para usar a janelinha de vídeo, o Velox precisa do modo segundo plano ligado: assim o vídeo continua tocando quando você sai do Velox. Quer ativar agora?")
             .setPositiveButton("Ativar") { _, _ ->
@@ -1999,12 +1999,12 @@ class MainActivity : Activity() {
         opcoes.add("Usar como fundo do Velox"); acoes.add { imagemDaRede(url, null) }
         opcoes.add("Usar como ícone da barra…"); acoes.add { escolherSlot(url) }
         opcoes.add("Baixar imagem"); acoes.add { baixar(url, null, null, null) }
-        AlertDialog.Builder(this).setItems(opcoes.toTypedArray()) { _, i -> acoes[i]() }.show()
+        CaixaVelox(this, tema).setItems(opcoes.toTypedArray()) { _, i -> acoes[i]() }.show()
     }
 
     private fun escolherSlot(url: String) {
         val nomes = arrayOf("Voltar", "Avançar", "Início", "Recarregar", "Painel")
-        AlertDialog.Builder(this).setTitle("Qual botão?").setItems(nomes) { _, i -> imagemDaRede(url, Imagens.SLOTS[i]) }.show()
+        CaixaVelox(this, tema).setTitle("Qual botão?").setItems(nomes) { _, i -> imagemDaRede(url, Imagens.SLOTS[i]) }.show()
     }
 
     // ---------------------------------------------------------------- Vindex (outro app da Vetorial Tech)

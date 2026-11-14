@@ -1,0 +1,2 @@
+/* textos longos (tour, termos, novidades): quebram a linha como escritos e rolam dentro da janelinha */
+#x { white-space: pre-wrap; max-height: calc(100vh - 170px); overflow-y: auto; line-height: 1.45; }

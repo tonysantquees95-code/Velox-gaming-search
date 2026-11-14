@@ -573,7 +573,7 @@ function perguntar(def) {
   return new Promise((resolve) => {
     const id = proximoDialogo++;
     const j = new BrowserWindow({
-      parent: janela, modal: true, width: 440, height: def.altura || 280, resizable: false, minimizable: false, maximizable: false, show: false,
+      parent: janela, modal: true, width: def.largura || 440, height: def.altura || 280, resizable: false, minimizable: false, maximizable: false, show: false,
       backgroundColor: "#0d1530", title: def.titulo || "Velox", autoHideMenuBar: true,
       webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false },
     });
@@ -637,10 +637,10 @@ async function preencherAtual() {
   if (!cofre.existe()) { if (!(await criarCofre())) return; }
   else if (!cofre.aberto() && !(await desbloquear())) return;
   const logins = cofre.doSite(origem);
-  if (!logins.length) { dialog.showMessageBox(janela, { message: "Não há senha salva para este site.", buttons: ["OK"] }); return; }
+  if (!logins.length) { caixaTema(janela, { message: "Não há senha salva para este site.", buttons: ["OK"] }); return; }
   let escolhido = logins[0];
   if (logins.length > 1) {
-    const r = await dialog.showMessageBox(janela, { message: "Qual login usar?", buttons: [...logins.map((l) => l.usuario || "(sem usuário)"), "Cancelar"], cancelId: logins.length });
+    const r = await caixaTema(janela, { message: "Qual login usar?", buttons: [...logins.map((l) => l.usuario || "(sem usuário)"), "Cancelar"], cancelId: logins.length });
     if (r.response >= logins.length) return;
     escolhido = logins[r.response];
   }
@@ -964,9 +964,16 @@ async function iniciar() {
 
 
 // ---------------------------------------------------------------- apresentação e "o que há de novo"
-async function caixa(opcoes) {
-  const r = await dialog.showMessageBox(janela && !janela.isDestroyed() ? janela : undefined, { type: "none", noLink: true, cancelId: -1, ...opcoes });
-  return r.response;
+/** Caixa no visual do Velox (a mesma janelinha temática das senhas). Devolve o índice do botão, ou -1 se a pessoa fechou. */
+async function caixa(o) {
+  const r = await perguntar({ titulo: o.message, texto: o.detail || "", altura: o.altura || 520, largura: 520, botoes: o.buttons.map((rotulo, i) => ({ id: String(i), rotulo, primario: i === 0 })) });
+  const n = r && r.botao !== "" && r.botao !== null ? Number(r.botao) : NaN;
+  return Number.isInteger(n) ? n : -1;
+}
+/** Mesmo formato do dialog.showMessageBox, mas com a janelinha do Velox. */
+async function caixaTema(_janela, o) {
+  const r = await caixa({ message: o.message, detail: o.detail, buttons: o.buttons, altura: o.detail ? 340 : 240 });
+  return { response: r < 0 ? (Number.isInteger(o.cancelId) ? o.cancelId : o.buttons.length - 1) : r };
 }
 /** Telas passando: Próximo / Voltar / Pular. Devolve true se chegou ao fim. */
 async function mostrarTour(primeira) {
@@ -1032,7 +1039,7 @@ async function procurarAtualizacao(manual = false) {
     const portatil = !!process.env.PORTABLE_EXECUTABLE_FILE;
     if (d.acao === "avisar" || portatil) {
       versaoAvisada = d.numero;
-      const o = await dialog.showMessageBox(janela, { type: "info", buttons: ["Baixar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `Há uma versão nova do Velox (1.${d.numero}).`, detail: portatil ? "Você usa a versão portátil: baixe a nova e substitua o arquivo." : "Toque em Baixar agora para pegar o instalador." });
+      const o = await caixaTema(janela, { type: "info", buttons: ["Baixar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `Há uma versão nova do Velox (1.${d.numero}).`, detail: portatil ? "Você usa a versão portátil: baixe a nova e substitua o arquivo." : "Toque em Baixar agora para pegar o instalador." });
       if (o.response === 0) shell.openExternal(atualizador.DOWNLOAD);
       return;
     }
@@ -1043,7 +1050,7 @@ async function procurarAtualizacao(manual = false) {
     if (atualizador.sha256DoArquivo(dados) !== d.sha256) { console.error("Atualização recusada: o SHA-256 não bate."); return; }
     fs.writeFileSync(destino, dados);
     versaoAvisada = d.numero;
-    const o = await dialog.showMessageBox(janela, { type: "question", buttons: ["Atualizar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `A versão 1.${d.numero} do Velox está pronta.`, detail: "O Velox fecha, instala a atualização e abre de novo. Suas abas, favoritos e senhas continuam como estão." });
+    const o = await caixaTema(janela, { type: "question", buttons: ["Atualizar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `A versão 1.${d.numero} do Velox está pronta.`, detail: "O Velox fecha, instala a atualização e abre de novo. Suas abas, favoritos e senhas continuam como estão." });
     if (o.response !== 0) { versaoAvisada = 0; return; }
     const { spawn } = require("child_process");
     spawn("powershell", ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", atualizador.ROTEIRO], {
