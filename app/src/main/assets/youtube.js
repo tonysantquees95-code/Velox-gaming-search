@@ -3,6 +3,21 @@
 (function () {
   if (window.__veloxYT) return;
   window.__veloxYT = true;
+  var ANUNCIOS = window.__veloxAd !== false;
+  /* segundo plano (Android): a página acha que continua visível, então o YouTube não pausa o som */
+  if (window.__veloxBg) {
+    try {
+      Object.defineProperty(document, "hidden", { configurable: true, get: function () { return false; } });
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: function () { return "visible"; } });
+      Object.defineProperty(document, "webkitHidden", { configurable: true, get: function () { return false; } });
+      Object.defineProperty(document, "webkitVisibilityState", { configurable: true, get: function () { return "visible"; } });
+      ["visibilitychange", "webkitvisibilitychange", "pagehide", "blur"].forEach(function (n) {
+        document.addEventListener(n, function (e) { e.stopImmediatePropagation(); }, true);
+        window.addEventListener(n, function (e) { e.stopImmediatePropagation(); }, true);
+      });
+    } catch (e) { /* segue */ }
+  }
+  if (!ANUNCIOS) return;
   var CAMPOS = ["adPlacements", "playerAds", "adSlots", "adBreakHeartbeatParams"];
 
   /* 1) tira os campos de anúncio das respostas do player */

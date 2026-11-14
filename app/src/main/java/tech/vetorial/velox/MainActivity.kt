@@ -100,6 +100,7 @@ class MainActivity : Activity() {
         bloqueadosTotal.set(ajustes.bloqueadosTotal)
         montarTela()
         aplicarOpcoesSalvas()
+        if (Build.VERSION.SDK_INT >= 33 && ajustes.segundoPlano && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 4711)
         procurarAtualizacao(false)
         raizApp.postDelayed({ perguntarNavegadorPrincipal() }, 2600)
         sincronizarDepois()
@@ -128,13 +129,40 @@ class MainActivity : Activity() {
         val a = atual
         ajustes.abaAtual = if (a == null) 0 else normais.indexOf(a).coerceAtLeast(0)
         ajustes.bloqueadosTotal = bloqueadosTotal.get()
-        atual?.webView?.onPause()
+        if (ajustes.segundoPlano) SegundoPlano.ligar(this) else atual?.webView?.onPause()
         cofre.travar()
         CookieManager.getInstance().flush()
     }
 
+    private var favAntes = View.GONE
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        val u = atual?.url ?: ""
+        val video = Regex("^https://(www\\.|m\\.|music\\.)?youtube\\.com/(watch|shorts)").containsMatchIn(u)
+        if (ajustes.janelinha && video && Build.VERSION.SDK_INT >= 26) {
+            try { enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9)).build()) } catch (e: Exception) { /* sem janelinha neste aparelho */ }
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(emJanelinha: Boolean, config: android.content.res.Configuration) {
+        super.onPictureInPictureModeChanged(emJanelinha, config)
+        val wv = atual?.webView
+        if (emJanelinha) {
+            fecharPainel()
+            favAntes = faixaFav.visibility
+            for (v in listOf(barraDeCima, faixaAbas, barraDeBaixo, barra, faixaFav, flutuante)) v.visibility = View.GONE
+            if (telaCheia == null) wv?.evaluateJavascript(JS_JANELINHA, null)
+        } else {
+            wv?.evaluateJavascript("(function(){var s=document.getElementById('velox-pip');if(s)s.remove();})()", null)
+            faixaFav.visibility = favAntes
+            aplicarImersivo()
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        SegundoPlano.desligar(this)
         atual?.webView?.onResume()
         aplicarImersivo()
         sincronizarDepois()
@@ -418,7 +446,7 @@ class MainActivity : Activity() {
         val versao = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
         val o = JSONObject()
             .put("abas", lista)
-            .put("op", JSONObject().put("ad", ajustes.bloquearAnuncios).put("escuro", ajustes.sitesEscuros).put("imersivo", ajustes.imersivo)
+            .put("op", JSONObject().put("ad", ajustes.bloquearAnuncios).put("bg", ajustes.segundoPlano).put("pip", ajustes.janelinha).put("escuro", ajustes.sitesEscuros).put("imersivo", ajustes.imersivo)
                 .put("tela", ajustes.telaLigada).put("pc", ajustes.siteParaComputador).put("notema", ajustes.sitesNoTema))
             .put("bus", ajustes.buscador).put("buscadores", bus)
             .put("bl", JSONObject().put("p", atual?.bloqueados?.get() ?: 0).put("t", bloqueadosTotal.get()))
@@ -581,6 +609,8 @@ class MainActivity : Activity() {
     private fun opcao(chave: String?, ligado: Boolean) {
         when (chave) {
             "ad" -> { ajustes.bloquearAnuncios = ligado; for (a in abas) ligarBloqueioYoutube(a); atual?.webView?.reload() }
+            "bg" -> { ajustes.segundoPlano = ligado; for (a in abas) ligarBloqueioYoutube(a); atual?.webView?.reload() }
+            "pip" -> ajustes.janelinha = ligado
             "escuro" -> { ajustes.sitesEscuros = ligado; for (a in abas) aplicarEscuro(a.webView); atual?.webView?.reload() }
             "imersivo" -> { ajustes.imersivo = ligado; aplicarImersivo() }
             "tela" -> { ajustes.telaLigada = ligado; aplicarTela() }
@@ -1165,10 +1195,10 @@ class MainActivity : Activity() {
     /** Coloca (ou tira) o script que corta os anúncios do YouTube antes da página rodar. */
     private fun ligarBloqueioYoutube(aba: Aba) {
         scriptsYoutube.remove(aba)?.remove()
-        if (!ajustes.bloquearAnuncios || jsYoutube.isEmpty()) return
+        if ((!ajustes.bloquearAnuncios && !ajustes.segundoPlano) || jsYoutube.isEmpty()) return
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
         try {
-            scriptsYoutube[aba] = androidx.webkit.WebViewCompat.addDocumentStartJavaScript(aba.webView, jsYoutube, setOf("https://www.youtube.com", "https://m.youtube.com", "https://music.youtube.com", "https://youtube.com"))
+            scriptsYoutube[aba] = androidx.webkit.WebViewCompat.addDocumentStartJavaScript(aba.webView, "window.__veloxAd=" + ajustes.bloquearAnuncios + ";window.__veloxBg=" + ajustes.segundoPlano + ";" + jsYoutube, setOf("https://www.youtube.com", "https://m.youtube.com", "https://music.youtube.com", "https://youtube.com"))
         } catch (e: Exception) { /* sem suporte nesta versão do WebView */ }
     }
 
@@ -1787,6 +1817,9 @@ class MainActivity : Activity() {
         const val VINDEX = "tech.vetorial.vindex"
 
         /** Vê o envio de formulários de login e avisa o app; só observa, nunca preenche sozinho. */
+        const val JS_JANELINHA = "(function(){var s=document.getElementById('velox-pip')||document.createElement('style');s.id='velox-pip';" +
+            "s.textContent='video.html5-main-video{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important}body{overflow:hidden!important}';" +
+            "document.documentElement.appendChild(s);})()"
         const val JS_CAPTURA = "(function(){try{if(window.__veloxSenhas||!window.VeloxSenhas)return;window.__veloxSenhas=1;" +
             "function achar(f){var p=f.querySelector('input[type=password]');if(!p||!p.value)return;" +
             "var u='',c=f.querySelectorAll('input');for(var i=0;i<c.length;i++){var t=(c[i].type||'text').toLowerCase();" +

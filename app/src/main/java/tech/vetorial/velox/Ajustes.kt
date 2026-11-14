@@ -20,6 +20,14 @@ class Ajustes(contexto: Context) {
         get() = p.getBoolean("bloquear", true)
         set(v) { p.edit().putBoolean("bloquear", v).apply() }
 
+    var segundoPlano: Boolean
+        get() = p.getBoolean("segundo_plano", true)
+        set(v) { p.edit().putBoolean("segundo_plano", v).apply() }
+
+    var janelinha: Boolean
+        get() = p.getBoolean("janelinha", true)
+        set(v) { p.edit().putBoolean("janelinha", v).apply() }
+
     var siteParaComputador: Boolean
         get() = p.getBoolean("computador", false)
         set(v) { p.edit().putBoolean("computador", v).apply() }
