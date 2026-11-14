@@ -1240,11 +1240,11 @@ class MainActivity : Activity() {
             .setNegativeButton("Fechar", null).create()
         val ultima = arrayOf("")
         d.setOnShowListener {
-            d.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
+            d.getButton(DialogInterface.BUTTON_POSITIVE)?.setOnClickListener {
                 val q = entrada.text.toString()
                 if (q.isNotBlank()) { if (ultima[0] != q) { ultima[0] = q; wv.findAllAsync(q) } else wv.findNext(true) }
             }
-            d.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener { wv.findNext(false) }
+            d.getButton(DialogInterface.BUTTON_NEUTRAL)?.setOnClickListener { wv.findNext(false) }
         }
         d.setOnDismissListener { wv.clearMatches() }
         d.show()
