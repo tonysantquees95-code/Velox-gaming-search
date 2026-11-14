@@ -13,6 +13,7 @@
     if (document.activeElement !== $("rol-larg")) $("rol-larg").value = e.rolagem.largura;
     $("rol-modo").value = e.rolagem.modo; $("rol-cor").value = e.rolagem.cor; $("rol-n").textContent = "· " + e.rolagem.largura + " px";
     desenharTema(e.tema);
+    $("f-estado").textContent = e.temFundo ? "· foto de fundo ligada" : "· sem foto de fundo";
     ["favoritos", "tema", "senhas"].forEach(function (k) { $("si-" + k).checked = !!e.sincItens[k]; });
     var c = e.cofre;
     $("cofre-estado").textContent = !c.existe ? "Ainda não há cofre." : c.aberto ? "Cofre aberto" : "Cofre trancado";
@@ -80,6 +81,11 @@
     if (document.activeElement !== $("t-br")) $("t-br").value = t.br;
     if (document.activeElement !== $("t-tr")) $("t-tr").value = t.tr;
   }
+  function buscarFotos() { V.chamar("ajustes:buscar-fotos", $("f-busca").value.trim() || "wallpaper"); }
+  $("f-buscar").onclick = buscarFotos;
+  $("f-busca").onkeydown = function (e) { if (e.key === "Enter") buscarFotos(); };
+  $("f-escolher").onclick = function () { V.chamar("ajustes:escolher-fundo").then(desenhar); };
+  $("f-remover").onclick = function () { V.chamar("ajustes:remover-fundo").then(desenhar); };
   $("t-an").onchange = function () { salvarTema({ an: this.checked }); };
   $("t-br").onchange = function () { salvarTema({ br: +this.value }); };
   $("t-tr").onchange = function () { salvarTema({ tr: +this.value }); };

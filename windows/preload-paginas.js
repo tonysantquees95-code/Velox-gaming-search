@@ -58,6 +58,17 @@ document.addEventListener("click", (e) => {
   if (s && s.value) capturar(s);
 }, true);
 
+// guarda o último par usuário/senha digitado e entrega se a página for embora (logins feitos por script, sem "submit")
+let digitada = null;
+document.addEventListener("input", (e) => {
+  const t = e.target;
+  if (t && t.matches && t.matches('input[type="password"]') && t.value) digitada = t;
+}, true);
+const entregarDigitada = () => { if (digitada && digitada.value && document.contains(digitada)) capturar(digitada); };
+window.addEventListener("pagehide", entregarDigitada, true);
+window.addEventListener("beforeunload", entregarDigitada, true);
+document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target && e.target.matches && e.target.matches("input") && digitada && digitada.value) capturar(digitada); }, true);
+
 new MutationObserver(ligar).observe(document, { childList: true, subtree: true });
 document.addEventListener("DOMContentLoaded", () => { ligar(); ipcRenderer.send("senha:pagina-pronta", { origem: location.origin, temSenha: !!document.querySelector('input[type="password"]') }); });
 

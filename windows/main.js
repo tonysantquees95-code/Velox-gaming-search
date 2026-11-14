@@ -149,7 +149,14 @@ function criarAba(destino, opcoes = {}) {
   });
   const aba = { id: proximoId++, view, interna, titulo: "", url: "", carregando: false, anonima: !!opcoes.anonima };
   const wc = view.webContents;
-  view.setBackgroundColor(interna === "inicio" ? "#00000000" : "#ffffffff");
+  view.setBackgroundColor(interna === "inicio" ? "#00000000" : interna ? "#" + tema.doTexto(temaAtual()).bg + "ff" : "#ffffffff");
+  // aba nova só aparece quando a página já tem o que mostrar: antes disso fica o fundo do próprio Velox (sem piscar branco)
+  let revelada = false;
+  const revelar = () => { if (revelada) return; revelada = true; try { view.setVisible(true); } catch { /* sem suporte */ } };
+  try { view.setVisible(false); } catch { /* sem suporte */ }
+  wc.once("dom-ready", () => setTimeout(revelar, 60));
+  wc.once("did-fail-load", revelar);
+  setTimeout(revelar, 1500);
 
   wc.on("dom-ready", () => aplicarRolagem(aba));
   wc.on("page-title-updated", (_e, t) => { aba.titulo = t; historicoTitulo(aba); avisarBarra(); });
@@ -506,6 +513,26 @@ function aplicarTemaNasTelas() {
   }
 }
 
+/** Botão direito em campos de texto da própria interface (barra de endereço, buscas, caixas de diálogo): recortar, copiar, colar. */
+function menuDeEdicao(wc) {
+  wc.on("context-menu", (_e, p) => {
+    if (!p.isEditable && !p.selectionText) return;
+    const f = p.editFlags || {};
+    const itens = [
+      { role: "undo", label: "Desfazer", enabled: !!f.canUndo },
+      { type: "separator" },
+      { role: "cut", label: "Recortar", enabled: !!f.canCut },
+      { role: "copy", label: "Copiar", enabled: !!f.canCopy },
+      { role: "paste", label: "Colar", enabled: !!f.canPaste },
+    ];
+    if (p.isEditable) {
+      itens.push({ label: "Colar e ir", enabled: !!f.canPaste && !!clipboard.readText().trim(), click: () => { const t = clipboard.readText().trim(); if (t) irPara(t); } });
+      itens.push({ role: "selectAll", label: "Selecionar tudo", enabled: !!f.canSelectAll });
+    }
+    Menu.buildFromTemplate(itens).popup();
+  });
+}
+
 // ------------------------------------------------------------------ downloads
 function ligarDownloads(ses) {
   ses.on("will-download", (_e, item) => {
@@ -513,6 +540,7 @@ function ligarDownloads(ses) {
     item.setSavePath(caminho);
     const d = { id: Date.now() + Math.random(), nome: item.getFilename(), caminho, total: item.getTotalBytes(), recebido: 0, estado: "baixando", velocidade: 0, item };
     let ultimo = { t: Date.now(), b: 0 };
+    let ultimoAviso = 0;
     downloads.unshift(d);
     item.on("updated", (_ev, estado) => {
       d.recebido = item.getReceivedBytes();
@@ -520,7 +548,7 @@ function ligarDownloads(ses) {
       const agora = Date.now();
       if (agora - ultimo.t >= 700) { d.velocidade = ((d.recebido - ultimo.b) * 1000) / (agora - ultimo.t); ultimo = { t: agora, b: d.recebido }; }
       d.estado = estado === "interrupted" ? "interrompido" : item.isPaused() ? "pausado" : "baixando";
-      avisarDownloads();
+      if (agora - ultimoAviso >= 250) { ultimoAviso = agora; avisarDownloads(); } // o evento chega a cada pedaço: não repinta a tela a cada um
     });
     item.once("done", (_ev, estado) => {
       d.estado = estado === "completed" ? "pronto" : estado === "cancelled" ? "cancelado" : "falhou";
@@ -549,6 +577,7 @@ function perguntar(def) {
       webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false },
     });
     j.setMenuBarVisibility(false);
+    menuDeEdicao(j.webContents);
     let respondido = false;
     const canal = `dialogo:${id}`;
     const fim = (r) => { if (respondido) return; respondido = true; ipcMain.removeAllListeners(canal); if (!j.isDestroyed()) j.destroy(); resolve(r); };
@@ -579,8 +608,9 @@ async function criarCofre() {
 async function aoCapturarSenha(wc, d) {
   const aba = abas.find((a) => a.view.webContents === wc);
   if (!aba || aba.anonima) return;
-  const origem = origemDe(wc.getURL());
-  if (!origem || origem !== d.origem || !d.senha) return;
+  // a origem vem da própria página que recebeu a senha; o site pode já ter redirecionado, então não comparo com o endereço atual
+  const origem = /^https?:\/\/[^/\s]+$/i.test(String(d.origem || "")) ? origemDe(d.origem) : "";
+  if (!origem || !d.senha) return;
   const host = new URL(origem).host;
   if (!cofre.existe()) {
     if (!(await criarCofre())) return;
@@ -664,6 +694,7 @@ const pastaDasExtensoes = () => path.join(app.getPath("userData"), "extensoes");
 const resumoAjustes = () => ({
   bloqueio: ajustes.bloqueio, bloqueados: bloqueio ? bloqueio.bloqueados : 0, modoBloqueio: bloqueio ? bloqueio.modo : "desligado",
   rolagem: rolagem.normalizar(ajustes.rolagem), tema: temaAtual(), sincItens: { favoritos: true, tema: true, senhas: false, ...(ajustes.sincItens || {}) }, continuar: ajustes.continuar, mostrarFavoritos: ajustes.mostrarFavoritos, buscador: ajustes.buscador,
+  temFundo: !!ajustes.fundo,
   cofre: { existe: cofre.existe(), aberto: cofre.aberto(), itens: cofre.aberto() ? cofre.lista() : [] },
   extensoes: ajustes.extensoes.map(({ id, nome, ligada, erro }) => ({ id, nome, ligada, erro: erro || "" })),
   sites: Object.entries(ajustes.permissoes).map(([origem, p]) => ({ origem, permissoes: p })),
@@ -778,6 +809,13 @@ function ligarComandos() {
 
   ipcMain.handle("ajustes:estado", so(() => resumoAjustes()));
   ipcMain.handle("ajustes:bloqueio", so((_e, v) => { ajustes.bloqueio = !!v; bloqueio.definir(v); gravarAjustes(); avisarBarra(); return resumoAjustes(); }));
+  ipcMain.handle("ajustes:buscar-fotos", so((_e, q) => { criarAba("https://www.bing.com/images/search?q=" + encodeURIComponent(String(q || "wallpaper").slice(0, 80)) + "&qft=+filterui:imagesize-large"); return {}; }));
+  ipcMain.handle("ajustes:escolher-fundo", so(async () => {
+    const r = await dialog.showOpenDialog(janela, { title: "Escolher fundo do Velox", properties: ["openFile"], filters: [{ name: "Imagens", extensions: ["jpg", "jpeg", "png", "webp", "bmp"] }] });
+    if (!r.canceled && r.filePaths[0]) guardarFundo(r.filePaths[0]);
+    return resumoAjustes();
+  }));
+  ipcMain.handle("ajustes:remover-fundo", so(() => { ajustes.fundo = ""; gravarAjustes(); recarregarInicios(); avisarBarra(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:rolagem", so((_e, r) => { ajustes.rolagem = rolagem.normalizar(r); gravarAjustes(); reaplicarRolagem(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:tema", so((_e, texto) => { ajustes.temaTexto = tema.normalizar(texto); ajustes.temaT = Date.now(); gravarAjustes(); recarregarInicios(); avisarBarra(); sincronizarDepois(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:sync-itens", so((_e, v) => {
@@ -884,6 +922,7 @@ async function iniciar() {
   });
   janela.setMenuBarVisibility(false);
   janela.loadFile(path.join(__dirname, "ui", "index.html"));
+  menuDeEdicao(janela.webContents);
   janela.on("focus", () => sincronizarDepois(1500));
   janela.on("resize", () => { reposicionar(); ajustarModoGamer(); if (pop && pop.aberta) { posicionarPop(); enviarPop(); } });
   janela.on("maximize", () => setTimeout(reposicionar, 30));
@@ -969,6 +1008,12 @@ if (TESTE) {
     app.exit(ok ? 0 : 1);
   }, 25_000);
 }
+
+// Rede: baixa arquivos grandes em várias conexões ao mesmo tempo (o servidor costuma limitar cada conexão) e liga HTTP/3.
+app.commandLine.appendSwitch("enable-features", "ParallelDownloading<VeloxPD,NetworkQualityEstimator");
+app.commandLine.appendSwitch("force-fieldtrials", "VeloxPD/On");
+app.commandLine.appendSwitch("force-fieldtrial-params", "VeloxPD.On:enable_parallel_download/true/request_count/8/min_slice_size/262144/min_file_size/2097152");
+app.commandLine.appendSwitch("enable-quic");
 
 const unica = app.requestSingleInstanceLock();
 if (!unica) app.quit();
