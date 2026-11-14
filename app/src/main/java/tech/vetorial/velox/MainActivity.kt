@@ -251,12 +251,13 @@ class MainActivity : Activity() {
         barraDeBaixo.addView(caixaAbas, LinearLayout.LayoutParams(0, altura, 1f))
         barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1f))
 
-        coluna.addView(barraDeCima, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
-        coluna.addView(barra, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3)))
+        // como no Brave: a página em cima e, embaixo, a faixa de favoritos, o endereço e os botões
         coluna.addView(conteudo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         faixaConteudo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), dp(6), dp(10), dp(6)) }
         faixaFav = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; visibility = View.GONE; addView(faixaConteudo) }
         coluna.addView(faixaFav, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        coluna.addView(barra, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3)))
+        coluna.addView(barraDeCima, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         coluna.addView(barraDeBaixo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, altura).apply { setMargins(dp(10), dp(4), dp(10), dp(8)) })
 
         // no modo imersivo as barras somem; este botão pequeno traz o painel de volta
@@ -293,7 +294,7 @@ class MainActivity : Activity() {
         val alfa = (255 - (tr * 1.6f).toInt()).coerceIn(60, 255) shl 24
         val a = (tema.superficie and 0x00FFFFFF) or alfa
         val b = (LogoVgx.misturar(tema.superficie, tema.fundo, 0.55f) and 0x00FFFFFF) or alfa
-        barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(a, b))
+        barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(a, b))
         barraDeBaixo.background = PainelCortado((tema.superficie and 0x00FFFFFF) or ((255 - (tr * 1.5f).toInt()).coerceIn(70, 255) shl 24), (tema.destaque and 0x00FFFFFF) or 0xA0000000.toInt(),
             dp(1).toFloat() + 0.5f, if (tema.redondo) dp(28).toFloat() else dp(14).toFloat(), tema.redondo)
         bEstrelaCima.setTextColor(tema.destaque)
