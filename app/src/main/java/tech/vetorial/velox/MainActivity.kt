@@ -356,7 +356,7 @@ class MainActivity : Activity() {
         val bPainel = botao("painel", "Ligar o modo gamer (segure para abrir o painel)") { ligarModoGamer() }
         bPainel.setOnLongClickListener { abrirPainel("jogo"); true }
         // mesmo formato inclinado da barra de baixo, mais brilhoso, com um LED branco correndo pela borda
-        val formaGamer = BotaoGamerForma(dp(13).toFloat(), dp(1).toFloat() + 0.5f, 0xFFFF1F3D.toInt())
+        val formaGamer = BotaoGamerForma(if (tema.redondo) dp(28).toFloat() else dp(14).toFloat(), dp(1).toFloat() + 0.5f, 0xFFFF1F3D.toInt())
         bPainel.background = formaGamer
         formaGamer.start()
         bPainel.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
@@ -368,7 +368,7 @@ class MainActivity : Activity() {
         for (b in listOf(bVoltar, bAvancar, bInicio, bRecarregar)) barraDeBaixo.addView(b, LinearLayout.LayoutParams(0, altura, 1f))
         barraDeBaixo.addView(bEstrelaBaixo, LinearLayout.LayoutParams(0, altura, 1f))
         barraDeBaixo.addView(bAjustes, LinearLayout.LayoutParams(0, altura, 1f))
-        barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1.35f).apply { setMargins(dp(5), dp(2), dp(5), dp(2)) })
+        barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1.35f).apply { setMargins(dp(4), 0, 0, 0) })
 
         // como no Brave: a página em cima e, embaixo, a faixa de favoritos, o endereço e os botões
         // puxar a página para baixo recarrega (só quando a página está no topo e não é a tela inicial)
@@ -454,8 +454,7 @@ class MainActivity : Activity() {
         }
         window.statusBarColor = tema.superficie
         window.navigationBarColor = tema.fundo
-        val vidro = if (ajustes.sitesNoTema) Color.TRANSPARENT else tema.fundo
-        for (x in abas) x.webView.setBackgroundColor(vidro)
+                for (x in abas) fundoDoWebView(x.webView)
         aplicarIcones()
         atualizarFundo()
         atualizarSetas()
@@ -849,7 +848,7 @@ class MainActivity : Activity() {
             "tela" -> { ajustes.telaLigada = ligado; aplicarTela() }
             "notema" -> {
                 ajustes.sitesNoTema = ligado
-                for (a in abas) { aplicarEscuro(a.webView); a.webView.setBackgroundColor(if (ligado) Color.TRANSPARENT else tema.fundo) }
+                for (a in abas) { aplicarEscuro(a.webView); fundoDoWebView(a.webView) }
                 atualizarFundo()
                 // a página inicial leva a escolha no endereço: abre de novo com ela
                 val a = atual
@@ -1345,6 +1344,12 @@ class MainActivity : Activity() {
         }
     }
 
+    /** Vidro (papel de parede aparece por trás) quando os sites estão no tema ou quando é a página inicial com papel de parede definido; senão a cor do tema. */
+    private fun fundoDoWebView(wv: WebView, url: String? = wv.url) {
+        val inicio = (url ?: "").startsWith("file:///android_asset/") || url.isNullOrEmpty()
+        wv.setBackgroundColor(if (ajustes.sitesNoTema || (inicio && fotoFundo != null)) Color.TRANSPARENT else tema.fundo)
+    }
+
     private fun mudarTema(consulta: String?) {
         val antes = tema
         tema = Tema.daString(consulta)
@@ -1364,7 +1369,7 @@ class MainActivity : Activity() {
 
     private fun configurar(wv: WebView, anonima: Boolean) {
         // vidro desde o início: com fundo sólido o wallpaper sumia até mexer na transparência
-        wv.setBackgroundColor(if (ajustes.sitesNoTema) Color.TRANSPARENT else tema.fundo)
+        fundoDoWebView(wv)
         aplicarEscuro(wv)
         val s = wv.settings
         s.javaScriptEnabled = true
@@ -1601,6 +1606,7 @@ class MainActivity : Activity() {
 
         override fun onPageStarted(view: WebView, url: String, icone: Bitmap?) {
             aba.bloqueados.set(0)
+            fundoDoWebView(view, url)
             if (!url.startsWith("file:///android_asset/")) aba.url = url else aba.url = ""
             if (aba === atual) { campo.setText(Enderecos.paraMostrar(aba.url)); atualizarFundo(); atualizarEstrela() }
         }

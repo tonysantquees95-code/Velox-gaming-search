@@ -153,10 +153,8 @@ html.com-abertura .abertura { display: grid; }
 (function () {
   var P = window.TEMA_PARAMS, R = document.documentElement, M = window.MARCAS || {};
   if (P.get("ab") === "1" && P.get("an") !== "0") R.classList.add("com-abertura");
-  // com a transparência dos sites desligada, a página inicial também fica firme: fundo sólido e cartões opacos
-  const firme = P.get("nt") === "0";
-  if (P.get("ft") === "1" && !firme) R.classList.add("com-foto");
-  if (firme) R.style.setProperty("--vi", "100%");
+  // com papel de parede definido a página inicial sempre mostra o papel de parede, independente da transparência dos sites
+  if (P.get("ft") === "1") R.classList.add("com-foto");
   var $ = function (id) { return document.getElementById(id); };
   $("n1").textContent = P.get("n1") || "0"; $("n2").textContent = P.get("n2") || "0"; $("n3").textContent = P.get("ad") === "0" ? "OFF" : "ON";
   $("mot").textContent = P.get("bus") ? "Buscando com " + P.get("bus") : "";
