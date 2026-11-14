@@ -11,6 +11,13 @@
   <label class="linha"><span>Mostrar a barra de favoritos</span><input type="checkbox" id="barrafav"></label>
 </section>
 
+<section class="cartao"><h2>Barra de rolagem</h2>
+  <p class="nota">Vale para todos os sites e telas do Velox. Por padrão ela fica invisível e só aparece quando o mouse passa por cima.</p>
+  <label class="linha"><span>Aparência</span><select id="rol-modo"><option value="hover">Some até passar o mouse</option><option value="sempre">Sempre visível (fina)</option><option value="padrao">Padrão do Windows</option></select></label>
+  <label class="linha"><span>Espessura <span class="s nota" id="rol-n"></span></span><input type="range" id="rol-larg" min="6" max="16"></label>
+  <label class="linha"><span>Cor</span><select id="rol-cor"><option value="tema">Ciano do Velox</option><option value="roxo">Roxo</option><option value="vermelho">Vermelho gamer</option><option value="branco">Branco</option></select></label>
+</section>
+
 <section class="cartao"><h2>Senhas</h2>
   <p class="nota">As senhas ficam só neste computador, cifradas (AES-256) com a sua senha mestra. Ela não é guardada em lugar nenhum: se esquecer, não dá para recuperar. O cofre tranca sozinho depois de 15 minutos sem uso.</p>
   <div class="linha"><span id="cofre-estado"></span><span><button id="cofre-abrir" class="p">Abrir cofre</button> <button id="cofre-travar">Trancar</button> <button id="cofre-trocar">Trocar senha mestra</button></span></div>

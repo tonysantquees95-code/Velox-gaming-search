@@ -2,7 +2,11 @@
 html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
 #barra { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 8px; border-radius: 16px; background: rgba(8, 12, 22, .88); border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 6px 24px rgba(0, 0, 0, .5); backdrop-filter: blur(10px); color: #e6ecf8; }
 #med { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
-body.lado #med { grid-template-columns: 1fr 1fr; }
+body.lado #med { grid-template-columns: 1fr; gap: 3px; }
+body.lado .m { flex-direction: row; justify-content: space-between; padding: 2px 8px; border-radius: 8px; }
+body.lado .m b { font-size: 13px; }
+body.lado #bot button { width: 30px; height: 28px; }
+body.lado #barra { padding: 6px; gap: 6px; }
 .m { display: flex; flex-direction: column; align-items: center; padding: 3px 2px; border-radius: 10px; background: rgba(255, 255, 255, .06); }
 .m span { font-size: 9px; letter-spacing: .12em; color: #8a97b3; }
 .m b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }

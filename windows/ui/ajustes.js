@@ -10,6 +10,8 @@
     $("bloq-n").textContent = e.bloqueados ? "· " + e.bloqueados + " bloqueados nesta sessão" : "";
     $("bloq-modo").textContent = e.modoBloqueio === "ghostery" ? "Motor completo com listas atualizadas (EasyList e uBlock)." : e.modoBloqueio === "lista" ? "Motor básico por lista de domínios (o completo não carregou — precisa de internet na primeira vez)." : "Carregando as listas…";
 
+    if (document.activeElement !== $("rol-larg")) $("rol-larg").value = e.rolagem.largura;
+    $("rol-modo").value = e.rolagem.modo; $("rol-cor").value = e.rolagem.cor; $("rol-n").textContent = "· " + e.rolagem.largura + " px";
     var c = e.cofre;
     $("cofre-estado").textContent = !c.existe ? "Ainda não há cofre." : c.aberto ? "Cofre aberto" : "Cofre trancado";
     $("cofre-estado").className = c.aberto ? "ok" : "";
@@ -55,6 +57,8 @@
   function recarregar() { return V.chamar("ajustes:estado").then(desenhar); }
 
   $("bloqueio").onchange = function () { V.chamar("ajustes:bloqueio", this.checked).then(desenhar); };
+  function salvarRolagem() { V.chamar("ajustes:rolagem", { modo: $("rol-modo").value, largura: +$("rol-larg").value, cor: $("rol-cor").value }).then(desenhar); }
+  $("rol-modo").onchange = salvarRolagem; $("rol-cor").onchange = salvarRolagem; $("rol-larg").onchange = salvarRolagem;
   $("continuar").onchange = function () { V.chamar("ajustes:continuar", this.checked).then(desenhar); };
   $("barrafav").onchange = function () { V.chamar("ajustes:favoritos-barra", this.checked).then(desenhar); };
   $("cofre-abrir").onclick = function () { $("cofre-erro").textContent = ""; V.chamar("ajustes:estado").then(function (e) { return V.chamar(e.cofre.existe ? "cofre:abrir" : "cofre:criar"); }).then(function (r) { if (r && !r.ok) $("cofre-erro").textContent = r.erro; recarregar(); }); };

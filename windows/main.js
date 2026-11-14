@@ -11,6 +11,7 @@ const { limitesBarra, proxima: proximaPosicao, valida: posicaoValida } = require
 const { idDaLoja, baixarDaLoja } = require("./crx");
 const sincronia = require("./sincronia");
 const atualizador = require("./atualizador");
+const rolagem = require("./rolagem");
 
 const ALTURA_BARRA = 118; // a barra inteira (abas, endereço e botões) fica embaixo, como no celular
 const BUSCADORES = {
@@ -38,7 +39,7 @@ let sincronizando = false;
 // ------------------------------------------------------------------ ajustes (um arquivo JSON)
 const arquivoAjustes = () => path.join(app.getPath("userData"), "velox.json");
 let ajustes = {
-  favoritos: [], apagados: {}, fundo: "", transparencia: 30, buscador: "google", mostrarFavoritos: true, bloqueio: true, continuar: true,
+  favoritos: [], apagados: {}, fundo: "", transparencia: 30, buscador: "google", rolagem: { modo: "hover", largura: 8, cor: "tema" }, mostrarFavoritos: true, bloqueio: true, continuar: true,
   abas: [], historico: [], permissoes: {}, extensoes: [], sync: { email: "", token: "", ultimo: 0 },
 };
 function lerAjustes() {
@@ -120,6 +121,16 @@ function salvarAbasAbertas() {
   gravarAjustes();
 }
 
+function aplicarRolagem(aba) {
+  const wc = aba.view.webContents;
+  if (wc.isDestroyed()) return;
+  const antiga = aba.chaveRolagem; aba.chaveRolagem = null;
+  if (antiga) wc.removeInsertedCSS(antiga).catch(() => undefined);
+  const texto = rolagem.css(ajustes.rolagem);
+  if (texto) wc.insertCSS(texto).then((k) => { aba.chaveRolagem = k; }).catch(() => undefined);
+}
+function reaplicarRolagem() { for (const a of abas) aplicarRolagem(a); }
+
 function criarAba(destino, opcoes = {}) {
   const interna = opcoes.interna || null;
   const especial = interna && interna !== "inicio";
@@ -136,6 +147,7 @@ function criarAba(destino, opcoes = {}) {
   const wc = view.webContents;
   view.setBackgroundColor(interna === "inicio" ? "#00000000" : "#ffffffff");
 
+  wc.on("dom-ready", () => aplicarRolagem(aba));
   wc.on("page-title-updated", (_e, t) => { aba.titulo = t; historicoTitulo(aba); avisarBarra(); });
   wc.on("did-start-loading", () => { aba.carregando = true; avisarBarra(); });
   wc.on("did-stop-loading", () => { aba.carregando = false; avisarBarra(); });
@@ -563,7 +575,7 @@ const pastaDasExtensoes = () => path.join(app.getPath("userData"), "extensoes");
 // ------------------------------------------------------------------ comandos vindos das telas
 const resumoAjustes = () => ({
   bloqueio: ajustes.bloqueio, bloqueados: bloqueio ? bloqueio.bloqueados : 0, modoBloqueio: bloqueio ? bloqueio.modo : "desligado",
-  continuar: ajustes.continuar, mostrarFavoritos: ajustes.mostrarFavoritos, buscador: ajustes.buscador,
+  rolagem: rolagem.normalizar(ajustes.rolagem), continuar: ajustes.continuar, mostrarFavoritos: ajustes.mostrarFavoritos, buscador: ajustes.buscador,
   cofre: { existe: cofre.existe(), aberto: cofre.aberto(), itens: cofre.aberto() ? cofre.lista() : [] },
   extensoes: ajustes.extensoes.map(({ id, nome, ligada, erro }) => ({ id, nome, ligada, erro: erro || "" })),
   sites: Object.entries(ajustes.permissoes).map(([origem, p]) => ({ origem, permissoes: p })),
@@ -646,6 +658,7 @@ function ligarComandos() {
 
   ipcMain.handle("ajustes:estado", so(() => resumoAjustes()));
   ipcMain.handle("ajustes:bloqueio", so((_e, v) => { ajustes.bloqueio = !!v; bloqueio.definir(v); gravarAjustes(); avisarBarra(); return resumoAjustes(); }));
+  ipcMain.handle("ajustes:rolagem", so((_e, r) => { ajustes.rolagem = rolagem.normalizar(r); gravarAjustes(); reaplicarRolagem(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:continuar", so((_e, v) => { ajustes.continuar = !!v; gravarAjustes(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:favoritos-barra", so((_e, v) => { ajustes.mostrarFavoritos = !!v; gravarAjustes(); reposicionar(); avisarBarra(); return resumoAjustes(); }));
 
