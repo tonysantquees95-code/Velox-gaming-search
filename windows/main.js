@@ -259,6 +259,7 @@ async function acaoDoJogo(nome) {
 }
 
 function mostrar(aba) {
+  fecharPop();
   if (busca.aberta) fecharBusca();
   if (ativa && ativa !== aba) janela.contentView.removeChildView(ativa.view);
   ativa = aba;
@@ -310,6 +311,51 @@ function zoom(passo) {
   wc.setZoomLevel(passo === 0 ? 0 : Math.max(-3, Math.min(5, wc.getZoomLevel() + passo)));
 }
 
+// ------------------------------------------------------------------ telinhas coladas nos botões (como no Chrome)
+let pop = null; // { view, aberta, tipo, sub }
+let ancoras = { menu: 0, baixados: 0 };
+function dadosPop() {
+  const [l] = janela.getContentSize();
+  const wc = ativa && ativa.view.webContents;
+  const nivel = wc && !wc.isDestroyed() ? wc.getZoomLevel() : 0;
+  return {
+    tipo: pop.tipo, sub: pop.sub, x: pop.tipo === "menu" ? ancoras.menu || l - 20 : ancoras.baixados || l - 120, larg: l, tema: temaAtual(),
+    zoom: Math.round(Math.pow(1.2, nivel) * 100), tela: janela.isFullScreen(),
+    downloads: resumoDownloads().slice(0, 8),
+    historico: ajustes.historico.filter((h) => /^https?:/i.test(h.u)).slice(0, 8).map((h) => ({ n: h.n || "", u: h.u })),
+    favoritos: ajustes.favoritos.map((f) => ({ n: f.n, u: f.u })),
+    mostrarFavoritos: !!ajustes.mostrarFavoritos,
+    favorita: !!(ativa && ativa.url && ajustes.favoritos.some((f) => f.u === ativa.url)),
+  };
+}
+function enviarPop() { if (pop && pop.aberta && !pop.view.webContents.isDestroyed()) pop.view.webContents.send("pop:estado", dadosPop()); }
+function posicionarPop() {
+  const [l, a] = janela.getContentSize();
+  pop.view.setBounds({ x: 0, y: ALTURA_TOPO, width: l, height: Math.max(0, a - ALTURA_BARRA - ALTURA_TOPO) });
+}
+function abrirPop(tipo) {
+  if (!janela || janela.isDestroyed() || janela.isFullScreen()) return;
+  if (pop && pop.aberta && pop.tipo === tipo && !pop.sub) { fecharPop(); return; }
+  if (!pop) {
+    const view = new WebContentsView({ webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, sandbox: true, nodeIntegration: false } });
+    view.setBackgroundColor("#00000000");
+    view.webContents.loadFile(path.join(__dirname, "ui", "pop.html"));
+    view.webContents.on("before-input-event", (e, input) => { if (input.type === "keyDown" && input.key === "Escape") { e.preventDefault(); fecharPop(); } });
+    pop = { view, aberta: false, tipo, sub: null };
+  }
+  pop.tipo = tipo; pop.sub = null; pop.aberta = true;
+  posicionarPop();
+  janela.contentView.addChildView(pop.view);
+  pop.view.webContents.focus();
+  enviarPop();
+}
+function fecharPop() {
+  if (!pop || !pop.aberta) return;
+  pop.aberta = false;
+  if (janela && !janela.isDestroyed()) janela.contentView.removeChildView(pop.view);
+  if (ativa && !jogo.ligado) ativa.view.webContents.focus();
+}
+
 function abrirBusca() { busca.aberta = true; if (janela) janela.webContents.send("abrir-busca"); janela.webContents.focus(); }
 function fecharBusca() {
   busca.aberta = false;
@@ -327,7 +373,8 @@ function atalhos(e, input) {
   else if (ctrl && k === "l") { e.preventDefault(); janela.webContents.focus(); janela.webContents.send("focar-endereco"); }
   else if (ctrl && k === "f") { e.preventDefault(); abrirBusca(); }
   else if (ctrl && input.shift && k === "g") { e.preventDefault(); alternarModoGamer(!jogo.ligado); }
-  else if (ctrl && k === "j") { e.preventDefault(); abrirInterna("downloads"); }
+  else if (ctrl && k === "j") { e.preventDefault(); abrirPop("downloads"); }
+  else if (input.key === "F11") { e.preventDefault(); janela.setFullScreen(!janela.isFullScreen()); }
   else if (ctrl && k === "h") { e.preventDefault(); abrirInterna("historico"); }
   else if (ctrl && k === "d") { e.preventDefault(); alternarFavorito(); }
   else if (ctrl && k === "p") { e.preventDefault(); if (ativa) ativa.view.webContents.print(); }
@@ -466,11 +513,12 @@ function ligarDownloads(ses) {
       avisarDownloads();
     });
     avisarDownloads();
-    abrirInterna("downloads");
+    abrirPop("downloads");
   });
 }
 const resumoDownloads = () => downloads.map(({ item, ...d }) => d);
 function avisarDownloads() {
+  enviarPop();
   for (const a of abas) if (a.interna === "downloads" && !a.view.webContents.isDestroyed()) a.view.webContents.send("downloads", resumoDownloads());
 }
 
@@ -611,6 +659,22 @@ const tente = async (f) => { try { return { ok: true, ...(await f()) }; } catch 
 const dasInternas = (e) => { const a = abas.find((x) => x.view.webContents === e.sender); return !!(a && a.interna && a.interna !== "inicio"); };
 const so = (fn) => (e, ...a) => (dasInternas(e) ? fn(e, ...a) : undefined);
 
+function menuPersonalizar() {
+  Menu.buildFromTemplate([
+      { label: "Nova aba anônima", click: () => criarAba(null, { interna: "inicio", anonima: true }) },
+      { label: "Histórico", click: () => abrirInterna("historico") },
+      { type: "separator" },
+      { label: "Escolher fundo…", click: () => ipcMain.emit("escolher-fundo", { sender: janela.webContents }) },
+      { label: "Remover fundo", click: () => { ajustes.fundo = ""; gravarAjustes(); recarregarInicios(); avisarBarra(); } },
+      { label: "Transparência da barra", submenu: [0, 20, 40, 60, 80].map((v) => ({ label: v + "%", type: "radio", checked: ajustes.transparencia === v, click: () => { ajustes.transparencia = v; gravarAjustes(); avisarBarra(); } })) },
+      { label: "Buscador", submenu: [["google", "Google"], ["duckduckgo", "DuckDuckGo"], ["bing", "Bing"]].map(([id, nome]) => ({ label: nome, type: "radio", checked: ajustes.buscador === id, click: () => { ajustes.buscador = id; gravarAjustes(); recarregarInicios(); avisarBarra(); } })) },
+      { label: "Bloquear anúncios e rastreadores", type: "checkbox", checked: !!ajustes.bloqueio, click: () => { ajustes.bloqueio = !ajustes.bloqueio; bloqueio.definir(ajustes.bloqueio); gravarAjustes(); avisarBarra(); } },
+      { type: "separator" },
+      { label: "Posição da game bar", submenu: [["dir", "Direita"], ["esq", "Esquerda"], ["cima", "Em cima"], ["baixo", "Embaixo"]].map(([id, nome]) => ({ label: nome, type: "radio", checked: posicaoValida(ajustes.posGameBar) === id, click: () => { ajustes.posGameBar = id; gravarAjustes(); ajustarModoGamer(); avisarBarra(); } })) },
+      { label: "Ajustes", click: () => abrirInterna("ajustes") },
+  ]).popup({ window: janela });
+}
+
 function ligarComandos() {
   // barra (janela principal)
   const daBarra = (fn) => (e, ...a) => (janela && e.sender === janela.webContents ? fn(e, ...a) : undefined);
@@ -638,20 +702,36 @@ function ligarComandos() {
   ipcMain.on("recarregar", daBarra(() => ativa && (ativa.carregando ? ativa.view.webContents.stop() : ativa.view.webContents.reload())));
   ipcMain.on("inicio", daBarra(() => { if (ativa) { ativa.interna = "inicio"; ativa.view.setBackgroundColor("#00000000"); ativa.view.webContents.loadURL(enderecoInicio()); } }));
   ipcMain.on("favorito", daBarra(alternarFavorito));
-  ipcMain.on("menu-mais", daBarra(() => {
-    Menu.buildFromTemplate([
-      { label: "Nova aba anônima", click: () => criarAba(null, { interna: "inicio", anonima: true }) },
-      { label: "Histórico", click: () => abrirInterna("historico") },
-      { type: "separator" },
-      { label: "Escolher fundo…", click: () => ipcMain.emit("escolher-fundo", { sender: janela.webContents }) },
-      { label: "Remover fundo", click: () => { ajustes.fundo = ""; gravarAjustes(); recarregarInicios(); avisarBarra(); } },
-      { label: "Transparência da barra", submenu: [0, 20, 40, 60, 80].map((v) => ({ label: v + "%", type: "radio", checked: ajustes.transparencia === v, click: () => { ajustes.transparencia = v; gravarAjustes(); avisarBarra(); } })) },
-      { label: "Buscador", submenu: [["google", "Google"], ["duckduckgo", "DuckDuckGo"], ["bing", "Bing"]].map(([id, nome]) => ({ label: nome, type: "radio", checked: ajustes.buscador === id, click: () => { ajustes.buscador = id; gravarAjustes(); recarregarInicios(); avisarBarra(); } })) },
-      { label: "Bloquear anúncios e rastreadores", type: "checkbox", checked: !!ajustes.bloqueio, click: () => { ajustes.bloqueio = !ajustes.bloqueio; bloqueio.definir(ajustes.bloqueio); gravarAjustes(); avisarBarra(); } },
-      { type: "separator" },
-      { label: "Posição da game bar", submenu: [["dir", "Direita"], ["esq", "Esquerda"], ["cima", "Em cima"], ["baixo", "Embaixo"]].map(([id, nome]) => ({ label: nome, type: "radio", checked: posicaoValida(ajustes.posGameBar) === id, click: () => { ajustes.posGameBar = id; gravarAjustes(); ajustarModoGamer(); avisarBarra(); } })) },
-      { label: "Ajustes", click: () => abrirInterna("ajustes") },
-    ]).popup({ window: janela });
+  ipcMain.on("menu-mais", daBarra(() => abrirPop("menu")));
+  ipcMain.on("pop-abrir", daBarra((_e, tipo, ancora) => { ancoras[tipo === "menu" ? "menu" : "baixados"] = Number(ancora) || 0; abrirPop(tipo === "menu" ? "menu" : "downloads"); }));
+  ipcMain.on("ancoras", daBarra((_e, a) => { if (a && typeof a === "object") ancoras = { menu: Number(a.menu) || 0, baixados: Number(a.baixados) || 0 }; }));
+  ipcMain.on("pop-fechar", daBarra(() => fecharPop()));
+  const daPop = (fn) => (e, ...a) => (pop && e.sender === pop.view.webContents ? fn(e, ...a) : undefined);
+  ipcMain.on("pop:pronto", daPop(() => enviarPop()));
+  ipcMain.on("pop:fechar", daPop(() => fecharPop()));
+  ipcMain.on("pop:sub", daPop((_e, s) => { pop.sub = ["historico", "favoritos", "downloads"].includes(s) ? s : null; enviarPop(); }));
+  ipcMain.on("pop:acao", daPop((_e, nome, arg) => {
+    const fica = nome === "zoom+" || nome === "zoom-";
+    if (nome === "zoom+") zoom(0.5);
+    else if (nome === "zoom-") zoom(-0.5);
+    else {
+      fecharPop();
+      if (nome === "nova-aba") criarAba(null, { interna: "inicio" });
+      else if (nome === "anonima") criarAba(null, { interna: "inicio", anonima: true });
+      else if (nome === "historico") abrirInterna("historico");
+      else if (nome === "downloads-tudo") abrirInterna("downloads");
+      else if (nome === "ajustes") abrirInterna("ajustes");
+      else if (nome === "ir") { if (/^https?:/i.test(String(arg))) criarAba(String(arg)); }
+      else if (nome === "tela-cheia") janela.setFullScreen(!janela.isFullScreen());
+      else if (nome === "imprimir") { if (ativa) ativa.view.webContents.print(); }
+      else if (nome === "localizar") abrirBusca();
+      else if (nome === "gamer") alternarModoGamer(true);
+      else if (nome === "favoritar") alternarFavorito();
+      else if (nome === "fav-barra") { ajustes.mostrarFavoritos = !ajustes.mostrarFavoritos; gravarAjustes(); avisarBarra(); }
+      else if (nome === "personalizar") menuPersonalizar();
+      else if (nome === "download-abrir") { const d = downloads.find((x) => x.id === arg); if (d) shell.openPath(d.caminho); }
+    }
+    if (fica) enviarPop();
   }));
   ipcMain.on("abrir-interna", daBarra((_e, nome) => { if (INTERNAS[nome]) abrirInterna(nome); }));
   ipcMain.on("escolher-fundo", daBarra(async () => {
@@ -789,11 +869,11 @@ async function iniciar() {
   });
   janela.setMenuBarVisibility(false);
   janela.loadFile(path.join(__dirname, "ui", "index.html"));
-  janela.on("resize", () => { reposicionar(); ajustarModoGamer(); });
+  janela.on("resize", () => { reposicionar(); ajustarModoGamer(); if (pop && pop.aberta) { posicionarPop(); enviarPop(); } });
   janela.on("maximize", () => setTimeout(reposicionar, 30));
   janela.on("unmaximize", () => setTimeout(reposicionar, 30));
   janela.on("leave-full-screen", () => { if (jogo.ligado) alternarModoGamer(false); setTimeout(reposicionar, 50); });
-  janela.on("enter-full-screen", () => setTimeout(ajustarModoGamer, 50));
+  janela.on("enter-full-screen", () => setTimeout(() => { fecharPop(); ajustarModoGamer(); if (!jogo.ligado && ativa) { const [w, h] = janela.getContentSize(); ativa.view.setBounds({ x: 0, y: 0, width: w, height: h }); } }, 50));
   janela.on("close", gravarAgora);
 
   const principal = sessaoPrincipal();

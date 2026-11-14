@@ -72,11 +72,15 @@
   $("recarregar").onclick = function () { V.enviar("recarregar"); };
   $("inicio").onclick = function () { V.enviar("inicio"); };
   $("estrela").onclick = function () { V.enviar("favorito"); };
-  $("baixados").onclick = function () { V.enviar("downloads"); };
+  $("baixados").onclick = function () { V.enviar("pop-abrir", "downloads", Math.round($("baixados").getBoundingClientRect().right)); };
   $("endereco").addEventListener("keydown", function (ev) { if (ev.key === "Enter") { V.enviar("ir", $("endereco").value); $("endereco").blur(); } });
   $("endereco").addEventListener("focus", function () { setTimeout(function () { $("endereco").select(); }, 0); });
   $("gamer").onclick = function () { V.enviar("modo-gamer"); };
-  $("menu").onclick = function () { V.enviar("menu-mais"); };
+  function ancoras() { return { menu: Math.round($("menu").getBoundingClientRect().right), baixados: Math.round($("baixados").getBoundingClientRect().right) }; }
+  function enviarAncoras() { V.enviar("ancoras", ancoras()); }
+  window.addEventListener("resize", enviarAncoras); enviarAncoras();
+  $("menu").onclick = function () { V.enviar("pop-abrir", "menu", ancoras().menu); };
+  document.addEventListener("pointerdown", function (ev) { if (!ev.target.closest("#menu, #baixados")) V.enviar("pop-fechar"); });
   $("ajustes").onclick = function () { V.enviar("abrir-interna", "ajustes"); };
   $("chave").onclick = function () { V.enviar("chave"); };
   /* busca na página (Ctrl+F) */
