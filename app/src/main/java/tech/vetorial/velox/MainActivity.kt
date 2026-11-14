@@ -131,7 +131,7 @@ class MainActivity : Activity() {
         val a = atual
         ajustes.abaAtual = if (a == null) 0 else normais.indexOf(a).coerceAtLeast(0)
         ajustes.bloqueadosTotal = bloqueadosTotal.get()
-        if (ajustes.segundoPlano) { SegundoPlano.ligar(this); atual?.webView?.evaluateJavascript("window.__veloxFundo=true", null) } else atual?.webView?.onPause()
+        if (ajustes.segundoPlano) verificarPlayerDeFundo() else atual?.webView?.onPause()
         cofre.travar()
         CookieManager.getInstance().flush()
     }
@@ -198,8 +198,56 @@ class MainActivity : Activity() {
         if (emJanelinha) fecharPainel() else aplicarImersivo()
     }
 
+    // ---- player em segundo plano: só quando há áudio ou vídeo tocando de verdade
+    private val monitorPlayer = object : Runnable {
+        override fun run() {
+            if (!emSegundoPlano) return
+            consultarMidia { tocando, titulo ->
+                if (tocando) { semMidiaDesde = 0L; SegundoPlano.ligar(this@MainActivity, titulo, true) }
+                else {
+                    if (semMidiaDesde == 0L) semMidiaDesde = System.currentTimeMillis()
+                    // pausado de propósito (pelo botão) fica no player por 2 minutos; depois o Velox sossega
+                    if (System.currentTimeMillis() - semMidiaDesde > 120_000) { SegundoPlano.desligar(this@MainActivity); atual?.webView?.onPause(); return@consultarMidia }
+                    if (SegundoPlano.tocando) SegundoPlano.ligar(this@MainActivity, titulo, false)
+                }
+                raizApp.postDelayed(this, 4000)
+            }
+        }
+    }
+    private var emSegundoPlano = false
+    private var semMidiaDesde = 0L
+
+    /** Pergunta à página se algum áudio/vídeo está tocando agora e qual o título dela. */
+    private fun consultarMidia(resposta: (Boolean, String) -> Unit) {
+        val wv = atual?.webView ?: return resposta(false, "")
+        wv.evaluateJavascript(JS_MIDIA) { bruto ->
+            val t = try { JSONObject(org.json.JSONTokener(bruto ?: "null").nextValue() as? String ?: "{}") } catch (e: Exception) { JSONObject() }
+            resposta(t.optBoolean("t", false), t.optString("n", ""))
+        }
+    }
+
+    private fun verificarPlayerDeFundo() {
+        emSegundoPlano = true
+        semMidiaDesde = 0L
+        SegundoPlano.controle = { acao ->
+            runOnUiThread {
+                val tocar = acao == SegundoPlano.ACAO_TOCAR
+                atual?.webView?.evaluateJavascript("window.__veloxFundo=" + tocar + ";document.querySelectorAll('video,audio').forEach(function(m){try{" + (if (tocar) "m.play()" else "m.pause()") + "}catch(e){}})", null)
+            }
+        }
+        consultarMidia { tocando, titulo ->
+            if (tocando) {
+                atual?.webView?.evaluateJavascript("window.__veloxFundo=true", null)
+                SegundoPlano.ligar(this, titulo, true)
+                raizApp.postDelayed(monitorPlayer, 4000)
+            } else atual?.webView?.onPause() // nada tocando: o Velox sai de cena sem aviso nenhum
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        emSegundoPlano = false
+        raizApp.removeCallbacks(monitorPlayer)
         SegundoPlano.desligar(this)
         atual?.webView?.onResume()
         atual?.webView?.evaluateJavascript("window.__veloxFundo=false", null)
@@ -307,11 +355,14 @@ class MainActivity : Activity() {
         // botão do modo gamer: maior, vermelho e com a borda acesa como as letras do VX; toque liga o modo gamer, segurar abre o painel
         val bPainel = botao("painel", "Ligar o modo gamer (segure para abrir o painel)") { ligarModoGamer() }
         bPainel.setOnLongClickListener { abrirPainel("jogo"); true }
-        bPainel.background = android.graphics.drawable.LayerDrawable(arrayOf<android.graphics.drawable.Drawable>(
-            GradientDrawable().apply { cornerRadius = dp(15).toFloat(); setStroke(dp(5), 0x33FF1F3D) },
-            GradientDrawable().apply { cornerRadius = dp(14).toFloat(); setStroke(dp(3), 0x66FF1F3D) },
-            GradientDrawable().apply { cornerRadius = dp(13).toFloat(); setColor(0xFF2A0A14.toInt()); setStroke(dp(2) - 1, 0xFFFF1F3D.toInt()) }
-        )).also { ld -> for (i in 0..2) ld.setLayerInset(i, dp(i), dp(i), dp(i), dp(i)) }
+        // mesmo formato inclinado da barra de baixo, mais brilhoso, com um LED branco correndo pela borda
+        val formaGamer = BotaoGamerForma(dp(13).toFloat(), dp(1).toFloat() + 0.5f, 0xFFFF1F3D.toInt())
+        bPainel.background = formaGamer
+        formaGamer.start()
+        bPainel.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+            override fun onViewAttachedToWindow(v: View) { formaGamer.start() }
+            override fun onViewDetachedFromWindow(v: View) { formaGamer.stop() }
+        })
         val bAjustes = botao("ajustes", "Ajustes") { abrirPainel("mais") }
         val altura = dp(54)
         for (b in listOf(bVoltar, bAvancar, bInicio, bRecarregar)) barraDeBaixo.addView(b, LinearLayout.LayoutParams(0, altura, 1f))
@@ -800,7 +851,9 @@ class MainActivity : Activity() {
                 ajustes.sitesNoTema = ligado
                 for (a in abas) { aplicarEscuro(a.webView); a.webView.setBackgroundColor(if (ligado) Color.TRANSPARENT else tema.fundo) }
                 atualizarFundo()
-                atual?.webView?.reload()
+                // a página inicial leva a escolha no endereço: abre de novo com ela
+                val a = atual
+                if (a != null && (a.webView.url ?: "").startsWith("file:///android_asset/inicio.html")) a.webView.loadUrl(enderecoInicial()) else a?.webView?.reload()
             }
             "pc" -> { ajustes.siteParaComputador = ligado; for (a in abas) aplicarModoComputador(a.webView); atual?.webView?.reload() }
         }
@@ -1306,7 +1359,7 @@ class MainActivity : Activity() {
         val abertura = if (aberturaFeita) "" else "&ab=1"
         aberturaFeita = true
         return INICIO + "?" + tema.params() + "&n1=" + bloqueadosSessao.get() + "&n2=" + bloqueadosTotal.get() +
-            "&ft=" + (if (fotoFundo != null) 1 else 0) + "&ad=" + (if (ajustes.bloquearAnuncios) 1 else 0) + "&bus=" + Uri.encode(Buscador.porId(ajustes.buscador).nome) + abertura
+            "&nt=" + (if (ajustes.sitesNoTema) 1 else 0) + "&ft=" + (if (fotoFundo != null) 1 else 0) + "&ad=" + (if (ajustes.bloquearAnuncios) 1 else 0) + "&bus=" + Uri.encode(Buscador.porId(ajustes.buscador).nome) + abertura
     }
 
     private fun configurar(wv: WebView, anonima: Boolean) {
@@ -2047,6 +2100,10 @@ class MainActivity : Activity() {
             "if(m&&(m.length<4||+m[3]>0.6))e.style.setProperty('background-color','rgba(6,8,18,0.28)','important');}" +
             "var k=e.children;for(var i=0;i<k.length&&i<40;i++)l(k[i],d+1);}" +
             "l(document.body,0);}catch(x){}})();"
+
+        /** {t: algum áudio/vídeo tocando, n: título da página} */
+        const val JS_MIDIA = "(function(){try{var m=document.querySelectorAll('video,audio'),t=false;for(var i=0;i<m.length;i++){if(!m[i].paused&&!m[i].ended&&m[i].readyState>2&&m[i].currentTime>0){t=true;break;}}" +
+            "return JSON.stringify({t:t,n:(document.title||'').slice(0,120)});}catch(e){return JSON.stringify({t:false,n:''});}})()"
 
         const val JS_TRANSPARENTE = "(function(){try{var s=document.getElementById('velox-tema');if(!s){s=document.createElement('style');s.id='velox-tema';" +
             "s.textContent='html,body{background:transparent!important;background-image:none!important}';(document.head||document.documentElement).appendChild(s);}" +

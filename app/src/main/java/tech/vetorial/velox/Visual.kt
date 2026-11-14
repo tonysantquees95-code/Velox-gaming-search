@@ -6,7 +6,9 @@ import android.graphics.Canvas
 import android.graphics.ColorFilter
 import android.graphics.Matrix
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.RectF
+import android.graphics.drawable.Animatable
 import android.graphics.drawable.Drawable
 import android.graphics.LinearGradient
 import android.graphics.Paint
@@ -387,6 +389,71 @@ class FormaDeAba(private val preenchimento: Int, private val contorno: Int, priv
         canvas.drawPath(caminho, cheio)
         canvas.drawPath(caminho, linha)
     }
+
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(cf: ColorFilter?) {}
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+}
+
+/**
+ * Fundo do botão do modo gamer: mesmo formato inclinado (cantos cortados) da barra de baixo, mais brilhoso, com um LED branco
+ * correndo pela borda, como o neon que corre nas letras do VX.
+ */
+class BotaoGamerForma(private val corte: Float, private val espessura: Float, private val destaque: Int) : Drawable(), Animatable {
+    private val caminho = Path()
+    private val medida = PathMeasure()
+    private val trecho = Path()
+    private val cheio = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
+    private val linha = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeJoin = Paint.Join.MITER; strokeCap = Paint.Cap.ROUND }
+    private var comprimento = 1f
+    private var fase = 0f
+    private val animador = ValueAnimator.ofFloat(0f, 1f).apply {
+        duration = 2800
+        repeatCount = ValueAnimator.INFINITE
+        interpolator = android.view.animation.LinearInterpolator()
+        addUpdateListener { fase = it.animatedValue as Float; invalidateSelf() }
+    }
+
+    override fun onBoundsChange(b: Rect) {
+        caminho.reset()
+        val m = espessura * 2f
+        val r = RectF(b.left + m, b.top + m, b.right - m, b.bottom - m)
+        val c = minOf(corte, r.height() / 2f)
+        caminho.moveTo(r.left + c, r.top)
+        caminho.lineTo(r.right, r.top)
+        caminho.lineTo(r.right, r.bottom - c)
+        caminho.lineTo(r.right - c, r.bottom)
+        caminho.lineTo(r.left, r.bottom)
+        caminho.lineTo(r.left, r.top + c)
+        caminho.close()
+        medida.setPath(caminho, true)
+        comprimento = medida.length.coerceAtLeast(1f)
+        cheio.shader = LinearGradient(0f, r.top, 0f, r.bottom, 0xFF4A1020.toInt(), 0xFF1A060C.toInt(), Shader.TileMode.CLAMP)
+    }
+
+    override fun draw(canvas: Canvas) {
+        canvas.drawPath(caminho, cheio)
+        // brilho vermelho de fora para dentro
+        linha.shader = null
+        linha.color = (destaque and 0x00FFFFFF) or 0x30000000; linha.strokeWidth = espessura * 4.2f; canvas.drawPath(caminho, linha)
+        linha.color = (destaque and 0x00FFFFFF) or 0x66000000; linha.strokeWidth = espessura * 2.6f; canvas.drawPath(caminho, linha)
+        linha.color = (destaque and 0x00FFFFFF) or 0xFF000000.toInt(); linha.strokeWidth = espessura * 1.4f; canvas.drawPath(caminho, linha)
+        // LED branco: um rastro que esmaece e a cabeça bem clara, dando a volta na borda
+        val cabeca = fase * comprimento
+        for ((fracao, alfa, larg) in listOf(Triple(0.30f, 0x40, 1.6f), Triple(0.18f, 0x80, 1.9f), Triple(0.07f, 0xFF, 2.3f))) {
+            val ini = cabeca - comprimento * fracao
+            trecho.reset()
+            if (ini >= 0f) medida.getSegment(ini, cabeca, trecho, true)
+            else { medida.getSegment(comprimento + ini, comprimento, trecho, true); medida.getSegment(0f, cabeca, trecho, true) }
+            linha.color = (0xFFFFFF) or (alfa shl 24); linha.strokeWidth = espessura * larg
+            canvas.drawPath(trecho, linha)
+        }
+    }
+
+    override fun start() { if (!animador.isStarted) animador.start() }
+    override fun stop() { animador.cancel() }
+    override fun isRunning(): Boolean = animador.isRunning
 
     override fun setAlpha(alpha: Int) {}
     override fun setColorFilter(cf: ColorFilter?) {}
