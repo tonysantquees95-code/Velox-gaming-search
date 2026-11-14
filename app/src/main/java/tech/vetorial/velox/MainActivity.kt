@@ -109,7 +109,7 @@ class MainActivity : Activity() {
         val pedido = intent?.dataString
         val salvas = ajustes.abas
         if (pedido != null) {
-            novaAba(pedido, false)
+            novaAba(pedido, false, deFora = true)
         } else if (salvas.isNotEmpty()) {
             for (u in salvas) novaAba(u, false, exibir = false)
             mostrar(abas[ajustes.abaAtual.coerceIn(0, abas.size - 1)])
@@ -121,7 +121,7 @@ class MainActivity : Activity() {
     override fun onNewIntent(nova: Intent?) {
         super.onNewIntent(nova)
         val u = nova?.dataString
-        if (u != null) novaAba(u, false)
+        if (u != null) novaAba(u, false, deFora = true)
     }
 
     override fun onPause() {
@@ -1343,9 +1343,13 @@ class MainActivity : Activity() {
         }
     }
 
-    private fun novaAba(url: String?, anonima: Boolean, exibir: Boolean = true) {
+    /** Abas abertas por outro app (link de download do Painel Dev, por exemplo): se o link só baixa um arquivo, a aba vazia fecha e a página de downloads abre. */
+    private val abasDeFora = HashSet<Aba>()
+
+    private fun novaAba(url: String?, anonima: Boolean, exibir: Boolean = true, deFora: Boolean = false) {
         val wv = WebView(this)
         val aba = Aba(wv, anonima)
+        if (deFora) abasDeFora.add(aba)
         configurar(wv, anonima)
         if (!anonima) wv.addJavascriptInterface(PonteSenhas(aba), "VeloxSenhas")
         wv.webViewClient = navegador(aba)
@@ -1359,7 +1363,11 @@ class MainActivity : Activity() {
                 true
             } else false
         }
-        wv.setDownloadListener { u, ua, disp, tipo, _ -> baixar(u, ua, disp, tipo) }
+        wv.setDownloadListener { u, ua, disp, tipo, _ ->
+            baixar(u, ua, disp, tipo)
+            // veio de fora e o link só baixa: não deixa a aba vazia na tela, mostra os downloads
+            if (abasDeFora.remove(aba) && aba.webView.copyBackForwardList().size <= 1 && aba.webView.title.isNullOrBlank()) raizApp.post { fecharAba(aba); abrirDownloads() }
+        }
         abas.add(aba)
         val alvo = when {
             url == null || url == INICIO -> enderecoInicial()
@@ -1459,6 +1467,7 @@ class MainActivity : Activity() {
         val i = abas.indexOf(aba)
         if (i < 0) return
         abas.removeAt(i)
+        abasDeFora.remove(aba)
         conteudo.removeView(aba.webView)
         aba.webView.destroy()
         if (aba.anonima && abas.none { it.anonima }) limparRastros()
