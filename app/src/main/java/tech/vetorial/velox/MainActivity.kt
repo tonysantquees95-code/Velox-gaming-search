@@ -412,23 +412,25 @@ class MainActivity : Activity() {
 
     /** Ícones da barra: os seus (foto) quando existirem, senão o desenho do pacote escolhido. */
     private fun aplicarIcones() {
-        for ((slot, v) in botoes) {
+        fun pintar(slot: String, v: ImageView, pad: Int) {
             val proprio = iconesProprios.getOrPut(slot) { Imagens.carregarIcone(this, slot)?.let { Imagens.arredondar(it, 0.22f) } }
             if (proprio != null) {
                 v.clearColorFilter()
                 v.setImageBitmap(proprio)
-                v.setPadding(dp(11), dp(11), dp(11), dp(11))
+                v.setPadding(dp(pad - 4), dp(pad - 4), dp(pad - 4), dp(pad - 4))
             } else {
-                val d = IconeTraco.criar(slot)
+                val d = IconeTraco.criar(if (slot == "som" && somMudo) "mudo" else slot)
                 d.cor = tema.texto
                 d.c1 = tema.destaque
                 d.c2 = tema.secundaria
                 d.pacote = tema.pacote
                 v.clearColorFilter()
                 v.setImageDrawable(d)
-                v.setPadding(dp(15), dp(15), dp(15), dp(15))
+                v.setPadding(dp(pad), dp(pad), dp(pad), dp(pad))
             }
         }
+        for ((slot, v) in botoes) pintar(slot, v, 15)
+        for ((slot, v) in botoesGb) pintar(slot, v, 11) // a game bar usa o mesmo pacote e as mesmas cores da barra de baixo
     }
 
     private fun atualizarSetas() {
@@ -453,30 +455,31 @@ class MainActivity : Activity() {
     @Suppress("DEPRECATION")
     // ---------------------------------------------------------------- game bar (modo gamer)
 
-    private val botoesGameBar = ArrayList<TextView>()
-    private lateinit var gbSom: TextView
+    private val botoesGb = LinkedHashMap<String, ImageView>()
+    private lateinit var gbRecolher: ImageView
 
     private fun montarGameBar() {
         gameBar = LinearLayout(this).apply { visibility = View.GONE; setPadding(dp(4), dp(4), dp(4), dp(4)) }
-        fun b(glifo: String, descricao: String, acao: (TextView) -> Unit): TextView = TextView(this).apply {
-            text = glifo; textSize = 18f; gravity = Gravity.CENTER; contentDescription = descricao
+        fun b(slot: String, descricao: String, acao: () -> Unit): ImageView = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.CENTER_INSIDE
+            contentDescription = descricao
             isClickable = true; isFocusable = true
-            setOnClickListener { acao(this) }
-            botoesGameBar.add(this)
+            setOnClickListener { acao() }
+            botoesGb[slot] = this
             gameBar.addView(this, LinearLayout.LayoutParams(dp(44), dp(44)))
         }
-        b("‹", "Voltar") { voltar() }
-        b("⟳", "Recarregar") { atual?.webView?.reload() }
-        b("📷", "Captura de tela") { capturarTela() }
-        gbSom = b("🔊", "Som da página") { alternarSom() }
-        b("🎮", "Painel do Velox") { abrirPainel("jogo") }
-        b("⇄", "Mudar a barra de lado") {
+        b("voltar", "Voltar") { voltar() }
+        b("recarregar", "Recarregar") { atual?.webView?.reload() }
+        b("captura", "Captura de tela") { capturarTela() }
+        b("som", "Som da página") { alternarSom() }
+        b("painel", "Painel do Velox") { abrirPainel("jogo") }
+        b("lado", "Mudar a barra de lado") {
             val ordem = listOf("dir", "esq", "cima", "baixo")
             ajustes.posGameBar = ordem[(ordem.indexOf(ajustes.posGameBar) + 1) % ordem.size]
             posicionarGameBar()
         }
-        b("⟩", "Recolher a barra") { gbRecolhida = true; atualizarGameBar() }
-        b("✕", "Sair do modo gamer") { ajustes.imersivo = false; aplicarImersivo() }.setTextColor(0xFFF87171.toInt())
+        gbRecolher = b("recolher", "Recolher a barra") { gbRecolhida = true; atualizarGameBar() }
+        b("sair", "Sair do modo gamer") { ajustes.imersivo = false; aplicarImersivo() }
         pintarGameBar()
     }
 
@@ -484,7 +487,7 @@ class MainActivity : Activity() {
         gameBar.background = GradientDrawable().apply {
             setColor(0xE00A0F1C.toInt()); cornerRadius = dp(18).toFloat(); setStroke(dp(1), (tema.destaque and 0x00FFFFFF) or 0x80000000.toInt())
         }
-        for (t in botoesGameBar) if (t.text != "✕") t.setTextColor(tema.texto)
+        aplicarIcones()
     }
 
     /** Põe a barra e a alça no lado escolhido (direita, esquerda, em cima ou embaixo). */
@@ -500,6 +503,8 @@ class MainActivity : Activity() {
         }
         gameBar.layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, g).apply { setMargins(dp(8), dp(8), dp(8), dp(8)) }
         flutuante.layoutParams = FrameLayout.LayoutParams(dp(44), dp(44), g).apply { setMargins(dp(4), dp(4), dp(4), dp(4)) }
+        // a seta de recolher aponta para a borda onde a barra fica
+        gbRecolher.rotation = when (lado) { "esq" -> 180f; "cima" -> 270f; "baixo" -> 90f; else -> 0f }
         atualizarGameBar()
     }
 
@@ -518,7 +523,7 @@ class MainActivity : Activity() {
     private var somMudo = false
     private fun alternarSom() {
         somMudo = !somMudo
-        gbSom.text = if (somMudo) "🔇" else "🔊"
+        aplicarIcones()
         atual?.webView?.evaluateJavascript("(function(m){document.querySelectorAll('video,audio').forEach(function(x){x.muted=m});window.__veloxMudo=m;})(" + somMudo + ")", null)
     }
 

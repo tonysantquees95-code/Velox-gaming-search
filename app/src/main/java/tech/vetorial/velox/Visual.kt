@@ -267,6 +267,21 @@ class IconeTraco(private val tracos: List<Path>, private val pontos: List<FloatA
             "recarregar" -> IconeTraco(listOf(
                 p { arcTo(RectF(5f, 5f, 19f, 19f), 0f, 315f) },
                 p { moveTo(19f, 4f); lineTo(19f, 8f); lineTo(15f, 8f) }), emptyList())
+            "captura" -> IconeTraco(listOf(
+                p { moveTo(4f, 8f); lineTo(8f, 8f); lineTo(9.5f, 5.5f); lineTo(14.5f, 5.5f); lineTo(16f, 8f); lineTo(20f, 8f); lineTo(20f, 19f); lineTo(4f, 19f); close() },
+                p { arcTo(RectF(9f, 10.5f, 15f, 16.5f), 0f, 359f); close() }), emptyList())
+            "som" -> IconeTraco(listOf(
+                p { moveTo(4f, 10f); lineTo(8f, 10f); lineTo(12f, 6.5f); lineTo(12f, 17.5f); lineTo(8f, 14f); lineTo(4f, 14f); close() },
+                p { arcTo(RectF(9f, 8f, 17f, 16f), -45f, 90f) },
+                p { arcTo(RectF(8f, 5f, 20f, 19f), -45f, 90f) }), emptyList())
+            "mudo" -> IconeTraco(listOf(
+                p { moveTo(4f, 10f); lineTo(8f, 10f); lineTo(12f, 6.5f); lineTo(12f, 17.5f); lineTo(8f, 14f); lineTo(4f, 14f); close() },
+                p { moveTo(15f, 9.5f); lineTo(20f, 14.5f) }, p { moveTo(20f, 9.5f); lineTo(15f, 14.5f) }), emptyList())
+            "lado" -> IconeTraco(listOf(
+                p { moveTo(4f, 8f); lineTo(20f, 8f); moveTo(16f, 4.5f); lineTo(20f, 8f); lineTo(16f, 11.5f) },
+                p { moveTo(20f, 16f); lineTo(4f, 16f); moveTo(8f, 12.5f); lineTo(4f, 16f); lineTo(8f, 19.5f) }), emptyList())
+            "recolher" -> IconeTraco(listOf(p { moveTo(9f, 5f); lineTo(16f, 12f); lineTo(9f, 19f) }), emptyList())
+            "sair" -> IconeTraco(listOf(p { moveTo(6f, 6f); lineTo(18f, 18f) }, p { moveTo(18f, 6f); lineTo(6f, 18f) }), emptyList())
             "ajustes" -> IconeTraco(listOf(
                 p { arcTo(RectF(9f, 9f, 15f, 15f), 0f, 359f); close() },
                 p { moveTo(12f, 3f); lineTo(12f, 5.5f) }, p { moveTo(12f, 18.5f); lineTo(12f, 21f) },
