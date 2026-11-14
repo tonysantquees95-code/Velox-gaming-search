@@ -25,6 +25,7 @@
       "sincronia.js",
       "atualizador.js",
       "jogo.js",
+      "desempenho.js",
       "build/icon.png",
       "ui/**",
       "inicio/**",

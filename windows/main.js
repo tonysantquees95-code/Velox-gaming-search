@@ -6,6 +6,7 @@ const crypto = require("crypto");
 const { pathToFileURL } = require("url");
 const { Cofre } = require("./cofre");
 const { Bloqueio } = require("./bloqueio");
+const { Medidor, SCRIPT_FPS } = require("./desempenho");
 const { limitesBarra, proxima: proximaPosicao, valida: posicaoValida } = require("./jogo");
 const { idDaLoja, baixarDaLoja } = require("./crx");
 const sincronia = require("./sincronia");
@@ -172,7 +173,7 @@ function criarAba(destino, opcoes = {}) {
 }
 
 // ------------------------------------------------------------------ modo gamer e game bar
-const jogo = { ligado: false, rec: false, view: null };
+const jogo = { ligado: false, rec: false, view: null, medidor: null };
 function estadoDoJogo() {
   const wc = ativa && ativa.view.webContents;
   return { pos: posicaoValida(ajustes.posGameBar), rec: jogo.rec, mudo: !!(wc && wc.isAudioMuted()), bloqueio: !!ajustes.bloqueio };
@@ -196,6 +197,13 @@ function alternarModoGamer(liga) {
       jogo.view.webContents.setWindowOpenHandler(() => ({ action: "deny" }));
     }
     jogo.ligado = true;
+    if (!jogo.medidor) {
+      jogo.medidor = new Medidor(
+        async () => { const wc = ativa && ativa.view.webContents; if (!wc || wc.isDestroyed()) return null; try { return await wc.executeJavaScript(SCRIPT_FPS); } catch { return null; } },
+        (m) => { if (jogo.view && !jogo.view.webContents.isDestroyed()) jogo.view.webContents.send("jogo:medidas", m); }
+      );
+    }
+    jogo.medidor.iniciar();
     const u = pathToFileURL(path.join(__dirname, "ui", "jogo.html"));
     u.search = `?pos=${posicaoValida(ajustes.posGameBar)}&rec=${jogo.rec ? 1 : 0}`;
     jogo.view.webContents.loadURL(u.toString());
@@ -205,6 +213,7 @@ function alternarModoGamer(liga) {
     setTimeout(ajustarModoGamer, 900);
   } else {
     jogo.ligado = false;
+    if (jogo.medidor) jogo.medidor.parar();
     if (jogo.view) janela.contentView.removeChildView(jogo.view);
     janela.setFullScreen(false);
     setTimeout(reposicionar, 80);

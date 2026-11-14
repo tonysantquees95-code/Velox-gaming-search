@@ -30,6 +30,23 @@
     V.enviar("jogo:acao", b.dataset.a);
     if (b.dataset.a === "captura") { var o = b.innerHTML; b.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'; setTimeout(function () { b.innerHTML = o; }, 1400); }
   };
+  function ponha(id, texto, nivel) {
+    var el = document.getElementById(id); el.firstChild.nextSibling.textContent = texto;
+    el.className = "m" + (nivel ? " " + nivel : "");
+  }
+  var porUso = function (v) { return v == null ? "" : v >= 90 ? "alto" : v >= 70 ? "aviso" : "ok"; };
+  function medidas(m) {
+    ponha("m-fps", m.fps == null ? "–" : String(m.fps), m.fps == null ? "" : m.fps >= 55 ? "ok" : m.fps >= 30 ? "aviso" : "alto");
+    ponha("m-cpu", m.cpu == null ? "–" : m.cpu + "%", porUso(m.cpu));
+    ponha("m-gpu", m.gpu == null ? "–" : m.gpu + "%", porUso(m.gpu));
+    var t = m.tempGpu != null ? m.tempGpu : m.tempCpu;
+    ponha("m-temp", t == null ? "–" : t + "°", t == null ? "" : t >= 85 ? "alto" : t >= 72 ? "aviso" : "ok");
+    document.getElementById("m-temp").title = (m.tempGpu != null ? "Temperatura da placa de vídeo" : m.tempCpu != null ? "Temperatura do processador" : "O Windows não informou a temperatura");
+    ponha("m-ram", m.ram == null ? "–" : m.ram + "%", porUso(m.ram));
+    ponha("m-ping", m.ping == null ? "–" : m.ping + " ms", m.ping == null ? "" : m.ping <= 60 ? "ok" : m.ping <= 120 ? "aviso" : "alto");
+    if (m.gpuNome) document.getElementById("m-gpu").title = m.gpuNome;
+  }
+  V.ouvir("jogo:medidas", medidas);
   V.ouvir("jogo:estado", aplicar);
   aplicar({ pos: q.get("pos") || "dir", rec: q.get("rec") === "1", mudo: false, bloqueio: true });
 })();

@@ -8,8 +8,8 @@ function limitesBarra(pos, recolhida, largura, altura) {
   const p = valida(pos);
   const lado = p === "esq" || p === "dir";
   const M = 12;
-  let w = recolhida ? (lado ? 26 : 64) : (lado ? 64 : 470);
-  let h = recolhida ? (lado ? 64 : 26) : (lado ? 470 : 64);
+  let w = recolhida ? (lado ? 26 : 64) : (lado ? 150 : 640);
+  let h = recolhida ? (lado ? 64 : 26) : (lado ? 440 : 104);
   w = Math.max(0, Math.min(w, largura));
   h = Math.max(0, Math.min(h, altura));
   const folga = recolhida ? 0 : M;

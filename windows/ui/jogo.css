@@ -1,11 +1,19 @@
 * { box-sizing: border-box; margin: 0; }
 html, body { width: 100%; height: 100%; background: transparent; overflow: hidden; font-family: "Segoe UI", system-ui, sans-serif; user-select: none; }
-#barra { width: 100%; height: 100%; display: flex; align-items: center; justify-content: space-around; gap: 2px; padding: 4px; border-radius: 16px; background: rgba(8, 12, 22, .86); border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 6px 24px rgba(0, 0, 0, .5); backdrop-filter: blur(10px); }
-body.lado #barra { flex-direction: column; }
-button { display: flex; align-items: center; justify-content: center; flex: 1 1 0; min-width: 0; min-height: 0; max-width: 48px; max-height: 48px; aspect-ratio: 1; border: 0; border-radius: 12px; background: transparent; color: #e6ecf8; cursor: pointer; }
+#barra { width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 6px; padding: 8px; border-radius: 16px; background: rgba(8, 12, 22, .88); border: 1px solid rgba(255, 255, 255, .14); box-shadow: 0 6px 24px rgba(0, 0, 0, .5); backdrop-filter: blur(10px); color: #e6ecf8; }
+#med { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; }
+body.lado #med { grid-template-columns: 1fr 1fr; }
+.m { display: flex; flex-direction: column; align-items: center; padding: 3px 2px; border-radius: 10px; background: rgba(255, 255, 255, .06); }
+.m span { font-size: 9px; letter-spacing: .12em; color: #8a97b3; }
+.m b { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.m.ok b { color: #34d399; } .m.aviso b { color: #fbbf24; } .m.alto b { color: #f87171; }
+#bot { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; }
+button { display: flex; align-items: center; justify-content: center; width: 38px; height: 34px; border: 0; border-radius: 10px; background: transparent; color: #e6ecf8; cursor: pointer; }
 button:hover { background: rgba(255, 255, 255, .12); }
 button.ligado { color: #34d399; }
 button svg { display: block; margin: auto; transition: transform .15s; }
 body.rec #barra { padding: 0; border-radius: 10px; }
-body.rec button:not(#b-recolher) { display: none; }
-body.rec button#b-recolher { max-width: none; max-height: none; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 10px; }
+body.rec #med { display: none; }
+body.rec #bot button:not(#b-recolher) { display: none; }
+body.rec #bot { height: 100%; }
+body.rec button#b-recolher { width: 100%; height: 100%; border-radius: 10px; }
