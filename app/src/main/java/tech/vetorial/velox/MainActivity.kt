@@ -193,9 +193,15 @@ class MainActivity : Activity() {
             .show()
     }
 
+    /** Dentro da janelinha de vídeo: sem abas, endereço nem barras, só a página (o vídeo fica no topo dela). */
+    private var emJanelinha = false
+
     override fun onPictureInPictureModeChanged(emJanelinha: Boolean, config: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(emJanelinha, config)
-        if (emJanelinha) fecharPainel() else aplicarImersivo()
+        this.emJanelinha = emJanelinha
+        if (emJanelinha) fecharPainel()
+        aplicarImersivo()
+        if (emJanelinha) atual?.webView?.scrollTo(0, 0)
     }
 
     // ---- player em segundo plano: só quando há áudio ou vídeo tocando de verdade
@@ -576,7 +582,7 @@ class MainActivity : Activity() {
 
     private fun atualizarGameBar() {
         if (!::gameBar.isInitialized) return
-        val ligado = ajustes.imersivo && telaCheia == null && painel == null
+        val ligado = ajustes.imersivo && telaCheia == null && painel == null && !emJanelinha
         gameBar.visibility = if (ligado && !gbRecolhida) View.VISIBLE else View.GONE
         flutuante.visibility = if (ligado && gbRecolhida) View.VISIBLE else View.GONE
     }
@@ -639,7 +645,8 @@ class MainActivity : Activity() {
 
     private fun aplicarImersivo() {
         if (telaCheia != null) return
-        val ligado = ajustes.imersivo
+        // na janelinha de vídeo só a página aparece (o YouTube pode sair da tela cheia ao encolher a janela)
+        val ligado = ajustes.imersivo || emJanelinha
         barraDeCima.visibility = if (ligado) View.GONE else View.VISIBLE
         faixaAbas.visibility = if (ligado) View.GONE else View.VISIBLE
         barraDeBaixo.visibility = if (ligado) View.GONE else View.VISIBLE
