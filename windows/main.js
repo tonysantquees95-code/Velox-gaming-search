@@ -1005,6 +1005,7 @@ async function mostrarNovidades(itens) {
 }
 /** Primeira abertura: tour, permissões e termos. Nas seguintes: só as novidades que a pessoa ainda não viu. */
 async function apresentar() {
+  if (process.env.VELOX_TESTE === "1") return; // o teste de fumaça não pode ficar esperando uma janelinha
   if (apresentacao.precisaApresentar(ajustes)) {
     await mostrarTour(true);
     await mostrarPermissoes();
