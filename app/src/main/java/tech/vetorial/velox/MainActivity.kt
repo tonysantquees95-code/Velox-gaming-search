@@ -12,6 +12,7 @@ import android.graphics.drawable.GradientDrawable
 import android.util.Base64
 import android.view.WindowManager
 import android.widget.ImageView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.webkit.WebSettingsCompat
 import androidx.webkit.WebViewFeature
 import org.json.JSONArray
@@ -58,6 +59,7 @@ class MainActivity : Activity() {
     private lateinit var campo: EditText
     private lateinit var barra: BarraNeon
     private lateinit var conteudo: FrameLayout
+    private lateinit var puxar: SwipeRefreshLayout
     private lateinit var contador: TextView
     private lateinit var barraDeCima: LinearLayout
     private lateinit var barraDeBaixo: LinearLayout
@@ -252,7 +254,16 @@ class MainActivity : Activity() {
         barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1f))
 
         // como no Brave: a página em cima e, embaixo, a faixa de favoritos, o endereço e os botões
-        coluna.addView(conteudo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
+        // puxar a página para baixo recarrega (só quando a página está no topo e não é a tela inicial)
+        puxar = SwipeRefreshLayout(this).apply {
+            addView(conteudo, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            setOnChildScrollUpCallback { _, _ -> val a = atual; a == null || a.url.isEmpty() || a.webView.scrollY > 0 }
+            setOnRefreshListener {
+                atual?.webView?.reload()
+                postDelayed({ isRefreshing = false }, 8000)
+            }
+        }
+        coluna.addView(puxar, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         faixaConteudo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), dp(6), dp(10), dp(6)) }
         faixaFav = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; visibility = View.GONE; addView(faixaConteudo) }
         coluna.addView(faixaFav, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
@@ -297,6 +308,8 @@ class MainActivity : Activity() {
         barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(a, b))
         barraDeBaixo.background = PainelCortado((tema.superficie and 0x00FFFFFF) or ((255 - (tr * 1.5f).toInt()).coerceIn(70, 255) shl 24), (tema.destaque and 0x00FFFFFF) or 0xA0000000.toInt(),
             dp(1).toFloat() + 0.5f, if (tema.redondo) dp(28).toFloat() else dp(14).toFloat(), tema.redondo)
+        puxar.setColorSchemeColors(tema.destaque, tema.secundaria)
+        puxar.setProgressBackgroundColorSchemeColor(tema.superficie)
         bEstrelaCima.setTextColor(tema.destaque)
         bDownload.cor(tema.destaque)
         bEstrelaBaixo.setTextColor(tema.destaque)
@@ -1259,6 +1272,7 @@ class MainActivity : Activity() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            if (aba === atual && ::puxar.isInitialized) puxar.isRefreshing = false
             if (!url.startsWith("file:///android_asset/")) {
                 aba.url = url
                 registrarHistorico(aba, url)
