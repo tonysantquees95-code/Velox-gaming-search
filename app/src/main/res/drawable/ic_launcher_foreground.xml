@@ -4,14 +4,14 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- VX: letras chanfradas com borda interna acesa e luz laranja -->
+    <!-- VX: letras chanfradas com borda interna acesa e luz vermelha -->
     <group android:translateX="21.80" android:translateY="40.48" android:scaleX="0.155" android:scaleY="0.155">
-        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#FF8A1F" android:strokeColor="#FF8A1F" android:strokeWidth="4" />
+        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#8C0A1C" android:strokeColor="#8C0A1C" android:strokeWidth="4" />
     </group>
     <group android:translateX="23.00" android:translateY="39.27" android:scaleX="0.155" android:scaleY="0.155">
-        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#03050C" android:strokeColor="#03050C" android:strokeWidth="16" />
-        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#142038" />
+        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#05020A" android:strokeColor="#05020A" android:strokeWidth="16" />
+        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:fillColor="#2A0A14" />
         <clip-path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" />
-        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:strokeColor="#22D3EE" android:strokeWidth="9" />
+        <path android:pathData="M190 0 L254 0 L400 190 L336 190 Z M336 0 L400 0 L254 190 L190 190 Z M0 0 L64 0 L110 124 L156 0 L220 0 L142 190 L78 190 Z" android:strokeColor="#FF1F3D" android:strokeWidth="9" />
     </group>
 </vector>

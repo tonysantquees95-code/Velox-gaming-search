@@ -632,6 +632,7 @@ async function iniciar() {
   bloqueio.aoMudar = () => { if (!bloqueio.agendado) { bloqueio.agendado = setTimeout(() => { bloqueio.agendado = null; avisarBarra(); }, 1000); } };
 
   janela = new BrowserWindow({
+    icon: path.join(__dirname, "build", "icon.png"),
     width: 1280, height: 800, minWidth: 720, minHeight: 480,
     backgroundColor: "#070b14", title: "Velox", autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false },

@@ -24,11 +24,13 @@
       "bloqueio.js",
       "sincronia.js",
       "atualizador.js",
+      "build/icon.png",
       "ui/**",
       "inicio/**",
       "package.json"
     ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         "nsis",
         "portable"
