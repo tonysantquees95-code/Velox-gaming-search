@@ -9,15 +9,45 @@
   "scripts": {
     "start": "electron .",
     "preparar": "node preparar.js",
-    "dist": "node preparar.js && electron-builder --win portable nsis --publish never"
+    "dist": "node preparar.js && electron-builder --win portable nsis --publish never",
+    "test": "node --test teste/*.test.js"
   },
   "build": {
     "appId": "tech.vetorial.velox.windows",
     "productName": "Velox",
-    "files": ["main.js", "preload.js", "ui/**", "inicio/**", "package.json"],
-    "win": { "target": ["nsis", "portable"] },
-    "portable": { "artifactName": "Velox-Portatil-${version}.exe" },
-    "nsis": { "artifactName": "Velox-Instalador-${version}.exe", "oneClick": false, "allowToChangeInstallationDirectory": true, "perMachine": false }
+    "files": [
+      "main.js",
+      "preload.js",
+      "preload-paginas.js",
+      "cofre.js",
+      "crx.js",
+      "bloqueio.js",
+      "sincronia.js",
+      "ui/**",
+      "inicio/**",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "Velox-Portatil-${version}.exe"
+    },
+    "nsis": {
+      "artifactName": "Velox-Instalador-${version}.exe",
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    }
   },
-  "devDependencies": { "electron": "33.2.1", "electron-builder": "25.1.8" }
+  "devDependencies": {
+    "electron": "33.2.1",
+    "electron-builder": "25.1.8"
+  },
+  "dependencies": {
+    "@ghostery/adblocker-electron": "^2.0.0"
+  }
 }

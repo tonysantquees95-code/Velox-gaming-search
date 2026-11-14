@@ -22,5 +22,5 @@ Navegador Android da Vetorial Tech, com visual gamer: abas, bloqueio de anúncio
 
 ## Velox para Windows
 
-Pasta `windows/`: navegador desktop (Electron/Chromium) com abas, favoritos, página inicial igual à do Android, downloads, fundo e transparência da barra. Compila no GitHub Actions (`Gerar Velox para Windows`) e publica o instalador e a versão portátil em Releases (`windows-1.N`).
+Pasta `windows/`: navegador desktop (Electron/Chromium) com abas, barra de favoritos, página inicial igual à do Android, downloads, histórico, busca na página, zoom, restaurar abas, bloqueio de anúncios (motor do Ghostery), cofre de senhas cifrado com senha mestra (AES-256 + scrypt), extensões da Chrome Web Store, permissões por site, fundo/transparência e sincronização de favoritos pelo Vetorial ID. Compila no GitHub Actions (`Gerar Velox para Windows`) e publica o instalador e a versão portátil em Releases (`windows-1.N`).
 Atalhos: Ctrl+T nova aba, Ctrl+W fecha, Ctrl+L endereço, Ctrl+D favoritar, Ctrl+J downloads, F5 recarrega.

@@ -28,12 +28,18 @@ jobs:
 
       - name: Conferir a sintaxe
         run: |
-          node --check main.js
-          node --check preload.js
-          node --check ui/barra.js
+          for f in main.js preload.js preload-paginas.js cofre.js crx.js bloqueio.js sincronia.js ui/*.js; do node --check "$f"; done
 
       - name: Instalar dependências
         run: npm install --no-audit --no-fund
+
+      - name: Testar (cofre, extensões, sincronização, bloqueio)
+        run: npm test
+
+      - name: Abrir o Velox de verdade (teste de fumaça)
+        env:
+          VELOX_TESTE: "1"
+        run: timeout 120 npx electron . --no-sandbox 2>&1 | tail -30
 
       - name: Gerar o instalador e a versão portátil
         env:

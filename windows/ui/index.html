@@ -14,19 +14,26 @@
   <button id="avancar" title="Avançar (Alt+→)" aria-label="Avançar">›</button>
   <button id="recarregar" title="Recarregar (F5)" aria-label="Recarregar">⟳</button>
   <button id="inicio" title="Início" aria-label="Início">⌂</button>
-  <input id="endereco" type="text" spellcheck="false" autocomplete="off" placeholder="Pesquise ou digite um endereço">
+  <div id="campo"><span id="cadeado" title=""></span><input id="endereco" type="text" spellcheck="false" autocomplete="off" placeholder="Pesquise ou digite um endereço"></div>
+  <div id="busca" hidden><input id="busca-texto" type="text" spellcheck="false" placeholder="Buscar na página"><span id="busca-n"></span><button id="busca-ant" title="Anterior">↑</button><button id="busca-prox" title="Próximo">↓</button><button id="busca-fechar" title="Fechar (Esc)">×</button></div>
+  <button id="chave" title="Senhas salvas" aria-label="Senhas">🔑</button>
   <button id="estrela" title="Favoritar (Ctrl+D)" aria-label="Favoritar">☆</button>
   <button id="baixados" title="Downloads (Ctrl+J)" aria-label="Downloads">⤓</button>
   <button id="menu" title="Mais" aria-label="Mais opções">⋮</button>
 </div>
+<div id="favoritos" hidden></div>
 <div id="gaveta" hidden>
   <h3>Aparência</h3>
   <div class="linha"><button id="g-fundo">Escolher fundo…</button><button id="g-sem-fundo">Remover</button></div>
   <label class="linha">Transparência da barra <input id="g-trans" type="range" min="0" max="80"></label>
+  <h3>Proteção</h3>
+  <label class="linha"><input type="checkbox" id="g-bloqueio"> Bloquear anúncios e rastreadores <span id="g-contador"></span></label>
   <h3>Buscador</h3>
   <select id="g-bus"><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option><option value="bing">Bing</option></select>
   <h3>Abas</h3>
   <div class="linha"><button id="g-anonima">Nova aba anônima</button></div>
+  <h3>Velox</h3>
+  <div class="linha"><button id="g-ajustes">Ajustes</button><button id="g-historico">Histórico</button></div>
 </div>
 <script src="barra.js"></script>
 </body>

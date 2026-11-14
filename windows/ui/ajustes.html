@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><title>Ajustes</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+<link rel="stylesheet" href="comum.css"></head><body><main>
+<h1>Ajustes do Velox</h1><p class="sub" id="versao"></p>
+
+<section class="cartao"><h2>Privacidade e bloqueio</h2>
+  <label class="linha"><span>Bloquear anúncios e rastreadores <span class="s nota" id="bloq-n"></span></span><input type="checkbox" id="bloqueio"></label>
+  <p class="nota" id="bloq-modo"></p>
+  <label class="linha"><span>Continuar de onde parou ao abrir o Velox</span><input type="checkbox" id="continuar"></label>
+  <label class="linha"><span>Mostrar a barra de favoritos</span><input type="checkbox" id="barrafav"></label>
+</section>
+
+<section class="cartao"><h2>Senhas</h2>
+  <p class="nota">As senhas ficam só neste computador, cifradas (AES-256) com a sua senha mestra. Ela não é guardada em lugar nenhum: se esquecer, não dá para recuperar. O cofre tranca sozinho depois de 15 minutos sem uso.</p>
+  <div class="linha"><span id="cofre-estado"></span><span><button id="cofre-abrir" class="p">Abrir cofre</button> <button id="cofre-travar">Trancar</button> <button id="cofre-trocar">Trocar senha mestra</button></span></div>
+  <div id="cofre-lista"></div><p class="nota erro" id="cofre-erro"></p>
+</section>
+
+<section class="cartao"><h2>Extensões</h2>
+  <p class="nota">Cole o ID ou o endereço de uma extensão da Chrome Web Store. Funcionam melhor as que mexem nas páginas (modo escuro, bloqueadores, utilitários). Botões de extensão na barra ainda não existem.</p>
+  <div class="linha"><input type="text" id="ext-id" placeholder="ID ou endereço da extensão"><button id="ext-instalar" class="p">Instalar</button><button id="ext-pasta">Carregar pasta…</button></div>
+  <p class="nota" id="ext-msg"></p><div id="ext-lista"></div>
+</section>
+
+<section class="cartao"><h2>Sites e permissões</h2>
+  <p class="nota">Câmera, microfone, localização e notificações que você permitiu ou bloqueou. Remover faz o site perguntar de novo.</p>
+  <div id="sites-lista"></div>
+</section>
+
+<section class="cartao"><h2>Sincronização com o celular</h2>
+  <p class="nota">Entre com o seu Vetorial ID (o mesmo do Vênus, Vindex e Vortex) para levar os favoritos para os seus outros aparelhos.</p>
+  <div id="sync-fora"><div class="linha"><input type="email" id="sync-email" placeholder="E-mail do Vetorial ID"><input type="password" id="sync-senha" placeholder="Senha"><button id="sync-entrar" class="p">Entrar</button></div></div>
+  <div id="sync-dentro" hidden><div class="linha"><span id="sync-info"></span><span><button id="sync-agora" class="p">Sincronizar agora</button> <button id="sync-sair" class="perigo">Sair</button></span></div></div>
+  <p class="nota" id="sync-msg"></p>
+</section>
+</main>
+<script src="ajustes.js"></script></body></html>

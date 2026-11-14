@@ -28,3 +28,19 @@ html, body { margin:0; height:100%; background:var(--bg); color:var(--tx); font:
 #gaveta .linha { display:flex; gap:8px; margin:6px 0; align-items:center; color:var(--su); font-size:13px; }
 #gaveta button, #gaveta select { background:var(--campo); color:var(--tx); border:1px solid rgba(255,255,255,.12); border-radius:8px; padding:7px 10px; cursor:pointer; font:inherit; }
 #gaveta input[type=range] { flex:1; }
+
+#campo { flex:1; position:relative; display:flex; align-items:center; }
+#campo #endereco { width:100%; padding-left:38px; }
+#cadeado { position:absolute; left:14px; font-size:13px; pointer-events:none; }
+#busca { flex:1; display:flex; align-items:center; gap:6px; }
+#busca[hidden] { display:none; }
+#busca-texto { flex:1; height:34px; border-radius:17px; border:1px solid var(--c1); background:rgba(20,30,64,.95); color:var(--tx); padding:0 16px; outline:none; user-select:text; }
+#busca-n { color:var(--su); font-size:12px; min-width:48px; text-align:center; }
+#favoritos { position:relative; display:flex; gap:6px; align-items:center; height:32px; padding:0 8px; overflow-x:auto; background:rgba(13,21,48,var(--alfa)); border-top:1px solid rgba(255,255,255,.05); }
+#favoritos[hidden] { display:none; }
+#favoritos::-webkit-scrollbar { display:none; }
+#favoritos button { flex:0 0 auto; max-width:160px; height:24px; padding:0 10px; border-radius:12px; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.06); color:var(--tx); font-size:12px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#favoritos button:hover { border-color:var(--c1); }
+#chave.aberta { color:var(--c1); }
+.aba.anonima { border-color:rgba(167,139,250,.6); }
+.aba.anonima span::before { content:"🕶 "; }
