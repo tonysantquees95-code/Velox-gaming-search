@@ -12,8 +12,7 @@ const { idDaLoja, baixarDaLoja } = require("./crx");
 const sincronia = require("./sincronia");
 const atualizador = require("./atualizador");
 
-const ALTURA_BARRA = 84;
-const ALTURA_FAVORITOS = 32;
+const ALTURA_BARRA = 118; // a barra inteira (abas, endereço e botões) fica embaixo, como no celular
 const BUSCADORES = {
   google: (q) => "https://www.google.com/search?q=" + encodeURIComponent(q),
   duckduckgo: (q) => "https://duckduckgo.com/?q=" + encodeURIComponent(q),
@@ -82,11 +81,11 @@ const enderecoInterno = (nome) => pathToFileURL(path.join(__dirname, "ui", INTER
 const origemDe = (url) => { try { const u = new URL(url); return /^https?:$/.test(u.protocol) ? u.origin : ""; } catch { return ""; } };
 
 // ------------------------------------------------------------------ abas
-const alturaBarra = () => ALTURA_BARRA + (ajustes.mostrarFavoritos && ajustes.favoritos.length ? ALTURA_FAVORITOS : 0);
+const alturaBarra = () => ALTURA_BARRA;
 function limites() {
   const [l, a] = janela.getContentSize();
   const h = alturaBarra();
-  return { x: 0, y: h, width: l, height: Math.max(0, a - h) };
+  return { x: 0, y: 0, width: l, height: Math.max(0, a - h) };
 }
 function reposicionar() { if (ativa && !janela.isFullScreen()) ativa.view.setBounds(limites()); }
 
@@ -602,6 +601,21 @@ function ligarComandos() {
   ipcMain.on("recarregar", daBarra(() => ativa && (ativa.carregando ? ativa.view.webContents.stop() : ativa.view.webContents.reload())));
   ipcMain.on("inicio", daBarra(() => { if (ativa) { ativa.interna = "inicio"; ativa.view.setBackgroundColor("#00000000"); ativa.view.webContents.loadURL(enderecoInicio()); } }));
   ipcMain.on("favorito", daBarra(alternarFavorito));
+  ipcMain.on("menu-mais", daBarra(() => {
+    Menu.buildFromTemplate([
+      { label: "Nova aba anônima", click: () => criarAba(null, { interna: "inicio", anonima: true }) },
+      { label: "Histórico", click: () => abrirInterna("historico") },
+      { type: "separator" },
+      { label: "Escolher fundo…", click: () => ipcMain.emit("escolher-fundo", { sender: janela.webContents }) },
+      { label: "Remover fundo", click: () => { ajustes.fundo = ""; gravarAjustes(); recarregarInicios(); avisarBarra(); } },
+      { label: "Transparência da barra", submenu: [0, 20, 40, 60, 80].map((v) => ({ label: v + "%", type: "radio", checked: ajustes.transparencia === v, click: () => { ajustes.transparencia = v; gravarAjustes(); avisarBarra(); } })) },
+      { label: "Buscador", submenu: [["google", "Google"], ["duckduckgo", "DuckDuckGo"], ["bing", "Bing"]].map(([id, nome]) => ({ label: nome, type: "radio", checked: ajustes.buscador === id, click: () => { ajustes.buscador = id; gravarAjustes(); recarregarInicios(); avisarBarra(); } })) },
+      { label: "Bloquear anúncios e rastreadores", type: "checkbox", checked: !!ajustes.bloqueio, click: () => { ajustes.bloqueio = !ajustes.bloqueio; bloqueio.definir(ajustes.bloqueio); gravarAjustes(); avisarBarra(); } },
+      { type: "separator" },
+      { label: "Posição da game bar", submenu: [["dir", "Direita"], ["esq", "Esquerda"], ["cima", "Em cima"], ["baixo", "Embaixo"]].map(([id, nome]) => ({ label: nome, type: "radio", checked: posicaoValida(ajustes.posGameBar) === id, click: () => { ajustes.posGameBar = id; gravarAjustes(); ajustarModoGamer(); avisarBarra(); } })) },
+      { label: "Ajustes", click: () => abrirInterna("ajustes") },
+    ]).popup({ window: janela });
+  }));
   ipcMain.on("abrir-interna", daBarra((_e, nome) => { if (INTERNAS[nome]) abrirInterna(nome); }));
   ipcMain.on("escolher-fundo", daBarra(async () => {
     const r = await dialog.showOpenDialog(janela, { title: "Escolher fundo do Velox", properties: ["openFile"], filters: [{ name: "Imagens", extensions: ["jpg", "jpeg", "png", "webp", "bmp"] }] });

@@ -2,43 +2,35 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; style-src 'self' 'unsafe-inline'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' file: data:; script-src 'self' file:; style-src 'self' file: 'unsafe-inline'">
 <title>Velox</title>
+<link rel="stylesheet" href="../inicio/vgx.css">
 <link rel="stylesheet" href="barra.css">
 </head>
 <body>
 <div id="fundo"></div>
-<div id="abas"></div>
-<div id="ferramentas">
-  <button id="voltar" title="Voltar (Alt+←)" aria-label="Voltar">‹</button>
-  <button id="avancar" title="Avançar (Alt+→)" aria-label="Avançar">›</button>
-  <button id="recarregar" title="Recarregar (F5)" aria-label="Recarregar">⟳</button>
-  <button id="inicio" title="Início" aria-label="Início">⌂</button>
-  <div id="campo"><span id="cadeado" title=""></span><input id="endereco" type="text" spellcheck="false" autocomplete="off" placeholder="Pesquise ou digite um endereço"></div>
-  <div id="busca" hidden><input id="busca-texto" type="text" spellcheck="false" placeholder="Buscar na página"><span id="busca-n"></span><button id="busca-ant" title="Anterior">↑</button><button id="busca-prox" title="Próximo">↓</button><button id="busca-fechar" title="Fechar (Esc)">×</button></div>
-  <button id="gamer" title="Modo gamer (Ctrl+Shift+G)" aria-label="Modo gamer"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8h10q4 0 4 4v2c0 3-4 4-6 1l-1-1h-4l-1 1c-2 3-6 2-6-1v-2q0-4 4-4z"/><path d="M8 10.5v3M6.5 12h3"/><circle cx="16" cy="11.5" r=".6"/><circle cx="18" cy="13" r=".6"/></svg></button>
-  <button id="chave" title="Senhas salvas" aria-label="Senhas">🔑</button>
-  <button id="estrela" title="Favoritar (Ctrl+D)" aria-label="Favoritar">☆</button>
-  <button id="baixados" title="Downloads (Ctrl+J)" aria-label="Downloads">⤓</button>
-  <button id="menu" title="Mais" aria-label="Mais opções">⋮</button>
+<div id="dock">
+  <div id="abas"></div>
+  <div id="enderecos">
+    <div id="logo" title="Velox" data-vgx data-emblema="1" data-brilho="0"></div>
+    <div id="campo"><span id="cadeado" title=""></span><input id="endereco" type="text" spellcheck="false" autocomplete="off" placeholder="Pesquise ou digite um endereço"></div>
+    <div id="busca" hidden><input id="busca-texto" type="text" spellcheck="false" placeholder="Buscar na página"><span id="busca-n"></span><button id="busca-ant" title="Anterior">↑</button><button id="busca-prox" title="Próximo">↓</button><button id="busca-fechar" title="Fechar (Esc)">×</button></div>
+    <button id="estrela" class="ic" title="Favoritar (Ctrl+D)" aria-label="Favoritar"></button>
+    <button id="chave" class="ic" title="Senhas salvas" aria-label="Senhas"></button>
+    <button id="baixados" class="ic" title="Downloads (Ctrl+J)" aria-label="Downloads"></button>
+    <button id="menu" class="ic" title="Mais opções" aria-label="Mais opções"></button>
+  </div>
+  <div id="botoes">
+    <button id="voltar" class="ic" title="Voltar (Alt+←)" aria-label="Voltar"></button>
+    <button id="avancar" class="ic" title="Avançar (Alt+→)" aria-label="Avançar"></button>
+    <button id="inicio" class="ic" title="Início" aria-label="Início"></button>
+    <button id="recarregar" class="ic" title="Recarregar (F5)" aria-label="Recarregar"></button>
+    <div id="favoritos"></div>
+    <button id="ajustes" class="ic" title="Ajustes" aria-label="Ajustes"></button>
+    <button id="gamer" title="Modo gamer (Ctrl+Shift+G)" aria-label="Modo gamer"><span class="inc"></span><i></i></button>
+  </div>
 </div>
-<div id="favoritos" hidden></div>
-<div id="gaveta" hidden>
-  <h3>Aparência</h3>
-  <div class="linha"><button id="g-fundo">Escolher fundo…</button><button id="g-sem-fundo">Remover</button></div>
-  <label class="linha">Transparência da barra <input id="g-trans" type="range" min="0" max="80"></label>
-  <h3>Proteção</h3>
-  <label class="linha"><input type="checkbox" id="g-bloqueio"> Bloquear anúncios e rastreadores <span id="g-contador"></span></label>
-  <h3>Buscador</h3>
-  <select id="g-bus"><option value="google">Google</option><option value="duckduckgo">DuckDuckGo</option><option value="bing">Bing</option></select>
-  <h3>Modo gamer</h3>
-  <div class="linha"><button id="g-gamer">Ligar modo gamer (Ctrl+Shift+G)</button></div>
-  <label class="linha">Posição da game bar <select id="g-pos"><option value="dir">Direita</option><option value="esq">Esquerda</option><option value="cima">Em cima</option><option value="baixo">Embaixo</option></select></label>
-  <h3>Abas</h3>
-  <div class="linha"><button id="g-anonima">Nova aba anônima</button></div>
-  <h3>Velox</h3>
-  <div class="linha"><button id="g-ajustes">Ajustes</button><button id="g-historico">Histórico</button></div>
-</div>
+<script src="../inicio/vgx.js"></script>
 <script src="barra.js"></script>
 </body>
 </html>

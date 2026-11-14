@@ -1,6 +1,28 @@
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var V = window.velox, estado = null;
+  /* ícones no mesmo traço do celular (grade 24x24, pacote "linha") */
+  var ICONES = {
+    voltar: '<path d="M15 5L8 12L15 19"/>',
+    avancar: '<path d="M9 5L16 12L9 19"/>',
+    inicio: '<path d="M4 11L12 4L20 11"/><path d="M6 10V20H18V10"/>',
+    recarregar: '<path d="M19 12A7 7 0 1 1 16.95 7.05"/><path d="M19 4V8H15"/>',
+    ajustes: '<circle cx="12" cy="12" r="3"/><path d="M12 3V5.5M12 18.5V21M3 12H5.5M18.5 12H21M5.6 5.6L7.4 7.4M16.6 16.6L18.4 18.4M18.4 5.6L16.6 7.4M7.4 16.6L5.6 18.4"/>',
+    chave: '<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13L20 3M17 6L20 9M14 9L16.5 11.5"/>',
+    estrela: '<path d="M12 3.5L14.6 8.8L20.5 9.7L16.2 13.8L17.2 19.6L12 16.9L6.8 19.6L7.8 13.8L3.5 9.7L9.4 8.8Z"/>',
+    menu: '<path d="M12 5.5h.01M12 12h.01M12 18.5h.01"/>',
+    gamer: '<path d="M7 8H17Q21 8 21 12V14C21 17 17 18 15 15L14 14H10L9 15C7 18 3 17 3 14V12Q3 8 7 8Z"/><path d="M8 10.5V13.5M6.5 12H9.5"/><path d="M16 11.5h.01M18 13h.01"/>'
+  };
+  var uid = 0;
+  function pintar(el, nome) {
+    var s = window.VGX.pacoteSvg("linha", ICONES[nome], "22d3ee", "a78bfa", ++uid);
+    el.innerHTML = s;
+  }
+  ["voltar", "avancar", "inicio", "recarregar", "chave", "estrela", "menu"].forEach(function (n) { pintar($(n), n); });
+  pintar($("ajustes"), "ajustes");
+  pintar(document.querySelector("#gamer .inc"), "gamer");
+  /* download: anel + seta, igual ao botão do celular */
+  $("baixados").innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6" stroke-width="1.7" stroke-opacity=".3"/><path d="M12 8.6V15.4M9.4 12.8L12 15.4L14.6 12.8" stroke-width="2"/></g></svg>';
   function desenhar(e) {
     estado = e;
     var abas = $("abas"); abas.textContent = "";
@@ -17,18 +39,15 @@
     var m = document.createElement("button"); m.id = "mais"; m.textContent = "+"; m.title = "Nova aba (Ctrl+T)";
     m.onclick = function () { V.enviar("nova-aba"); }; abas.appendChild(m);
     $("voltar").disabled = !e.voltar; $("avancar").disabled = !e.avancar;
-    $("estrela").textContent = e.favorita ? "★" : "☆"; $("estrela").className = e.favorita ? "cheia" : "";
+    $("estrela").className = "ic" + (e.favorita ? " cheia" : "");
     $("estrela").disabled = !e.abas.some(function (a) { return a.id === e.ativa && /^https?:/i.test(a.url); });
     var at = e.abas.filter(function (a) { return a.id === e.ativa; })[0];
     if (document.activeElement !== $("endereco")) $("endereco").value = at ? at.url : "";
     var https = at && /^https:/i.test(at.url), http = at && /^http:/i.test(at.url);
     $("cadeado").textContent = https ? "🔒" : http ? "⚠" : "";
     $("cadeado").title = https ? "Conexão segura" : http ? "Conexão sem proteção" : "";
-    $("chave").className = e.cofreAberto ? "aberta" : "";
-    $("g-bloqueio").checked = !!e.bloqueio;
-    $("g-contador").textContent = e.bloqueados ? "(" + e.bloqueados + " bloqueados)" : "";
+    $("chave").className = "ic" + (e.cofreAberto ? " aberta" : "");
     var fav = $("favoritos"); fav.textContent = "";
-    fav.hidden = !e.favoritos.length;
     e.favoritos.forEach(function (f) {
       var b = document.createElement("button"); b.textContent = f.n; b.title = f.u;
       b.onclick = function () { V.enviar("abrir-favorito", f.u); };
@@ -36,8 +55,6 @@
     });
     document.documentElement.style.setProperty("--alfa", String(Math.max(0.15, 1 - e.transparencia / 100)));
     $("fundo").style.backgroundImage = e.fundo ? 'url("' + e.fundo + '")' : "none";
-    $("g-pos").value = e.posGameBar || "dir";
-    $("g-trans").value = e.transparencia; $("g-bus").value = e.buscador;
   }
   V.ouvir("estado", desenhar);
   V.ouvir("focar-endereco", function () { $("endereco").focus(); $("endereco").select(); });
@@ -49,20 +66,10 @@
   $("baixados").onclick = function () { V.enviar("downloads"); };
   $("endereco").addEventListener("keydown", function (ev) { if (ev.key === "Enter") { V.enviar("ir", $("endereco").value); $("endereco").blur(); } });
   $("endereco").addEventListener("focus", function () { setTimeout(function () { $("endereco").select(); }, 0); });
-  $("menu").onclick = function () { $("gaveta").hidden = !$("gaveta").hidden; };
-  document.addEventListener("click", function (ev) { if (!$("gaveta").contains(ev.target) && ev.target !== $("menu")) $("gaveta").hidden = true; });
-  $("g-fundo").onclick = function () { V.enviar("escolher-fundo"); };
-  $("g-sem-fundo").onclick = function () { V.enviar("remover-fundo"); };
-  $("g-trans").oninput = function () { V.enviar("transparencia", this.value); };
   $("gamer").onclick = function () { V.enviar("modo-gamer"); };
-  $("g-gamer").onclick = function () { V.enviar("modo-gamer"); $("gaveta").hidden = true; };
-  $("g-pos").onchange = function () { V.enviar("posicao-gamebar", this.value); };
-  $("g-bus").onchange = function () { V.enviar("buscador", this.value); };
-  $("g-anonima").onclick = function () { V.enviar("nova-anonima"); $("gaveta").hidden = true; };
+  $("menu").onclick = function () { V.enviar("menu-mais"); };
+  $("ajustes").onclick = function () { V.enviar("abrir-interna", "ajustes"); };
   $("chave").onclick = function () { V.enviar("chave"); };
-  $("g-bloqueio").onchange = function () { V.chamar("ajustes:bloqueio", this.checked); };
-  $("g-ajustes").onclick = function () { V.enviar("abrir-interna", "ajustes"); $("gaveta").hidden = true; };
-  $("g-historico").onclick = function () { V.enviar("abrir-interna", "historico"); $("gaveta").hidden = true; };
   /* busca na página (Ctrl+F) */
   function abrirBusca() { $("campo").hidden = true; $("busca").hidden = false; $("busca-texto").focus(); $("busca-texto").select(); }
   function fecharBusca() { $("busca").hidden = true; $("campo").hidden = false; $("busca-n").textContent = ""; }

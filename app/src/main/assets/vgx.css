@@ -75,4 +75,3 @@ html[data-formato="futurista"] .interruptor, html[data-formato="futurista"] .int
 .vgx .gira-r { animation-duration: 90s; animation-direction: reverse; }
 html[data-anim="0"] .vgx .pulso, html[data-anim="0"] .vgx .corre, html[data-anim="0"] .vgx .gira, html[data-anim="0"] .vgx .gira-r { animation: none; }
 html[data-anim="0"] .vgx .pulso { display: none; }
-@media (prefers-reduced-motion: reduce) { .vgx .pulso, .vgx .corre, .vgx .gira, .vgx .gira-r { animation: none; } }
