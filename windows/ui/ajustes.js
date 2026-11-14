@@ -59,7 +59,7 @@
     $("sync-msg").textContent = e.sync.resumo || $("sync-msg").textContent;
   }
   var VGX = window.VGX, temaAtual = null;
-  var GEAR = '<circle cx="12" cy="12" r="3"/><path d="M12 3V5.5M12 18.5V21M3 12H5.5M18.5 12H21M5.6 5.6L7.4 7.4M16.6 16.6L18.4 18.4M18.4 5.6L16.6 7.4M7.4 16.6L5.6 18.4"/>';
+  var GEAR = '<path d="M10.32 5.00 L10.87 2.47 L13.13 2.47 L13.68 5.00 L15.76 5.86 L17.94 4.46 L19.54 6.06 L18.14 8.24 L19.00 10.32 L21.53 10.87 L21.53 13.13 L19.00 13.68 L18.14 15.76 L19.54 17.94 L17.94 19.54 L15.76 18.14 L13.68 19.00 L13.13 21.53 L10.87 21.53 L10.32 19.00 L8.24 18.14 L6.06 19.54 L4.46 17.94 L5.86 15.76 L5.00 13.68 L2.47 13.13 L2.47 10.87 L5.00 10.32 L5.86 8.24 L4.46 6.06 L6.06 4.46 L8.24 5.86 Z" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.1"/>';
   function chips(id, lista, ativo, fazer, pinta) {
     var box = $(id); box.textContent = "";
     lista.forEach(function (x) {
