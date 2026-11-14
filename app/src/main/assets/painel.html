@@ -152,6 +152,37 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
           <p class="dica">Dica: use uma foto sua, um link ou busque na internet (segure numa imagem e escolha “Usar como ícone”).</p>
         </section>
 
+        <section class="sec" id="s-conta">
+          <p class="dica" id="c-msg" style="display:none"></p>
+          <div id="c-fora">
+            <p class="rotulo">Vetorial ID</p>
+            <p class="dica">Entre com a mesma conta do Velox no computador para ter os mesmos favoritos nos dois.</p>
+            <input class="campo-t" id="c-email" type="email" placeholder="E-mail" autocomplete="off">
+            <input class="campo-t" id="c-senha" type="password" placeholder="Senha" style="margin-top:8px">
+            <button class="botao primario" id="c-entrar" style="margin-top:10px">Entrar e sincronizar</button>
+          </div>
+          <div id="c-dentro" style="display:none">
+            <div class="vidro linha"><div><b id="c-quem">Conectado</b><small id="c-ultimo">Favoritos sincronizados</small></div></div>
+            <div class="dupla"><button class="botao primario" id="c-agora">Sincronizar agora</button><button class="botao perigo" id="c-sair">Sair</button></div>
+          </div>
+        </section>
+
+        <section class="sec" id="s-senhas">
+          <p class="dica" id="s-msg" style="display:none"></p>
+          <div id="s-corpo"></div>
+          <p class="dica">As senhas ficam só neste aparelho, cifradas com a sua senha mestra. O Velox pergunta se quer salvar quando você entra em um site e preenche só quando você pedir.</p>
+        </section>
+
+        <section class="sec" id="s-sites">
+          <p class="rotulo">Nesta página</p>
+          <div class="dupla" style="margin-top:0"><button class="botao" id="st-buscar">Buscar na página</button><button class="botao" id="st-preencher">Preencher login</button></div>
+          <p class="rotulo" style="margin-top:18px">Permissões dos sites</p>
+          <div id="st-perm"></div>
+          <p class="rotulo" style="margin-top:18px">Histórico</p>
+          <div id="st-hist"></div>
+          <button class="botao perigo" id="st-limpar" style="margin-top:10px">Limpar histórico</button>
+        </section>
+
         <section class="sec" id="s-mais">
           <p class="rotulo">Buscador</p><div class="fileira" id="buscadores"></div>
           <div class="dupla" style="margin-top:0">
@@ -188,9 +219,12 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     fundo: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 9"/>',
     barra: '<rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 17h.01M12 17h.01M17 17h.01M7 5h10M7 9h6"/>',
     mais: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+    conta: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
+    senhas: '<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>',
+    sites: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
     favoritos: '<path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8z"/>'
   };
-  var SECOES = [["abas", "Abas"], ["favoritos", "Favoritos"], ["jogo", "Jogo"], ["visual", "Visual"], ["fundo", "Fundo"], ["barra", "Barra"], ["mais", "Mais"]];
+  var SECOES = [["abas", "Abas"], ["favoritos", "Favoritos"], ["conta", "Conta"], ["senhas", "Senhas"], ["sites", "Sites"], ["jogo", "Jogo"], ["visual", "Visual"], ["fundo", "Fundo"], ["barra", "Barra"], ["mais", "Mais"]];
   var atual = SECOES.some(function (s) { return s[0] === P.get("aba"); }) ? P.get("aba") : "abas";
   function mostrar(id) {
     atual = id;
@@ -234,6 +268,72 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     });
   }
   $("nova").onclick = function () { ir("nova"); }; $("anonima").onclick = function () { ir("anonima"); };
+
+  /* conta Vetorial ID */
+  E.sync = E.sync || {}; E.cofre = E.cofre || { itens: [] }; E.sites = E.sites || []; E.hist = E.hist || [];
+  var msg = P.get("m") || "";
+  function aviso(id) { if (msg) { $(id).textContent = msg; $(id).style.display = "block"; } }
+  function desenharConta() {
+    var dentro = !!E.sync.logado;
+    $("c-fora").style.display = dentro ? "none" : "block"; $("c-dentro").style.display = dentro ? "block" : "none";
+    if (dentro) {
+      $("c-quem").textContent = E.sync.email || "Conectado";
+      $("c-ultimo").textContent = E.sync.ultimo ? "Última sincronização: " + new Date(E.sync.ultimo).toLocaleString("pt-BR") : "Ainda não sincronizou";
+    }
+    if (atual === "conta") aviso("c-msg");
+  }
+  $("c-entrar").onclick = function () { this.textContent = "Entrando…"; ir("sync-entrar", { e: $("c-email").value.trim(), s: $("c-senha").value }); };
+  $("c-agora").onclick = function () { this.textContent = "Sincronizando…"; ir("sync-agora"); };
+  $("c-sair").onclick = function () { ir("sync-sair"); };
+
+  /* cofre de senhas */
+  function desenharSenhas() {
+    var g = $("s-corpo"); g.innerHTML = "";
+    if (atual === "senhas") aviso("s-msg");
+    var c = E.cofre;
+    if (!c.existe) {
+      g.appendChild(el("p", "vazio", "Você ainda não criou o cofre de senhas."));
+      var b = el("button", "botao primario", "Criar cofre"); b.onclick = function () { ir("cofre-criar"); }; g.appendChild(b); return;
+    }
+    if (!c.aberto) {
+      g.appendChild(el("p", "vazio", "O cofre está trancado."));
+      var b2 = el("button", "botao primario", "Abrir com a senha mestra"); b2.onclick = function () { ir("cofre-abrir"); }; g.appendChild(b2); return;
+    }
+    if (!c.itens.length) g.appendChild(el("p", "vazio", "Nenhuma senha salva ainda."));
+    c.itens.forEach(function (i) {
+      var h = i.o; try { h = new URL(i.o).hostname; } catch (e) {}
+      var l = el("div", "vidro linha"), t = el("div"); t.appendChild(el("b", "", h)); t.appendChild(el("small", "", i.u || "(sem usuário)"));
+      var cp = el("button", "chip", "Copiar"); cp.onclick = function () { ir("cofre-copiar", { id: i.id }); };
+      var ap = el("button", "chip", "Apagar"); ap.onclick = function () { ir("cofre-apagar", { id: i.id }); };
+      l.appendChild(t); l.appendChild(cp); l.appendChild(ap); g.appendChild(l);
+    });
+    var tr = el("button", "botao", "Trancar cofre"); tr.style.marginTop = "10px"; tr.onclick = function () { ir("cofre-travar"); }; g.appendChild(tr);
+  }
+
+  /* sites: permissões e histórico */
+  var NOMES = { camera: "Câmera", microfone: "Microfone", localizacao: "Localização" };
+  function desenharSites() {
+    var p = $("st-perm"); p.innerHTML = "";
+    if (!E.sites.length) p.appendChild(el("p", "vazio", "Nenhuma permissão guardada."));
+    E.sites.forEach(function (x) {
+      var h = x.s; try { h = new URL(x.s).hostname; } catch (e) {}
+      var l = el("div", "vidro linha"), t = el("div"); t.appendChild(el("b", "", h)); t.appendChild(el("small", "", (NOMES[x.r] || x.r) + ": " + (x.v === "permitir" ? "permitido" : "bloqueado")));
+      var r = el("button", "chip", "Esquecer"); r.onclick = function () { ir("site-del", { s: x.s, r: x.r }); };
+      l.appendChild(t); l.appendChild(r); p.appendChild(l);
+    });
+    var g = $("st-hist"); g.innerHTML = "";
+    if (!E.hist.length) g.appendChild(el("p", "vazio", "O histórico está vazio."));
+    E.hist.forEach(function (x) {
+      var h = ""; try { h = new URL(x.u).hostname; } catch (e) {}
+      var l = el("div", "vidro linha"), t = el("div"); t.appendChild(el("b", "", x.n || h)); t.appendChild(el("small", "", h));
+      t.style.flex = "1"; t.onclick = function () { ir("hist-abrir", { u: x.u }); };
+      var r = el("button", "x", "×"); r.setAttribute("aria-label", "Apagar do histórico"); r.onclick = function () { ir("hist-apagar", { u: x.u }); };
+      l.appendChild(t); l.appendChild(r); g.appendChild(l);
+    });
+  }
+  $("st-buscar").onclick = function () { ir("buscar-pagina"); };
+  $("st-preencher").onclick = function () { ir("senha-preencher"); };
+  $("st-limpar").onclick = function () { ir("hist-limpar"); };
 
   /* modo jogo */
   var CHAVES = [
@@ -358,7 +458,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
   if (E.padrao) { $("padrao-t").textContent = "O Velox já é o seu navegador principal"; $("navprinc").textContent = "Ativo"; }
   if (E.v) $("versao").textContent = "Versão " + E.v + " · Vetorial Tech";
 
-  desenharWalls(); desenharFav(); desenharAbas(); desenharChaves(); vars(); desenharVisual(); desenharFundo(); mostrar(atual);
+  desenharConta(); desenharSenhas(); desenharSites(); desenharWalls(); desenharFav(); desenharAbas(); desenharChaves(); vars(); desenharVisual(); desenharFundo(); mostrar(atual);
 })();
 </script>
 </body>

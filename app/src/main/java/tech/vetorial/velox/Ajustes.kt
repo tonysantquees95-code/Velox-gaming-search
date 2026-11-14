@@ -66,6 +66,47 @@ class Ajustes(contexto: Context) {
         get() = p.getBoolean("perguntou_padrao", false)
         set(v) { p.edit().putBoolean("perguntou_padrao", v).apply() }
 
+    /** Quando cada favorito foi criado (url → milissegundos) e o que foi apagado (url → milissegundos): base da sincronização. */
+    var favTempoJson: String
+        get() = p.getString("fav_tempo", "{}") ?: "{}"
+        set(v) { p.edit().putString("fav_tempo", v).apply() }
+
+    var apagadosJson: String
+        get() = p.getString("fav_apagados", "{}") ?: "{}"
+        set(v) { p.edit().putString("fav_apagados", v).apply() }
+
+    var syncEmail: String
+        get() = p.getString("sync_email", "") ?: ""
+        set(v) { p.edit().putString("sync_email", v).apply() }
+
+    var syncToken: String
+        get() = p.getString("sync_token", "") ?: ""
+        set(v) { p.edit().putString("sync_token", v).apply() }
+
+    var syncUltimo: Long
+        get() = p.getLong("sync_ultimo", 0L)
+        set(v) { p.edit().putLong("sync_ultimo", v).apply() }
+
+    /** Identificador deste aparelho para o Vetorial ID (criado na primeira vez). */
+    val aparelho: String
+        get() {
+            val atual = p.getString("aparelho", "") ?: ""
+            if (atual.length >= 8) return atual
+            val novo = "velox-and-" + java.util.UUID.randomUUID().toString().replace("-", "").take(16)
+            p.edit().putString("aparelho", novo).apply()
+            return novo
+        }
+
+    /** Permissões dos sites: {origem: {recurso: "permitir"|"bloquear"}}. */
+    var permissoesJson: String
+        get() = p.getString("permissoes_sites", "{}") ?: "{}"
+        set(v) { p.edit().putString("permissoes_sites", v).apply() }
+
+    /** Histórico (sem abas anônimas): lista JSON de {u, n, t}, os mais novos primeiro. */
+    var historicoJson: String
+        get() = p.getString("historico", "[]") ?: "[]"
+        set(v) { p.edit().putString("historico", v).apply() }
+
     var abaAtual: Int
         get() = p.getInt("aba_atual", 0)
         set(v) { p.edit().putInt("aba_atual", v).apply() }

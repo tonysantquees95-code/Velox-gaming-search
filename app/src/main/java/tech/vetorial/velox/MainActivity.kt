@@ -49,6 +49,7 @@ class MainActivity : Activity() {
 
     private lateinit var ajustes: Ajustes
     private lateinit var tema: Tema
+    private lateinit var cofre: Cofre
     private val abas = mutableListOf<Aba>()
     private var atual: Aba? = null
 
@@ -90,6 +91,7 @@ class MainActivity : Activity() {
     override fun onCreate(estado: Bundle?) {
         super.onCreate(estado)
         ajustes = Ajustes(this)
+        cofre = Cofre.doContexto(this)
         try { Imagens.restaurarFundoSeSumiu(this) } catch (e: Exception) { /* segue sem fundo */ }
         tema = Tema.daString(ajustes.temaTexto)
         bloqueadosTotal.set(ajustes.bloqueadosTotal)
@@ -97,6 +99,7 @@ class MainActivity : Activity() {
         aplicarOpcoesSalvas()
         procurarAtualizacao(false)
         raizApp.postDelayed({ perguntarNavegadorPrincipal() }, 2600)
+        sincronizarDepois()
         val pedido = intent?.dataString
         val salvas = ajustes.abas
         if (pedido != null) {
@@ -123,6 +126,7 @@ class MainActivity : Activity() {
         ajustes.abaAtual = if (a == null) 0 else normais.indexOf(a).coerceAtLeast(0)
         ajustes.bloqueadosTotal = bloqueadosTotal.get()
         atual?.webView?.onPause()
+        cofre.travar()
         CookieManager.getInstance().flush()
     }
 
@@ -130,6 +134,7 @@ class MainActivity : Activity() {
         super.onResume()
         atual?.webView?.onResume()
         aplicarImersivo()
+        sincronizarDepois()
     }
 
     override fun onWindowFocusChanged(temFoco: Boolean) {
@@ -419,6 +424,10 @@ class MainActivity : Activity() {
             .put("walls", JSONArray(Imagens.listarWallpapers(this)))
             .put("fav", JSONArray(ajustes.favoritosJson))
             .put("padrao", ehNavegadorPrincipal())
+            .put("sync", JSONObject().put("email", ajustes.syncEmail).put("logado", ajustes.syncToken.isNotBlank()).put("ultimo", ajustes.syncUltimo))
+            .put("cofre", estadoDoCofre())
+            .put("sites", sitesDoPainel())
+            .put("hist", historicoDoPainel())
         fotoFundo?.let { o.put("fotoAmostra", Imagens.miniatura(it, 360, true)) }
         val ic = JSONObject()
         for (slot in Imagens.SLOTS) iconesProprios[slot]?.let { ic.put(slot, Imagens.miniatura(it, 72, false)) }
@@ -426,7 +435,32 @@ class MainActivity : Activity() {
         return Base64.encodeToString(o.toString().toByteArray(Charsets.UTF_8), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
     }
 
-    private fun abrirPainel(aba: String, esquerda: Boolean = false) {
+    private fun estadoDoCofre(): JSONObject {
+        val o = JSONObject().put("existe", cofre.existe()).put("aberto", cofre.aberto())
+        val itens = JSONArray()
+        if (cofre.aberto()) try { for (i in cofre.lista()) itens.put(JSONObject().put("id", i.id).put("o", i.origem).put("u", i.usuario)) } catch (e: Exception) { /* trancou */ }
+        return o.put("itens", itens)
+    }
+
+    private fun sitesDoPainel(): JSONArray {
+        val m = mapaJson(ajustes.permissoesJson)
+        val r = JSONArray()
+        for (site in m.keys()) {
+            val o = m.optJSONObject(site) ?: continue
+            for (rec in o.keys()) r.put(JSONObject().put("s", site).put("r", rec).put("v", o.optString(rec)))
+        }
+        return r
+    }
+
+    private fun historicoDoPainel(): JSONArray {
+        val a = try { JSONArray(ajustes.historicoJson) } catch (e: Exception) { JSONArray() }
+        val r = JSONArray()
+        for (i in 0 until minOf(a.length(), 60)) r.put(a.getJSONObject(i))
+        return r
+    }
+
+    private fun abrirPainel(aba: String, esquerda: Boolean = false, msg: String = "") {
+        ultimoLado = esquerda
         fecharPainel()
         val wv = WebView(this)
         wv.setBackgroundColor(Color.TRANSPARENT)
@@ -448,7 +482,7 @@ class MainActivity : Activity() {
         painel = wv
         flutuante.visibility = View.GONE
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(campo.windowToken, 0)
-        wv.loadUrl("file:///android_asset/painel.html?aba=" + aba + (if (esquerda) "&lado=esq" else "") + "&" + tema.params() + "&s=" + estadoDoPainel())
+        wv.loadUrl("file:///android_asset/painel.html?aba=" + aba + (if (esquerda) "&lado=esq" else "") + "&" + tema.params() + "&s=" + estadoDoPainel() + (if (msg.isNotEmpty()) "&m=" + Uri.encode(msg) else ""))
     }
 
     private fun fecharPainel() {
@@ -502,6 +536,27 @@ class MainActivity : Activity() {
             "fav-del" -> { u.getQueryParameter("i")?.toIntOrNull()?.let { removerFavorito(it) }; abrirPainel("favoritos", true) }
             "fav-abrir" -> { fecharPainel(); u.getQueryParameter("u")?.let { abrirTexto(it) } }
             "padrao" -> { fecharPainel(); pedirNavegadorPrincipal() }
+            "sync-entrar" -> entrarNoVetorialId(u.getQueryParameter("e") ?: "", u.getQueryParameter("s") ?: "")
+            "sync-sair" -> { ajustes.syncToken = ""; ajustes.syncEmail = ""; reabrirPainel("conta", "Você saiu do Vetorial ID.") }
+            "sync-agora" -> sincronizarAgora(true)
+            "cofre-criar" -> criarCofre { reabrirPainel("senhas") }
+            "cofre-abrir" -> abrirCofre("Digite a senha mestra para ver o cofre.") { reabrirPainel("senhas") }
+            "cofre-travar" -> { cofre.travar(); reabrirPainel("senhas") }
+            "cofre-apagar" -> { try { u.getQueryParameter("id")?.let { cofre.apagar(it) } } catch (e: Exception) { /* trancado */ }; reabrirPainel("senhas") }
+            "cofre-copiar" -> u.getQueryParameter("id")?.let { copiarSenha(it) }
+            "senha-preencher" -> { fecharPainel(); preencherPaginaAtual() }
+            "site-del" -> {
+                val m = mapaJson(ajustes.permissoesJson)
+                val o = m.optJSONObject(u.getQueryParameter("s") ?: "")
+                o?.remove(u.getQueryParameter("r") ?: "")
+                if (o != null && o.length() == 0) m.remove(u.getQueryParameter("s") ?: "")
+                ajustes.permissoesJson = m.toString()
+                reabrirPainel("sites")
+            }
+            "hist-abrir" -> { fecharPainel(); u.getQueryParameter("u")?.let { abrirTexto(it) } }
+            "hist-apagar" -> { apagarDoHistorico(u.getQueryParameter("u")); reabrirPainel("sites") }
+            "hist-limpar" -> { apagarDoHistorico(null); reabrirPainel("sites") }
+            "buscar-pagina" -> { fecharPainel(); mostrarBusca() }
             "fundo-galeria" -> escolherImagem(PEDIDO_FUNDO)
             "fundo-usar" -> {
                 val n = u.getQueryParameter("n") ?: ""
@@ -559,6 +614,301 @@ class MainActivity : Activity() {
         atualizarEstrela()
     }
 
+    // ---------------------------------------------------------------- Vetorial ID: favoritos sincronizados
+    private val relogioSync = Runnable { sincronizarAgora(false) }
+    private var sincronizando = false
+    private var ultimoLado = false
+
+    private fun mapaJson(texto: String): JSONObject = try { JSONObject(texto) } catch (e: Exception) { JSONObject() }
+
+    private fun docLocal(): Sync.Doc {
+        val tempos = mapaJson(ajustes.favTempoJson)
+        val ap = mapaJson(ajustes.apagadosJson)
+        val favs = listaFavoritos().map { Sync.Fav(it.first, it.second, tempos.optLong(it.second, 0L)) }
+        val apagados = HashMap<String, Long>()
+        for (k in ap.keys()) apagados[k] = ap.optLong(k, 0L)
+        return Sync.Doc(favs, apagados)
+    }
+
+    private fun aplicarDoc(d: Sync.Doc) {
+        val tempos = JSONObject()
+        for (f in d.favoritos) tempos.put(f.u, f.t)
+        val ap = JSONObject()
+        for ((k, v) in d.apagados) ap.put(k, v)
+        ajustes.favTempoJson = tempos.toString()
+        ajustes.apagadosJson = ap.toString()
+        gravarFavoritos(d.favoritos.map { Pair(it.n, it.u) })
+    }
+
+    /** Anota quando o favorito nasceu ou foi apagado (é o que a sincronização usa para decidir). */
+    private fun marcarFavorito(u: String, criado: Boolean) {
+        val tempos = mapaJson(ajustes.favTempoJson)
+        val ap = mapaJson(ajustes.apagadosJson)
+        val agora = System.currentTimeMillis()
+        if (criado) { tempos.put(u, agora); ap.remove(u) } else { tempos.remove(u); ap.put(u, agora) }
+        ajustes.favTempoJson = tempos.toString()
+        ajustes.apagadosJson = ap.toString()
+        sincronizarDepois()
+    }
+
+    private fun sincronizarDepois() {
+        if (ajustes.syncToken.isBlank()) return
+        raizApp.removeCallbacks(relogioSync)
+        raizApp.postDelayed(relogioSync, 3000)
+    }
+
+    private fun sincronizarAgora(avisar: Boolean) {
+        val token = ajustes.syncToken
+        if (token.isBlank() || sincronizando) return
+        sincronizando = true
+        val local = docLocal()
+        Thread {
+            try {
+                val (doc, mudou) = Sync.sincronizar(token, local)
+                runOnUiThread {
+                    sincronizando = false
+                    if (mudou) aplicarDoc(doc)
+                    ajustes.syncUltimo = System.currentTimeMillis()
+                    if (avisar) reabrirPainel("conta", "Favoritos sincronizados (" + doc.favoritos.size + ").")
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    sincronizando = false
+                    if (e is Sync.Falha && e.status == 401) ajustes.syncToken = ""
+                    if (avisar) reabrirPainel("conta", if (e is Sync.Falha && e.status == 401) "A sessão do Vetorial ID acabou. Entre de novo." else (e.message ?: "Não consegui sincronizar agora."))
+                }
+            }
+        }.start()
+    }
+
+    private fun entrarNoVetorialId(email: String, senha: String) {
+        if (email.isBlank() || senha.isBlank()) { reabrirPainel("conta", "Digite o e-mail e a senha do Vetorial ID."); return }
+        Thread {
+            try {
+                val (token, mail) = Sync.entrar(email.trim(), senha, ajustes.aparelho)
+                runOnUiThread { ajustes.syncToken = token; ajustes.syncEmail = mail; sincronizarAgora(true) }
+            } catch (e: Exception) {
+                runOnUiThread { reabrirPainel("conta", e.message ?: "Não consegui entrar agora.") }
+            }
+        }.start()
+    }
+
+    private fun reabrirPainel(aba: String, msg: String = "") {
+        if (painel == null) { if (msg.isNotEmpty()) Toast.makeText(this, msg, Toast.LENGTH_LONG).show(); return }
+        abrirPainel(aba, ultimoLado, msg)
+    }
+
+    // ---------------------------------------------------------------- cofre de senhas
+    private fun pedirCampos(titulo: String, texto: String, dicas: List<String>, ok: String, aoOk: (List<String>) -> Unit) {
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val campos = dicas.map { d ->
+            val e = EditText(this)
+            e.hint = d
+            e.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
+            col.addView(e)
+            e
+        }
+        AlertDialog.Builder(this).setTitle(titulo).setMessage(texto).setView(col)
+            .setPositiveButton(ok) { _, _ -> aoOk(campos.map { it.text.toString() }) }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun criarCofre(depois: () -> Unit) {
+        pedirCampos("Criar o cofre de senhas", "Crie uma senha mestra. Ela protege as suas senhas neste aparelho e não pode ser recuperada se você esquecer.", listOf("Senha mestra (mínimo 6 caracteres)", "Repita a senha mestra"), "Criar cofre") { v ->
+            if (v[0] != v[1]) Toast.makeText(this, "As senhas mestras não são iguais.", Toast.LENGTH_LONG).show()
+            else Thread {
+                try { cofre.criar(v[0]); runOnUiThread { depois() } }
+                catch (e: Exception) { runOnUiThread { Toast.makeText(this, e.message ?: "Não consegui criar o cofre.", Toast.LENGTH_LONG).show() } }
+            }.start()
+        }
+    }
+
+    private fun abrirCofre(motivo: String, depois: () -> Unit) {
+        if (cofre.aberto()) { depois(); return }
+        pedirCampos("Cofre de senhas", motivo, listOf("Senha mestra"), "Abrir") { v ->
+            Thread {
+                try { cofre.abrir(v[0]); runOnUiThread { depois() } }
+                catch (e: Exception) { runOnUiThread { Toast.makeText(this, "Senha mestra incorreta.", Toast.LENGTH_LONG).show() } }
+            }.start()
+        }
+    }
+
+    private fun garantirCofre(motivo: String, depois: () -> Unit) {
+        if (!cofre.existe()) criarCofre(depois) else abrirCofre(motivo, depois)
+    }
+
+    private fun origemDe(url: String?): String {
+        return try {
+            val u = Uri.parse(url ?: "")
+            val h = u.host
+            val e = u.scheme
+            if ((e != "http" && e != "https") || h.isNullOrBlank()) ""
+            else e + "://" + h + (if (u.port != -1 && !((e == "https" && u.port == 443) || (e == "http" && u.port == 80))) ":" + u.port else "")
+        } catch (ex: Exception) { "" }
+    }
+
+    private inner class PonteSenhas(private val aba: Aba) {
+        @android.webkit.JavascriptInterface
+        fun capturado(origem: String?, usuario: String?, senha: String?) {
+            val o = origem ?: return
+            val s = senha ?: return
+            val u = usuario ?: ""
+            runOnUiThread { aoCapturarSenha(aba, o, u, s) }
+        }
+    }
+
+    private fun aoCapturarSenha(aba: Aba, origem: String, usuario: String, senha: String) {
+        if (aba.anonima || senha.isEmpty()) return
+        val real = origemDe(aba.webView.url)
+        if (real.isEmpty() || real != origem) return
+        val host = Uri.parse(origem).host ?: origem
+        garantirCofre("Digite a senha mestra para salvar o login de $host.") {
+            if (cofre.jaPerguntou(origem)) return@garantirCofre
+            val existente = cofre.doSite(origem).firstOrNull { it.usuario == usuario }
+            if (existente != null && existente.senha == senha) return@garantirCofre
+            val quem = if (usuario.isBlank()) "(sem usuário)" else usuario
+            AlertDialog.Builder(this).setTitle("Salvar senha?")
+                .setMessage(if (existente != null) "Atualizar a senha de “$quem” em $host?" else "Salvar o login de “$quem” em $host?")
+                .setPositiveButton(if (existente != null) "Atualizar" else "Salvar") { _, _ -> try { cofre.salvar(origem, usuario, senha) } catch (e: Exception) { /* trancou no meio */ } }
+                .setNeutralButton("Nunca neste site") { _, _ -> try { cofre.nuncaOferecer(origem) } catch (e: Exception) { /* trancou no meio */ } }
+                .setNegativeButton("Agora não", null)
+                .show()
+        }
+    }
+
+    private fun preencherPaginaAtual() {
+        val a = atual ?: return
+        val origem = origemDe(a.webView.url)
+        if (origem.isEmpty() || a.anonima) { Toast.makeText(this, "Abra uma página de login (fora da aba anônima).", Toast.LENGTH_SHORT).show(); return }
+        garantirCofre("Digite a senha mestra para preencher o login.") {
+            val logins = cofre.doSite(origem)
+            when {
+                logins.isEmpty() -> Toast.makeText(this, "Não há senha salva para este site.", Toast.LENGTH_SHORT).show()
+                logins.size == 1 -> preencher(a, logins[0])
+                else -> AlertDialog.Builder(this).setTitle("Qual login usar?")
+                    .setItems(logins.map { if (it.usuario.isBlank()) "(sem usuário)" else it.usuario }.toTypedArray()) { _, i -> preencher(a, logins[i]) }
+                    .show()
+            }
+        }
+    }
+
+    private fun preencher(a: Aba, l: Cofre.Item) {
+        a.webView.evaluateJavascript(JS_PREENCHER + "(" + JSONObject.quote(l.usuario) + "," + JSONObject.quote(l.senha) + ")", null)
+    }
+
+    private fun copiarSenha(id: String) {
+        try {
+            val s = cofre.senhaDe(id) ?: return
+            val cm = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            cm.setPrimaryClip(android.content.ClipData.newPlainText("senha", s))
+            Toast.makeText(this, "Senha copiada. A área de transferência é limpa em 30 segundos.", Toast.LENGTH_LONG).show()
+            raizApp.postDelayed({
+                try { if (cm.primaryClip?.getItemAt(0)?.text?.toString() == s) cm.setPrimaryClip(android.content.ClipData.newPlainText("", "")) } catch (e: Exception) { /* sem acesso */ }
+            }, 30_000)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Abra o cofre primeiro.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ---------------------------------------------------------------- permissões por site
+    private var retornoPermissao: ((Boolean) -> Unit)? = null
+
+    private fun permissaoDoSite(origem: String, rec: String): String? =
+        mapaJson(ajustes.permissoesJson).optJSONObject(origem)?.optString(rec)?.takeIf { it.isNotBlank() }
+
+    private fun guardarPermissao(origem: String, rec: String, valor: String) {
+        val m = mapaJson(ajustes.permissoesJson)
+        val o = m.optJSONObject(origem) ?: JSONObject()
+        o.put(rec, valor)
+        m.put(origem, o)
+        ajustes.permissoesJson = m.toString()
+    }
+
+    private fun perguntarPermissaoSite(origem: String, recs: List<String>, resposta: (Boolean) -> Unit) {
+        val decididos = recs.map { permissaoDoSite(origem, it) }
+        if (decididos.all { it == "permitir" }) { resposta(true); return }
+        if (decididos.any { it == "bloquear" }) { resposta(false); return }
+        val nomes = recs.map { when (it) { "camera" -> "a câmera"; "microfone" -> "o microfone"; else -> "a sua localização" } }
+        val host = Uri.parse(origem).host ?: origem
+        AlertDialog.Builder(this).setTitle("Permissão do site")
+            .setMessage(host + " quer usar " + nomes.joinToString(" e ") + ".")
+            .setPositiveButton("Permitir") { _, _ -> for (r in recs) guardarPermissao(origem, r, "permitir"); resposta(true) }
+            .setNegativeButton("Bloquear") { _, _ -> for (r in recs) guardarPermissao(origem, r, "bloquear"); resposta(false) }
+            .setOnCancelListener { resposta(false) }
+            .show()
+    }
+
+    private fun garantirPermissoesDoAndroid(recs: List<String>, ok: (Boolean) -> Unit) {
+        val precisa = mutableListOf<String>()
+        for (r in recs) when (r) {
+            "camera" -> precisa.add(android.Manifest.permission.CAMERA)
+            "microfone" -> precisa.add(android.Manifest.permission.RECORD_AUDIO)
+            "localizacao" -> precisa.add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+        val faltam = precisa.filter { checkSelfPermission(it) != android.content.pm.PackageManager.PERMISSION_GRANTED }
+        if (faltam.isEmpty()) { ok(true); return }
+        retornoPermissao = ok
+        requestPermissions(faltam.toTypedArray(), PEDIDO_PERMISSAO)
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == PEDIDO_PERMISSAO) {
+            val r = retornoPermissao
+            retornoPermissao = null
+            r?.invoke(grantResults.isNotEmpty() && grantResults.all { it == android.content.pm.PackageManager.PERMISSION_GRANTED })
+        }
+    }
+
+    // ---------------------------------------------------------------- histórico e busca na página
+    private fun registrarHistorico(aba: Aba, url: String) {
+        if (aba.anonima || !(url.startsWith("http://") || url.startsWith("https://"))) return
+        val antigo = try { JSONArray(ajustes.historicoJson) } catch (e: Exception) { JSONArray() }
+        val novo = JSONArray()
+        novo.put(JSONObject().put("u", url).put("n", aba.titulo).put("t", System.currentTimeMillis()))
+        var n = 1
+        for (i in 0 until antigo.length()) {
+            val o = antigo.optJSONObject(i) ?: continue
+            if (i == 0 && o.optString("u") == url) continue
+            if (n >= 500) break
+            novo.put(o)
+            n++
+        }
+        ajustes.historicoJson = novo.toString()
+    }
+
+    private fun apagarDoHistorico(u: String?) {
+        val antigo = try { JSONArray(ajustes.historicoJson) } catch (e: Exception) { JSONArray() }
+        val novo = JSONArray()
+        for (i in 0 until antigo.length()) {
+            val o = antigo.optJSONObject(i) ?: continue
+            if (u == null || o.optString("u") != u) if (u != null) novo.put(o)
+        }
+        ajustes.historicoJson = novo.toString()
+    }
+
+    private fun mostrarBusca() {
+        val wv = atual?.webView ?: return
+        val entrada = EditText(this)
+        entrada.hint = "Buscar na página"
+        entrada.setSingleLine()
+        val col = LinearLayout(this).apply { setPadding(dp(20), dp(8), dp(20), 0); addView(entrada) }
+        val d = AlertDialog.Builder(this).setTitle("Buscar na página").setView(col)
+            .setPositiveButton("Próximo", null).setNeutralButton("Anterior", null)
+            .setNegativeButton("Fechar", null).create()
+        val ultima = arrayOf("")
+        d.setOnShowListener {
+            d.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val q = entrada.text.toString()
+                if (q.isNotBlank()) { if (ultima[0] != q) { ultima[0] = q; wv.findAllAsync(q) } else wv.findNext(true) }
+            }
+            d.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener { wv.findNext(false) }
+        }
+        d.setOnDismissListener { wv.clearMatches() }
+        d.show()
+    }
+
     private fun favoritarPaginaAtual() {
         val a = atual
         val u = a?.url ?: ""
@@ -574,14 +924,17 @@ class MainActivity : Activity() {
         val host = try { Uri.parse(u).host ?: u } catch (e: Exception) { u }
         l.add(Pair(a.titulo.ifBlank { host }.take(60), u))
         gravarFavoritos(l)
+        marcarFavorito(u, true)
         Toast.makeText(this, "Adicionada aos favoritos.", Toast.LENGTH_SHORT).show()
     }
 
     private fun removerFavorito(i: Int) {
         val l = listaFavoritos()
         if (i in l.indices) {
+            val u = l[i].second
             l.removeAt(i)
             gravarFavoritos(l)
+            marcarFavorito(u, false)
         }
     }
 
@@ -778,6 +1131,7 @@ class MainActivity : Activity() {
         val wv = WebView(this)
         val aba = Aba(wv, anonima)
         configurar(wv, anonima)
+        if (!anonima) wv.addJavascriptInterface(PonteSenhas(aba), "VeloxSenhas")
         wv.webViewClient = navegador(aba)
         wv.webChromeClient = cromo(aba)
         wv.setOnLongClickListener { v ->
@@ -906,6 +1260,8 @@ class MainActivity : Activity() {
         override fun onPageFinished(view: WebView, url: String) {
             if (!url.startsWith("file:///android_asset/")) {
                 aba.url = url
+                registrarHistorico(aba, url)
+                if (!aba.anonima) view.evaluateJavascript(JS_CAPTURA + "()", null)
                 if (ajustes.sitesNoTema) {
                     view.evaluateJavascript(JS_TRANSPARENTE, null)
                     view.postDelayed({ view.evaluateJavascript(JS_TRANSPARENTE, null) }, 1200)
@@ -957,6 +1313,31 @@ class MainActivity : Activity() {
 
         override fun onReceivedTitle(view: WebView, titulo: String?) {
             aba.titulo = if (titulo.isNullOrBlank() || titulo == "Velox") "Nova aba" else titulo
+        }
+
+        override fun onPermissionRequest(req: android.webkit.PermissionRequest) {
+            runOnUiThread {
+                val origem = origemDe(aba.webView.url)
+                val recs = mutableListOf<String>()
+                for (r in req.resources) when (r) {
+                    android.webkit.PermissionRequest.RESOURCE_VIDEO_CAPTURE -> recs.add("camera")
+                    android.webkit.PermissionRequest.RESOURCE_AUDIO_CAPTURE -> recs.add("microfone")
+                }
+                if (origem.isEmpty() || recs.isEmpty()) { req.deny(); return@runOnUiThread }
+                perguntarPermissaoSite(origem, recs) { sim ->
+                    if (!sim) req.deny() else garantirPermissoesDoAndroid(recs) { ok -> if (ok) req.grant(req.resources) else req.deny() }
+                }
+            }
+        }
+
+        override fun onGeolocationPermissionsShowPrompt(origin: String, cb: android.webkit.GeolocationPermissions.Callback) {
+            runOnUiThread {
+                val real = origemDe(aba.webView.url)
+                if (real.isEmpty()) { cb.invoke(origin, false, false); return@runOnUiThread }
+                perguntarPermissaoSite(real, listOf("localizacao")) { sim ->
+                    if (!sim) cb.invoke(origin, false, false) else garantirPermissoesDoAndroid(listOf("localizacao")) { ok -> cb.invoke(origin, ok, false) }
+                }
+            }
         }
 
         override fun onShowFileChooser(view: WebView, retorno: ValueCallback<Array<Uri>>, params: FileChooserParams): Boolean {
@@ -1326,7 +1707,26 @@ class MainActivity : Activity() {
         const val PEDIDO_FUNDO = 2
         const val PEDIDO_PADRAO = 9
         const val PEDIDO_ICONE = 3
+        const val PEDIDO_PERMISSAO = 4
         const val VINDEX = "tech.vetorial.vindex"
+
+        /** Vê o envio de formulários de login e avisa o app; só observa, nunca preenche sozinho. */
+        const val JS_CAPTURA = "(function(){try{if(window.__veloxSenhas||!window.VeloxSenhas)return;window.__veloxSenhas=1;" +
+            "function achar(f){var p=f.querySelector('input[type=password]');if(!p||!p.value)return;" +
+            "var u='',c=f.querySelectorAll('input');for(var i=0;i<c.length;i++){var t=(c[i].type||'text').toLowerCase();" +
+            "if(c[i]===p)break;if((t==='text'||t==='email'||t==='tel')&&c[i].value)u=c[i].value;}" +
+            "VeloxSenhas.capturado(location.origin,u,p.value);}" +
+            "document.addEventListener('submit',function(e){try{achar(e.target)}catch(x){}},true);" +
+            "document.addEventListener('click',function(e){try{var b=e.target.closest&&e.target.closest('button,input[type=submit]');" +
+            "if(b&&b.form)achar(b.form)}catch(x){}},true);}catch(x){}})";
+
+        /** Preenche usuário e senha na página (chamado só quando a pessoa pede, com valores já escapados). */
+        const val JS_PREENCHER = "(function(u,s){var p=document.querySelector('input[type=password]');if(!p)return false;" +
+            "function p2(el,v){var d=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value');d.set.call(el,v);" +
+            "el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}" +
+            "var f=p.form||document,c=f.querySelectorAll('input'),user=null;" +
+            "for(var i=0;i<c.length;i++){if(c[i]===p)break;var t=(c[i].type||'text').toLowerCase();if(t==='text'||t==='email'||t==='tel')user=c[i];}" +
+            "if(user&&u)p2(user,u);p2(p,s);return true;})"
 
         /** Deixa transparentes os fundos grandes e lisos da página para aparecer o fundo do Velox por trás. */
         /** Resultados do Google: tira o fundo sólido de tudo e deixa só um vidro escuro e leve atrás de cada resultado. */
