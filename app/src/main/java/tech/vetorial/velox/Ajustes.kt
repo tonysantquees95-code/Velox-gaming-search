@@ -20,6 +20,11 @@ class Ajustes(contexto: Context) {
         get() = p.getBoolean("bloquear", true)
         set(v) { p.edit().putBoolean("bloquear", v).apply() }
 
+    /** Lado da game bar do modo gamer: dir, esq, cima ou baixo. */
+    var posGameBar: String
+        get() = p.getString("gb_pos", "dir")?.takeIf { it in listOf("dir", "esq", "cima", "baixo") } ?: "dir"
+        set(v) { p.edit().putString("gb_pos", v).apply() }
+
     var segundoPlano: Boolean
         get() = p.getBoolean("segundo_plano", true)
         set(v) { p.edit().putBoolean("segundo_plano", v).apply() }

@@ -24,6 +24,7 @@
       "bloqueio.js",
       "sincronia.js",
       "atualizador.js",
+      "jogo.js",
       "build/icon.png",
       "ui/**",
       "inicio/**",

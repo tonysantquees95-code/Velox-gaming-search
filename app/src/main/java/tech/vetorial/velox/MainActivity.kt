@@ -64,6 +64,8 @@ class MainActivity : Activity() {
     private lateinit var barraDeBaixo: LinearLayout
     private lateinit var logo: LogoVgx
     private lateinit var flutuante: ImageView
+    private lateinit var gameBar: LinearLayout
+    private var gbRecolhida = false
     private val botoes = mutableMapOf<String, ImageView>()
     private val iconesProprios = HashMap<String, Bitmap?>()
     private lateinit var fundoView: FundoView
@@ -336,13 +338,17 @@ class MainActivity : Activity() {
             setImageDrawable(IconeTraco.criar("painel"))
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             setPadding(dp(11), dp(11), dp(11), dp(11))
-            contentDescription = "Abrir o painel do Velox"
+            contentDescription = "Abrir a game bar"
             visibility = View.GONE
             isClickable = true
-            setOnClickListener { abrirPainel("jogo") }
+            setOnClickListener { gbRecolhida = false; atualizarGameBar() }
+            setOnLongClickListener { abrirPainel("jogo"); true }
         }
+        montarGameBar()
         raizApp.addView(coluna, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        raizApp.addView(flutuante, FrameLayout.LayoutParams(dp(44), dp(44), Gravity.BOTTOM or Gravity.END).apply { rightMargin = dp(14); bottomMargin = dp(70) })
+        raizApp.addView(flutuante, FrameLayout.LayoutParams(dp(44), dp(44)))
+        raizApp.addView(gameBar, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        posicionarGameBar()
         setContentView(raizApp)
         fotoFundo = Imagens.carregarFundo(this)
         aplicarCores()
@@ -382,6 +388,7 @@ class MainActivity : Activity() {
         logo.cores(tema.destaque, tema.secundaria)
         barra.cores(tema.destaque, tema.secundaria)
         flutuante.setColorFilter(tema.sobreDestaque)
+        if (::gameBar.isInitialized) pintarGameBar()
         flutuante.background = GradientDrawable().apply {
             shape = if (tema.redondo) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
             cornerRadius = dp(8).toFloat()
@@ -444,6 +451,121 @@ class MainActivity : Activity() {
     }
 
     @Suppress("DEPRECATION")
+    // ---------------------------------------------------------------- game bar (modo gamer)
+
+    private val botoesGameBar = ArrayList<TextView>()
+    private lateinit var gbSom: TextView
+
+    private fun montarGameBar() {
+        gameBar = LinearLayout(this).apply { visibility = View.GONE; setPadding(dp(4), dp(4), dp(4), dp(4)) }
+        fun b(glifo: String, descricao: String, acao: (TextView) -> Unit): TextView = TextView(this).apply {
+            text = glifo; textSize = 18f; gravity = Gravity.CENTER; contentDescription = descricao
+            isClickable = true; isFocusable = true
+            setOnClickListener { acao(this) }
+            botoesGameBar.add(this)
+            gameBar.addView(this, LinearLayout.LayoutParams(dp(44), dp(44)))
+        }
+        b("‹", "Voltar") { voltar() }
+        b("⟳", "Recarregar") { atual?.webView?.reload() }
+        b("📷", "Captura de tela") { capturarTela() }
+        gbSom = b("🔊", "Som da página") { alternarSom() }
+        b("🎮", "Painel do Velox") { abrirPainel("jogo") }
+        b("⇄", "Mudar a barra de lado") {
+            val ordem = listOf("dir", "esq", "cima", "baixo")
+            ajustes.posGameBar = ordem[(ordem.indexOf(ajustes.posGameBar) + 1) % ordem.size]
+            posicionarGameBar()
+        }
+        b("⟩", "Recolher a barra") { gbRecolhida = true; atualizarGameBar() }
+        b("✕", "Sair do modo gamer") { ajustes.imersivo = false; aplicarImersivo() }.setTextColor(0xFFF87171.toInt())
+        pintarGameBar()
+    }
+
+    private fun pintarGameBar() {
+        gameBar.background = GradientDrawable().apply {
+            setColor(0xE00A0F1C.toInt()); cornerRadius = dp(18).toFloat(); setStroke(dp(1), (tema.destaque and 0x00FFFFFF) or 0x80000000.toInt())
+        }
+        for (t in botoesGameBar) if (t.text != "✕") t.setTextColor(tema.texto)
+    }
+
+    /** Põe a barra e a alça no lado escolhido (direita, esquerda, em cima ou embaixo). */
+    private fun posicionarGameBar() {
+        val lado = ajustes.posGameBar
+        val vertical = lado == "dir" || lado == "esq"
+        gameBar.orientation = if (vertical) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL
+        val g = when (lado) {
+            "esq" -> Gravity.START or Gravity.CENTER_VERTICAL
+            "cima" -> Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            "baixo" -> Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            else -> Gravity.END or Gravity.CENTER_VERTICAL
+        }
+        gameBar.layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, g).apply { setMargins(dp(8), dp(8), dp(8), dp(8)) }
+        flutuante.layoutParams = FrameLayout.LayoutParams(dp(44), dp(44), g).apply { setMargins(dp(4), dp(4), dp(4), dp(4)) }
+        atualizarGameBar()
+    }
+
+    private fun atualizarGameBar() {
+        if (!::gameBar.isInitialized) return
+        val ligado = ajustes.imersivo && telaCheia == null && painel == null
+        gameBar.visibility = if (ligado && !gbRecolhida) View.VISIBLE else View.GONE
+        flutuante.visibility = if (ligado && gbRecolhida) View.VISIBLE else View.GONE
+    }
+
+    private fun esconderGameBar() {
+        if (::gameBar.isInitialized) gameBar.visibility = View.GONE
+        flutuante.visibility = View.GONE
+    }
+
+    private var somMudo = false
+    private fun alternarSom() {
+        somMudo = !somMudo
+        gbSom.text = if (somMudo) "🔇" else "🔊"
+        atual?.webView?.evaluateJavascript("(function(m){document.querySelectorAll('video,audio').forEach(function(x){x.muted=m});window.__veloxMudo=m;})(" + somMudo + ")", null)
+    }
+
+    /** Foto da página (sem a barra por cima) salva em Imagens/Velox. */
+    private fun capturarTela() {
+        val wv = atual?.webView ?: return
+        if (wv.width <= 0 || wv.height <= 0) return
+        val estavaVisivel = gameBar.visibility == View.VISIBLE
+        gameBar.visibility = View.INVISIBLE
+        wv.postDelayed({
+            val bmp = android.graphics.Bitmap.createBitmap(wv.width, wv.height, android.graphics.Bitmap.Config.ARGB_8888)
+            val onde = IntArray(2)
+            wv.getLocationInWindow(onde)
+            try {
+                android.view.PixelCopy.request(window, android.graphics.Rect(onde[0], onde[1], onde[0] + wv.width, onde[1] + wv.height), bmp, { r ->
+                    if (estavaVisivel) gameBar.visibility = View.VISIBLE
+                    if (r == android.view.PixelCopy.SUCCESS) salvarCaptura(bmp) else Toast.makeText(this, "Não deu para fazer a captura.", Toast.LENGTH_SHORT).show()
+                }, android.os.Handler(mainLooper))
+            } catch (e: Exception) {
+                if (estavaVisivel) gameBar.visibility = View.VISIBLE
+                Toast.makeText(this, "Não deu para fazer a captura.", Toast.LENGTH_SHORT).show()
+            }
+        }, 140)
+    }
+
+    private fun salvarCaptura(bmp: android.graphics.Bitmap) {
+        val nome = "Velox-" + java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.ROOT).format(java.util.Date()) + ".png"
+        try {
+            if (Build.VERSION.SDK_INT >= 29) {
+                val v = android.content.ContentValues().apply {
+                    put(android.provider.MediaStore.Images.Media.DISPLAY_NAME, nome)
+                    put(android.provider.MediaStore.Images.Media.MIME_TYPE, "image/png")
+                    put(android.provider.MediaStore.Images.Media.RELATIVE_PATH, "Pictures/Velox")
+                }
+                val u = contentResolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, v)!!
+                contentResolver.openOutputStream(u)!!.use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+                Toast.makeText(this, "Captura salva em Imagens/Velox", Toast.LENGTH_SHORT).show()
+            } else {
+                val d = java.io.File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "Velox").apply { mkdirs() }
+                java.io.FileOutputStream(java.io.File(d, nome)).use { bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+                Toast.makeText(this, "Captura salva em " + d.path, Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Toast.makeText(this, "Não deu para salvar a captura.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun aplicarImersivo() {
         if (telaCheia != null) return
         val ligado = ajustes.imersivo
@@ -451,7 +573,7 @@ class MainActivity : Activity() {
         faixaAbas.visibility = if (ligado) View.GONE else View.VISIBLE
         barraDeBaixo.visibility = if (ligado) View.GONE else View.VISIBLE
         barra.visibility = if (ligado) View.GONE else View.VISIBLE
-        flutuante.visibility = if (ligado && painel == null) View.VISIBLE else View.GONE
+        atualizarGameBar()
         window.decorView.systemUiVisibility = if (ligado) {
             View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
         } else View.SYSTEM_UI_FLAG_VISIBLE
@@ -484,7 +606,7 @@ class MainActivity : Activity() {
         val versao = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
         val o = JSONObject()
             .put("abas", lista)
-            .put("op", JSONObject().put("ad", ajustes.bloquearAnuncios).put("bg", ajustes.segundoPlano).put("pip", ajustes.janelinha).put("escuro", ajustes.sitesEscuros).put("imersivo", ajustes.imersivo)
+            .put("gbpos", ajustes.posGameBar).put("op", JSONObject().put("ad", ajustes.bloquearAnuncios).put("bg", ajustes.segundoPlano).put("pip", ajustes.janelinha).put("escuro", ajustes.sitesEscuros).put("imersivo", ajustes.imersivo)
                 .put("tela", ajustes.telaLigada).put("pc", ajustes.siteParaComputador).put("notema", ajustes.sitesNoTema))
             .put("bus", ajustes.buscador).put("buscadores", bus)
             .put("bl", JSONObject().put("p", atual?.bloqueados?.get() ?: 0).put("t", bloqueadosTotal.get()))
@@ -550,7 +672,7 @@ class MainActivity : Activity() {
         }
         raizApp.addView(wv, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         painel = wv
-        flutuante.visibility = View.GONE
+        esconderGameBar()
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(campo.windowToken, 0)
         wv.loadUrl("file:///android_asset/painel.html?aba=" + aba + (if (esquerda) "&lado=esq" else "") + "&" + tema.params() + "&s=" + estadoDoPainel() + (if (msg.isNotEmpty()) "&m=" + Uri.encode(msg) else ""))
     }
@@ -581,6 +703,7 @@ class MainActivity : Activity() {
                 abrirPainel("abas")
             }
             "opc" -> opcao(u.getQueryParameter("k"), u.getQueryParameter("v") == "1")
+            "gbpos" -> { u.getQueryParameter("p")?.takeIf { it in listOf("dir", "esq", "cima", "baixo") }?.let { ajustes.posGameBar = it; posicionarGameBar() } }
             "tema" -> mudarTema(u.encodedQuery)
             "buscador" -> Buscador.values().firstOrNull { it.id == u.getQueryParameter("id") }?.let { ajustes.buscador = it.id }
             "compartilhar" -> { fecharPainel(); compartilhar() }
@@ -1644,7 +1767,7 @@ class MainActivity : Activity() {
         raizApp.addView(wv, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         painel = wv
         paginaDownloads = wv
-        flutuante.visibility = View.GONE
+        esconderGameBar()
         (getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(campo.windowToken, 0)
         wv.loadUrl("file:///android_asset/downloads.html?" + tema.params())
         val tick = object : Runnable {

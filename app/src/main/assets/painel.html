@@ -121,6 +121,8 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
             <div class="vidro"><b id="bo">ON</b><span>escudo</span></div>
           </div>
           <div id="chaves"></div>
+          <p class="rotulo" style="margin-top:18px">Game bar do modo gamer</p><div class="fileira" id="gbpos"></div>
+          <p class="dica">Ligue “Tela cheia imersiva” para entrar no modo gamer. A barra fica do lado que você escolher e dá para recolhê-la.</p>
         </section>
 
         <section class="sec" id="s-visual">
@@ -483,6 +485,9 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
   }
 
   /* mais */
+  var GBPOS = [["dir", "Direita"], ["esq", "Esquerda"], ["cima", "Em cima"], ["baixo", "Embaixo"]];
+  E.gbpos = E.gbpos || "dir";
+  (function desenharGb() { chips($("gbpos"), GBPOS, E.gbpos, function (id) { E.gbpos = id; desenharGb(); ir("gbpos", { p: id }); }); })();
   chips($("buscadores"), E.buscadores, E.bus, function (id) { E.bus = id; chips($("buscadores"), E.buscadores, E.bus, arguments.callee); ir("buscador", { id: id }); });
   $("compartilhar").onclick = function () { ir("compartilhar"); };
   var armado = false;

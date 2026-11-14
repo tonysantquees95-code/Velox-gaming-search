@@ -36,6 +36,7 @@
     });
     document.documentElement.style.setProperty("--alfa", String(Math.max(0.15, 1 - e.transparencia / 100)));
     $("fundo").style.backgroundImage = e.fundo ? 'url("' + e.fundo + '")' : "none";
+    $("g-pos").value = e.posGameBar || "dir";
     $("g-trans").value = e.transparencia; $("g-bus").value = e.buscador;
   }
   V.ouvir("estado", desenhar);
@@ -53,6 +54,8 @@
   $("g-fundo").onclick = function () { V.enviar("escolher-fundo"); };
   $("g-sem-fundo").onclick = function () { V.enviar("remover-fundo"); };
   $("g-trans").oninput = function () { V.enviar("transparencia", this.value); };
+  $("g-gamer").onclick = function () { V.enviar("modo-gamer"); $("gaveta").hidden = true; };
+  $("g-pos").onchange = function () { V.enviar("posicao-gamebar", this.value); };
   $("g-bus").onchange = function () { V.enviar("buscador", this.value); };
   $("g-anonima").onclick = function () { V.enviar("nova-anonima"); $("gaveta").hidden = true; };
   $("chave").onclick = function () { V.enviar("chave"); };
