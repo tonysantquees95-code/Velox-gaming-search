@@ -1,5 +1,5 @@
 // Velox Search para Windows: janela com barra de abas própria e uma página (WebContentsView) por aba.
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, dialog, Menu, safeStorage, clipboard } = require("electron");
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, dialog, Menu, safeStorage, clipboard, net } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -8,6 +8,7 @@ const { Cofre } = require("./cofre");
 const { Bloqueio } = require("./bloqueio");
 const { idDaLoja, baixarDaLoja } = require("./crx");
 const sincronia = require("./sincronia");
+const atualizador = require("./atualizador");
 
 const ALTURA_BARRA = 84;
 const ALTURA_FAVORITOS = 32;
@@ -659,8 +660,53 @@ async function iniciar() {
     ligarExtensoes().catch(() => undefined);
     sincronizarDepois(1500);
     setInterval(() => sincronizarDepois(100), 5 * 60_000);
+    setTimeout(() => procurarAtualizacao().catch(() => undefined), 20_000);
+    setInterval(() => procurarAtualizacao().catch(() => undefined), 6 * 3600_000);
   });
   janela.on("closed", () => { janela = null; });
+}
+
+
+// ---------------------------------------------------------------- atualização automática
+let atualizando = false;
+let versaoAvisada = 0;
+
+async function procurarAtualizacao() {
+  if (atualizando || !app.isPackaged || process.env.VELOX_TESTE === "1") return;
+  atualizando = true;
+  try {
+    const r = await net.fetch(atualizador.ENDERECO, { headers: { accept: "application/json" } });
+    if (!r.ok) return;
+    const d = atualizador.decidir(app.getVersion(), await r.json());
+    if (d.acao === "nada" || d.numero <= versaoAvisada) return;
+    const portatil = !!process.env.PORTABLE_EXECUTABLE_FILE;
+    if (d.acao === "avisar" || portatil) {
+      versaoAvisada = d.numero;
+      const o = await dialog.showMessageBox(janela, { type: "info", buttons: ["Baixar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `Há uma versão nova do Velox (1.${d.numero}).`, detail: portatil ? "Você usa a versão portátil: baixe a nova e substitua o arquivo." : "Toque em Baixar agora para pegar o instalador." });
+      if (o.response === 0) shell.openExternal(atualizador.DOWNLOAD);
+      return;
+    }
+    const destino = path.join(app.getPath("temp"), "VeloxSetup-atualizacao.exe");
+    const b = await net.fetch(d.url);
+    if (!b.ok) return;
+    const dados = Buffer.from(await b.arrayBuffer());
+    if (atualizador.sha256DoArquivo(dados) !== d.sha256) { console.error("Atualização recusada: o SHA-256 não bate."); return; }
+    fs.writeFileSync(destino, dados);
+    versaoAvisada = d.numero;
+    const o = await dialog.showMessageBox(janela, { type: "question", buttons: ["Atualizar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `A versão 1.${d.numero} do Velox está pronta.`, detail: "O Velox fecha, instala a atualização e abre de novo. Suas abas, favoritos e senhas continuam como estão." });
+    if (o.response !== 0) { versaoAvisada = 0; return; }
+    const { spawn } = require("child_process");
+    spawn("powershell", ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", atualizador.ROTEIRO], {
+      detached: true, stdio: "ignore", windowsHide: true,
+      env: { ...process.env, V_PID: String(process.pid), V_SETUP: destino, V_APP: process.execPath },
+    }).unref();
+    gravarAgora();
+    app.quit();
+  } catch (e) {
+    console.error("Atualização:", e && e.message ? e.message : e);
+  } finally {
+    atualizando = false;
+  }
 }
 
 // teste de fumaça no CI: abre o Velox de verdade, espera carregar e sai com código 0 (ou 1 se algo quebrar)

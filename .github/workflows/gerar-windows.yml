@@ -28,7 +28,7 @@ jobs:
 
       - name: Conferir a sintaxe
         run: |
-          for f in main.js preload.js preload-paginas.js cofre.js crx.js bloqueio.js sincronia.js ui/*.js; do node --check "$f"; done
+          for f in main.js preload.js preload-paginas.js cofre.js crx.js bloqueio.js sincronia.js atualizador.js ui/*.js; do node --check "$f"; done
 
       - name: Instalar dependências
         run: npm install --no-audit --no-fund

@@ -23,6 +23,7 @@
       "crx.js",
       "bloqueio.js",
       "sincronia.js",
+      "atualizador.js",
       "ui/**",
       "inicio/**",
       "package.json"
