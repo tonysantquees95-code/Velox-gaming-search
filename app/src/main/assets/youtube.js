@@ -17,6 +17,14 @@
       });
     } catch (e) { /* segue */ }
   }
+  /* se o app foi para o fundo ou para a janelinha, o vídeo não pode pausar sozinho */
+  if (window.__veloxBg) {
+    document.addEventListener("pause", function (e) {
+      var v = e.target;
+      if (!v || v.tagName !== "VIDEO" || !window.__veloxFundo) return;
+      setTimeout(function () { if (v.paused && !v.ended && window.__veloxFundo) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } }, 60);
+    }, true);
+  }
   if (!ANUNCIOS) return;
   var CAMPOS = ["adPlacements", "playerAds", "adSlots", "adBreakHeartbeatParams"];
 

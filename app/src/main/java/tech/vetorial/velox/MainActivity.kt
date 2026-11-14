@@ -129,7 +129,7 @@ class MainActivity : Activity() {
         val a = atual
         ajustes.abaAtual = if (a == null) 0 else normais.indexOf(a).coerceAtLeast(0)
         ajustes.bloqueadosTotal = bloqueadosTotal.get()
-        if (ajustes.segundoPlano) SegundoPlano.ligar(this) else atual?.webView?.onPause()
+        if (ajustes.segundoPlano) { SegundoPlano.ligar(this); atual?.webView?.evaluateJavascript("window.__veloxFundo=true", null) } else atual?.webView?.onPause()
         cofre.travar()
         CookieManager.getInstance().flush()
     }
@@ -185,7 +185,7 @@ class MainActivity : Activity() {
             for (v in listOf(barraDeCima, faixaAbas, barraDeBaixo, barra, faixaFav, flutuante)) v.visibility = View.GONE
             if (telaCheia == null) wv?.evaluateJavascript(JS_JANELINHA, null)
         } else {
-            wv?.evaluateJavascript("(function(){var s=document.getElementById('velox-pip');if(s)s.remove();})()", null)
+            wv?.evaluateJavascript(JS_FORA_JANELINHA, null)
             faixaFav.visibility = favAntes
             aplicarImersivo()
         }
@@ -195,6 +195,7 @@ class MainActivity : Activity() {
         super.onResume()
         SegundoPlano.desligar(this)
         atual?.webView?.onResume()
+        atual?.webView?.evaluateJavascript("window.__veloxFundo=false", null)
         if (ajustes.janelinha && Build.VERSION.SDK_INT >= 26 && !janelinhaPermitida()) raizApp.postDelayed({ pedirJanelinha() }, 1500)
         aplicarImersivo()
         sincronizarDepois()
@@ -1849,9 +1850,13 @@ class MainActivity : Activity() {
         const val VINDEX = "tech.vetorial.vindex"
 
         /** Vê o envio de formulários de login e avisa o app; só observa, nunca preenche sozinho. */
-        const val JS_JANELINHA = "(function(){var s=document.getElementById('velox-pip')||document.createElement('style');s.id='velox-pip';" +
-            "s.textContent='video.html5-main-video{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important}body{overflow:hidden!important}';" +
-            "document.documentElement.appendChild(s);})()"
+        const val JS_JANELINHA = "(function(){window.__veloxFundo=true;var v=document.querySelector('video');if(!v)return;" +
+            "for(var e=v.parentElement;e&&e!==document.documentElement;e=e.parentElement)e.setAttribute('data-velox-pip','1');" +
+            "var s=document.getElementById('velox-pip')||document.createElement('style');s.id='velox-pip';" +
+            "s.textContent='[data-velox-pip]{transform:none!important;filter:none!important;contain:none!important;overflow:visible!important;perspective:none!important}" +
+            "video{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important}body{overflow:hidden!important}';" +
+            "document.documentElement.appendChild(s);if(v.paused){var p=v.play();if(p&&p.catch)p.catch(function(){});}})()"
+        const val JS_FORA_JANELINHA = "(function(){var s=document.getElementById('velox-pip');if(s)s.remove();document.querySelectorAll('[data-velox-pip]').forEach(function(e){e.removeAttribute('data-velox-pip')});})()"
         const val JS_CAPTURA = "(function(){try{if(window.__veloxSenhas||!window.VeloxSenhas)return;window.__veloxSenhas=1;" +
             "function achar(f){var p=f.querySelector('input[type=password]');if(!p||!p.value)return;" +
             "var u='',c=f.querySelectorAll('input');for(var i=0;i<c.length;i++){var t=(c[i].type||'text').toLowerCase();" +
