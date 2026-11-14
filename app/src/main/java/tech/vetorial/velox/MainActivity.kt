@@ -138,11 +138,42 @@ class MainActivity : Activity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        val u = atual?.url ?: ""
+        val u = atual?.webView?.url ?: atual?.url ?: ""
         val video = Regex("^https://(www\\.|m\\.|music\\.)?youtube\\.com/(watch|shorts)").containsMatchIn(u)
         if (ajustes.janelinha && video && Build.VERSION.SDK_INT >= 26) {
-            try { enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9)).build()) } catch (e: Exception) { /* sem janelinha neste aparelho */ }
+            if (!janelinhaPermitida()) { pedirJanelinha(); return }
+            try { enterPictureInPictureMode(android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9)).build()) }
+            catch (e: Exception) { Toast.makeText(this, "Não deu para abrir a janelinha: " + (e.message ?: "sem suporte"), Toast.LENGTH_LONG).show() }
         }
+    }
+
+    /** O Android deixa a pessoa desligar a janelinha por app (Ajustes > Apps > Acesso especial > Picture-in-picture). */
+    private fun janelinhaPermitida(): Boolean {
+        if (Build.VERSION.SDK_INT < 26 || !packageManager.hasSystemFeature(android.content.pm.PackageManager.FEATURE_PICTURE_IN_PICTURE)) return false
+        return try {
+            val ops = getSystemService(android.content.Context.APP_OPS_SERVICE) as android.app.AppOpsManager
+            ops.checkOpNoThrow("android:picture_in_picture", android.os.Process.myUid(), packageName) == android.app.AppOpsManager.MODE_ALLOWED
+        } catch (e: Exception) { true }
+    }
+
+    private var perguntouJanelinha = 0L
+
+    /** Mostra o aviso e leva direto à tela do sistema onde se liga a janelinha; repete até a permissão estar ligada. */
+    private fun pedirJanelinha() {
+        if (System.currentTimeMillis() - perguntouJanelinha < 5000) return
+        perguntouJanelinha = System.currentTimeMillis()
+        AlertDialog.Builder(this)
+            .setTitle("Ligar a janelinha de vídeo")
+            .setMessage("Para o vídeo do YouTube continuar numa janela pequena quando você sair do Velox, o Android precisa que a permissão “Picture-in-picture” esteja ligada para o Velox.")
+            .setPositiveButton("Abrir configuração") { _, _ ->
+                try {
+                    startActivity(Intent("android.settings.PICTURE_IN_PICTURE_SETTINGS", Uri.parse("package:$packageName")))
+                } catch (e: Exception) {
+                    try { startActivity(Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))) } catch (e2: Exception) { /* sem tela */ }
+                }
+            }
+            .setNegativeButton("Agora não", null)
+            .show()
     }
 
     override fun onPictureInPictureModeChanged(emJanelinha: Boolean, config: android.content.res.Configuration) {
@@ -164,6 +195,7 @@ class MainActivity : Activity() {
         super.onResume()
         SegundoPlano.desligar(this)
         atual?.webView?.onResume()
+        if (ajustes.janelinha && Build.VERSION.SDK_INT >= 26 && !janelinhaPermitida()) raizApp.postDelayed({ pedirJanelinha() }, 1500)
         aplicarImersivo()
         sincronizarDepois()
     }
@@ -610,7 +642,7 @@ class MainActivity : Activity() {
         when (chave) {
             "ad" -> { ajustes.bloquearAnuncios = ligado; for (a in abas) ligarBloqueioYoutube(a); atual?.webView?.reload() }
             "bg" -> { ajustes.segundoPlano = ligado; for (a in abas) ligarBloqueioYoutube(a); atual?.webView?.reload() }
-            "pip" -> ajustes.janelinha = ligado
+            "pip" -> { ajustes.janelinha = ligado; if (ligado && !janelinhaPermitida()) { fecharPainel(); pedirJanelinha() } }
             "escuro" -> { ajustes.sitesEscuros = ligado; for (a in abas) aplicarEscuro(a.webView); atual?.webView?.reload() }
             "imersivo" -> { ajustes.imersivo = ligado; aplicarImersivo() }
             "tela" -> { ajustes.telaLigada = ligado; aplicarTela() }
