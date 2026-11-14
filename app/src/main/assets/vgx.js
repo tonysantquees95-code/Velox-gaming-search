@@ -70,7 +70,25 @@ window.VGX = {
     ["vinho", "Vinho", "12060b", "230c15", "33111f", "c79aa8"], ["floresta", "Floresta", "05110d", "0b2119", "113026", "8fc7b0"]
   ],
   ESTILOS: [["marca", "Cores da marca"], ["neon", "Neon do tema"], ["mono", "Branco"]],
-  PACOTES: [["linha", "Linha"], ["grossa", "Grossa"], ["duo", "Duplo"]],
+  PACOTES: [["linha", "Linha"], ["fino", "Fino"], ["grossa", "Grossa"], ["duo", "Duplo"], ["aurora", "Aurora"], ["cor", "Cor"], ["neon", "Neon"], ["reto", "Reto"], ["sombra", "Sombra"]],
+  /** Desenha um ícone (24x24) no estilo do pacote, igual ao da barra do app. `miolo` é o SVG do desenho; `uid` evita colisão de gradientes. */
+  pacoteSvg: function (id, miolo, c1, c2, uid) {
+    var A = "#" + c1, B = "#" + c2, W = "#ffffff";
+    var def = '<defs><linearGradient id="d' + uid + '" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22"><stop offset="0" stop-color="' + A + '"/><stop offset="1" stop-color="' + B + '"/></linearGradient>' +
+      '<linearGradient id="a' + uid + '" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22"><stop offset="0" stop-color="' + B + '"/><stop offset="1" stop-color="' + A + '"/></linearGradient></defs>';
+    var cam = function (stroke, w, op, ext) { return '<g fill="none" stroke="' + stroke + '" stroke-width="' + w + '" stroke-opacity="' + (op == null ? 1 : op) + '" ' + (ext || 'stroke-linecap="round" stroke-linejoin="round"') + '>' + miolo + '</g>'; };
+    var corpo;
+    if (id === "neon") corpo = cam(A, 5.2, 0.18) + cam(A, 3.6, 0.35) + cam(W, 1.9);
+    else if (id === "sombra") corpo = '<g transform="translate(1.1 1.1)">' + cam(B, 2.3) + '</g>' + cam(W, 2.3);
+    else if (id === "duo") corpo = cam("url(#d" + uid + ")", 2.3);
+    else if (id === "aurora") corpo = cam("url(#a" + uid + ")", 2.7);
+    else if (id === "cor") corpo = cam(A, 2.4);
+    else if (id === "reto") corpo = cam(W, 2.3, 1, 'stroke-linecap="square" stroke-linejoin="miter"');
+    else if (id === "grossa") corpo = cam(W, 2.9);
+    else if (id === "fino") corpo = cam(W, 1.3);
+    else corpo = cam(W, 1.9);
+    return '<svg viewBox="0 0 24 24" aria-hidden="true">' + def + corpo + '</svg>';
+  },
   FUNDOS: [["aurora", "Aurora"], ["grade", "Grade"], ["circuito", "Circuito"], ["pontos", "Pontos"], ["liso", "Liso"]],
   mistura: function (hex) { var n = parseInt(hex, 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, h = function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }; return h(r * 0.55 + 10) + h(g * 0.5) + h(b * 0.7 + 20); },
   params: function (t) {

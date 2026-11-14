@@ -17,7 +17,7 @@ class Tema private constructor(private val campos: Map<String, String>) {
     val animacoes: Boolean = campos["an"] != "0"
     /** Estilo dos atalhos da página inicial: marca, neon ou mono. */
     val atalhos: String = campos["ti"]?.takeIf { it in ESTILOS } ?: "marca"
-    /** Pacote de ícones da barra de baixo: linha, grossa ou duo. */
+    /** Pacote de ícones da barra de baixo: linha, fino, grossa, duo, aurora, cor, neon, reto ou sombra. */
     val pacote: String = campos["pk"]?.takeIf { it in PACOTES } ?: "linha"
     /** Quanto escurecer a foto de fundo (0 a 80). */
     val escurecer: Int = (campos["dim"]?.toIntOrNull() ?: 35).coerceIn(0, 80)
@@ -48,7 +48,7 @@ class Tema private constructor(private val campos: Map<String, String>) {
         private val FUNDOS = setOf("aurora", "grade", "circuito", "pontos", "liso")
         private val BASES = setOf("noite", "carvao", "vinho", "floresta")
         private val ESTILOS = setOf("marca", "neon", "mono")
-        private val PACOTES = setOf("linha", "grossa", "duo")
+        private val PACOTES = setOf("linha", "fino", "grossa", "duo", "aurora", "cor", "neon", "reto", "sombra")
 
         /** Lê o texto guardado, corrigindo qualquer valor estranho (nunca quebra). */
         fun daString(texto: String?): Tema {

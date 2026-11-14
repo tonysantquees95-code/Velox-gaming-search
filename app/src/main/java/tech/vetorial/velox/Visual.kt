@@ -222,12 +222,32 @@ class IconeTraco(private val tracos: List<Path>, private val pontos: List<FloatA
         canvas.save()
         canvas.translate(b.left + (b.width() - lado) / 2f, b.top + (b.height() - lado) / 2f)
         canvas.scale(lado / 24f, lado / 24f)
-        tinta.shader = if (pacote == "duo") LinearGradient(2f, 2f, 22f, 22f, c1, c2, Shader.TileMode.CLAMP) else null
-        tinta.color = cor
-        tinta.strokeWidth = when (pacote) { "grossa" -> 2.9f; "duo" -> 2.3f; else -> 1.9f }
-        for (t in tracos) canvas.drawPath(t, tinta)
-        for (p in pontos) canvas.drawPoint(p[0], p[1], tinta)
+        when (pacote) {
+            "neon" -> { passe(canvas, c1, 5.2f, 0x2E); passe(canvas, c1, 3.6f, 0x59); passe(canvas, cor, 1.9f) }
+            "sombra" -> {
+                canvas.save(); canvas.translate(1.1f, 1.1f); passe(canvas, c2, 2.3f); canvas.restore()
+                passe(canvas, cor, 2.3f)
+            }
+            "duo" -> passe(canvas, cor, 2.3f, 0xFF, LinearGradient(2f, 2f, 22f, 22f, c1, c2, Shader.TileMode.CLAMP))
+            "aurora" -> passe(canvas, cor, 2.7f, 0xFF, LinearGradient(2f, 2f, 22f, 22f, c2, c1, Shader.TileMode.CLAMP))
+            "cor" -> passe(canvas, c1, 2.4f)
+            "reto" -> passe(canvas, cor, 2.3f, 0xFF, null, Paint.Cap.SQUARE, Paint.Join.MITER)
+            "grossa" -> passe(canvas, cor, 2.9f)
+            "fino" -> passe(canvas, cor, 1.3f)
+            else -> passe(canvas, cor, 1.9f)
+        }
         canvas.restore()
+    }
+
+    /** Uma passada de traço com a cor, a espessura e o estilo de ponta pedidos (o neon e a sombra usam várias). */
+    private fun passe(canvas: Canvas, cor: Int, largura: Float, alfa: Int = 0xFF, gradiente: Shader? = null, ponta: Paint.Cap = Paint.Cap.ROUND, junta: Paint.Join = Paint.Join.ROUND) {
+        tinta.shader = gradiente
+        tinta.color = (cor and 0x00FFFFFF) or (alfa shl 24)
+        tinta.strokeWidth = largura
+        tinta.strokeCap = ponta
+        tinta.strokeJoin = junta
+        for (t in tracos) canvas.drawPath(t, tinta)
+        for (pt in pontos) canvas.drawPoint(pt[0], pt[1], tinta)
     }
 
     override fun setAlpha(alpha: Int) { tinta.alpha = alpha }
