@@ -13,18 +13,27 @@
     menu: '<path d="M12 5.5h.01M12 12h.01M12 18.5h.01"/>',
     gamer: '<path d="M7 8H17Q21 8 21 12V14C21 17 17 18 15 15L14 14H10L9 15C7 18 3 17 3 14V12Q3 8 7 8Z"/><path d="M8 10.5V13.5M6.5 12H9.5"/><path d="M16 11.5h.01M18 13h.01"/>'
   };
-  var uid = 0;
+  var uid = 0, pacote = "", cores = "";
   function pintar(el, nome) {
-    var s = window.VGX.pacoteSvg("linha", ICONES[nome], "22d3ee", "a78bfa", ++uid);
-    el.innerHTML = s;
+    el.innerHTML = window.VGX.pacoteSvg(pacote, ICONES[nome], cores.split("/")[0], cores.split("/")[1], ++uid);
   }
-  ["voltar", "avancar", "inicio", "recarregar", "chave", "estrela", "menu"].forEach(function (n) { pintar($(n), n); });
-  pintar($("ajustes"), "ajustes");
-  pintar(document.querySelector("#gamer .inc"), "gamer");
+  function pintarTudo() {
+    ["voltar", "avancar", "inicio", "recarregar", "chave", "estrela", "menu", "ajustes"].forEach(function (n) { pintar($(n), n); });
+    pintar(document.querySelector("#gamer .inc"), "gamer");
+  }
+  /* tema do navegador (o mesmo do celular): cores nas variáveis e pacote de ícones */
+  function aplicarTema(texto) {
+    var P = new URLSearchParams(texto || ""), S = document.documentElement.style;
+    [["c1", "--c1"], ["c2", "--c2"], ["bg", "--bg"], ["sup", "--sup"], ["campo", "--campo"], ["su", "--su"], ["tx", "--tx"]].forEach(function (p) { if (/^[0-9a-f]{6}$/i.test(P.get(p[0]) || "")) S.setProperty(p[1], "#" + P.get(p[0])); });
+    var novoPacote = P.get("pk") || "linha", novasCores = (P.get("c1") || "22d3ee") + "/" + (P.get("c2") || "a78bfa");
+    if (novoPacote !== pacote || novasCores !== cores) { pacote = novoPacote; cores = novasCores; pintarTudo(); }
+  }
+  aplicarTema("");
   /* download: anel + seta, igual ao botão do celular */
   $("baixados").innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.6" stroke-width="1.7" stroke-opacity=".3"/><path d="M12 8.6V15.4M9.4 12.8L12 15.4L14.6 12.8" stroke-width="2"/></g></svg>';
   function desenhar(e) {
     estado = e;
+    aplicarTema(e.tema);
     var abas = $("abas"); abas.textContent = "";
     e.abas.forEach(function (a) {
       var d = document.createElement("div");

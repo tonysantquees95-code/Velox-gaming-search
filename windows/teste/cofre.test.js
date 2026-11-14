@@ -47,3 +47,18 @@ test("apagar, nunca oferecer e trocar a senha mestra", () => {
   assert.equal(c.lista().length, 0);
   assert.throws(() => c.criar("123"), /pelo menos|Já existe/);
 });
+
+test("sincronia: apagar guarda a marca e aplicar mantém os ids", () => {
+  const c = novo();
+  c.criar("senha-mestra");
+  c.salvar("https://a.com", "toni", "s1", 100);
+  const id = c.lista()[0].id;
+  const doc = c.paraSincronia();
+  c.aplicarSincronia({ itens: [...doc.itens, { origem: "https://b.com", usuario: "u", senha: "s2", atualizado: 200 }], apagados: {} });
+  assert.equal(c.lista().find((i) => i.origem === "https://a.com").id, id);
+  assert.equal(c.lista().length, 2);
+  c.apagar(id);
+  assert.ok(c.paraSincronia().apagados["https://a.com\ntoni"] > 0);
+  c.travar();
+  assert.equal(c.senhaMem, null);
+});

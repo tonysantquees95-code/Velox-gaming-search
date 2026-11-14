@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><title>Ajustes</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' file:; style-src 'self' 'unsafe-inline'">
 <link rel="stylesheet" href="comum.css"></head><body><main>
 <h1>Ajustes do Velox</h1><p class="sub" id="versao"></p>
 
@@ -9,6 +9,18 @@
   <p class="nota" id="bloq-modo"></p>
   <label class="linha"><span>Continuar de onde parou ao abrir o Velox</span><input type="checkbox" id="continuar"></label>
   <label class="linha"><span>Mostrar a barra de favoritos</span><input type="checkbox" id="barrafav"></label>
+</section>
+
+<section class="cartao"><h2>Tema</h2>
+  <p class="nota">As mesmas escolhas do celular. Se a sincronização do tema estiver ligada, o que você escolher aqui aparece no celular e vice-versa (a foto de fundo não vai junto: é grande demais).</p>
+  <p class="rot">Cores</p><div class="chips" id="t-cores"></div>
+  <p class="rot">Base</p><div class="chips" id="t-bases"></div>
+  <p class="rot">Fundo da página inicial</p><div class="chips" id="t-fundos"></div>
+  <p class="rot">Pacote de ícones</p><div class="chips" id="t-pacotes"></div>
+  <p class="rot">Formato</p><div class="chips" id="t-formato"></div>
+  <label class="linha"><span>Animações</span><input type="checkbox" id="t-an"></label>
+  <label class="linha"><span>Brilho do neon</span><input type="range" id="t-br" min="0" max="100"></label>
+  <label class="linha"><span>Transparência das caixas</span><input type="range" id="t-tr" min="0" max="100"></label>
 </section>
 
 <section class="cartao"><h2>Barra de rolagem</h2>
@@ -39,7 +51,11 @@
   <p class="nota">Entre com o seu Vetorial ID (o mesmo do Vênus, Vindex e Vortex) para levar os favoritos para os seus outros aparelhos.</p>
   <div id="sync-fora"><div class="linha"><input type="email" id="sync-email" placeholder="E-mail do Vetorial ID"><input type="password" id="sync-senha" placeholder="Senha"><button id="sync-entrar" class="p">Entrar</button></div></div>
   <div id="sync-dentro" hidden><div class="linha"><span id="sync-info"></span><span><button id="sync-agora" class="p">Sincronizar agora</button> <button id="sync-sair" class="perigo">Sair</button></span></div></div>
+  <p class="rot">O que sincronizar neste computador</p>
+  <label class="linha"><span>Favoritos</span><input type="checkbox" id="si-favoritos"></label>
+  <label class="linha"><span>Tema (cores, ícones, fundo animado)</span><input type="checkbox" id="si-tema"></label>
+  <label class="linha"><span>Senhas <span class="s nota">· cifradas aqui; precisa da mesma senha mestra nos dois aparelhos e do cofre aberto</span></span><input type="checkbox" id="si-senhas"></label>
   <p class="nota" id="sync-msg"></p>
 </section>
 </main>
-<script src="ajustes.js"></script></body></html>
+<script src="../inicio/vgx.js"></script><script src="ajustes.js"></script></body></html>

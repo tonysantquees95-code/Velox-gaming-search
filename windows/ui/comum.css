@@ -16,3 +16,10 @@ input:focus{outline:none;border-color:#22d3ee}
 .item .t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .item .s{color:#8fa0cf;font-size:12px}
 .ok{color:#4ade80}.erro{color:#f87171}
+
+.rot{margin:12px 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8fa0cf}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips button{min-width:44px;height:34px;padding:0 12px;border-radius:10px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:#fff;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chips button[data-ativa="true"]{border-color:#22d3ee;box-shadow:0 0 8px rgba(34,211,238,.45)}
+.chips button i{width:16px;height:16px;border-radius:50%;display:inline-block}
+.chips button svg{width:22px;height:22px}

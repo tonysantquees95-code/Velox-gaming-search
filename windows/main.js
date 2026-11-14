@@ -12,8 +12,10 @@ const { idDaLoja, baixarDaLoja } = require("./crx");
 const sincronia = require("./sincronia");
 const atualizador = require("./atualizador");
 const rolagem = require("./rolagem");
+const tema = require("./tema");
 
-const ALTURA_BARRA = 118; // a barra inteira (abas, endereço e botões) fica embaixo, como no celular
+const ALTURA_BARRA = 84; // endereço e botões ficam embaixo, como no celular
+const ALTURA_TOPO = 36; // abas na barra de título, como no Chrome
 const BUSCADORES = {
   google: (q) => "https://www.google.com/search?q=" + encodeURIComponent(q),
   duckduckgo: (q) => "https://duckduckgo.com/?q=" + encodeURIComponent(q),
@@ -39,7 +41,7 @@ let sincronizando = false;
 // ------------------------------------------------------------------ ajustes (um arquivo JSON)
 const arquivoAjustes = () => path.join(app.getPath("userData"), "velox.json");
 let ajustes = {
-  favoritos: [], apagados: {}, fundo: "", transparencia: 30, buscador: "google", rolagem: { modo: "hover", largura: 8, cor: "tema" }, mostrarFavoritos: true, bloqueio: true, continuar: true,
+  favoritos: [], apagados: {}, fundo: "", transparencia: 30, buscador: "google", rolagem: { modo: "hover", largura: 8, cor: "tema" }, temaTexto: "", temaT: 0, sincItens: { favoritos: true, tema: true, senhas: false }, mostrarFavoritos: true, bloqueio: true, continuar: true,
   abas: [], historico: [], permissoes: {}, extensoes: [], sync: { email: "", token: "", ultimo: 0 },
 };
 function lerAjustes() {
@@ -74,7 +76,7 @@ function resolverEntrada(texto) {
 
 function enderecoInicio() {
   const u = pathToFileURL(path.join(__dirname, "inicio", "inicio.html"));
-  u.search = TEMA + `&n1=${bloqueio ? bloqueio.bloqueados : 0}&n2=${bloqueio ? bloqueio.bloqueados : 0}&ft=${ajustes.fundo ? 1 : 0}&ad=${ajustes.bloqueio ? 1 : 0}&bus=${encodeURIComponent(NOMES_BUSCADOR[ajustes.buscador] || "Google")}${abriuUmaVez ? "" : "&ab=1"}`;
+  u.search = temaAtual() + `&n1=${bloqueio ? bloqueio.bloqueados : 0}&n2=${bloqueio ? bloqueio.bloqueados : 0}&ft=${ajustes.fundo ? 1 : 0}&ad=${ajustes.bloqueio ? 1 : 0}&bus=${encodeURIComponent(NOMES_BUSCADOR[ajustes.buscador] || "Google")}${abriuUmaVez ? "" : "&ab=1"}`;
   abriuUmaVez = true;
   return u.toString();
 }
@@ -82,11 +84,12 @@ const enderecoInterno = (nome) => pathToFileURL(path.join(__dirname, "ui", INTER
 const origemDe = (url) => { try { const u = new URL(url); return /^https?:$/.test(u.protocol) ? u.origin : ""; } catch { return ""; } };
 
 // ------------------------------------------------------------------ abas
+const temaAtual = () => tema.normalizar(ajustes.temaTexto || TEMA);
 const alturaBarra = () => ALTURA_BARRA;
 function limites() {
   const [l, a] = janela.getContentSize();
   const h = alturaBarra();
-  return { x: 0, y: 0, width: l, height: Math.max(0, a - h) };
+  return { x: 0, y: ALTURA_TOPO, width: l, height: Math.max(0, a - h - ALTURA_TOPO) };
 }
 function reposicionar() { if (ativa && !janela.isFullScreen()) ativa.view.setBounds(limites()); }
 
@@ -100,6 +103,7 @@ function estadoDasAbas() {
     avancar: !!(at && at.view.webContents.navigationHistory.canGoForward()),
     favorita: !!(at && at.url && ajustes.favoritos.some((f) => f.u === at.url)),
     interna: at ? at.interna : null,
+    tema: temaAtual(),
     fundo: ajustes.fundo ? pathToFileURL(ajustes.fundo).toString() : "",
     transparencia: ajustes.transparencia,
     buscador: ajustes.buscador,
@@ -365,13 +369,34 @@ function sincronizarDepois(ms = 3000) {
 async function sincronizarAgora() {
   if (!tokenSync || sincronizando) return { ok: false, erro: "Entre com o Vetorial ID para sincronizar." };
   sincronizando = true;
+  const escolhas = { favoritos: true, tema: true, senhas: false, ...(ajustes.sincItens || {}) };
+  const avisos = [];
   try {
-    const r = await sincronia.sincronizar(tokenSync, { favoritos: ajustes.favoritos, apagados: ajustes.apagados });
-    if (r.mudouLocal) { ajustes.favoritos = r.doc.favoritos; ajustes.apagados = r.doc.apagados; reposicionar(); }
+    if (escolhas.favoritos) {
+      const r = await sincronia.sincronizar(tokenSync, { favoritos: ajustes.favoritos, apagados: ajustes.apagados });
+      if (r.mudouLocal) { ajustes.favoritos = r.doc.favoritos; ajustes.apagados = r.doc.apagados; reposicionar(); }
+    }
+    if (escolhas.tema) {
+      try {
+        const t = ajustes.temaT || (ajustes.temaTexto ? 1 : 0);
+        const r = await sincronia.sincronizarTema(tokenSync, { t, tema: ajustes.temaTexto ? tema.normalizar(ajustes.temaTexto) : "" });
+        if (r.mudouLocal) { ajustes.temaTexto = tema.normalizar(r.doc.tema); ajustes.temaT = r.doc.t; recarregarInicios(); }
+        else if (!ajustes.temaT && t) ajustes.temaT = t;
+      } catch (e) { if (e.status === 401) throw e; avisos.push("tema: " + (e.message || "falhou")); }
+    }
+    if (escolhas.senhas) {
+      if (!cofre.aberto()) avisos.push("senhas: abra o cofre para sincronizar");
+      else {
+        try {
+          const r = await sincronia.sincronizarSenhas(tokenSync, cofre.paraSincronia(), cofre.senhaMem);
+          if (r.mudouLocal) cofre.aplicarSincronia(r.doc);
+        } catch (e) { if (e.status === 401) throw e; avisos.push("senhas: " + (e.message || "falhou")); }
+      }
+    }
     ajustes.sync.ultimo = Date.now();
     gravarAjustes();
     avisarBarra();
-    return { ok: true, total: ajustes.favoritos.length };
+    return { ok: true, total: ajustes.favoritos.length, avisos };
   } catch (e) {
     if (e.status === 401) { tokenSync = ""; ajustes.sync.token = ""; gravarAjustes(); return { ok: false, erro: "A sessão do Vetorial ID acabou. Entre de novo." }; }
     return { ok: false, erro: e.message || "Não consegui sincronizar agora." };
@@ -477,7 +502,7 @@ async function desbloquear(motivo) {
   for (let t = 0; t < 3; t++) {
     const r = await perguntar({ titulo: "Cofre de senhas", texto: motivo || "Digite a senha mestra para abrir o cofre de senhas do Velox.", altura: 260, campos: [{ id: "senha", tipo: "password", rotulo: "Senha mestra" }], botoes: [{ id: "ok", rotulo: "Abrir", primario: true }, { id: "cancelar", rotulo: "Cancelar" }] });
     if (r.botao !== "ok") return false;
-    try { cofre.abrir(r.valores.senha || ""); avisarBarra(); return true; } catch (e) { motivo = e.message + " Tente de novo."; }
+    try { cofre.abrir(r.valores.senha || ""); avisarBarra(); sincronizarDepois(500); return true; } catch (e) { motivo = e.message + " Tente de novo."; }
   }
   return false;
 }
@@ -485,7 +510,7 @@ async function criarCofre() {
   const r = await perguntar({ titulo: "Criar o cofre de senhas", texto: "Crie uma senha mestra. Ela protege todas as suas senhas neste computador e não pode ser recuperada se você esquecer.", altura: 340, campos: [{ id: "senha", tipo: "password", rotulo: "Senha mestra (mínimo 6 caracteres)" }, { id: "conf", tipo: "password", rotulo: "Repita a senha mestra" }], botoes: [{ id: "ok", rotulo: "Criar cofre", primario: true }, { id: "cancelar", rotulo: "Agora não" }] });
   if (r.botao !== "ok") return false;
   if (r.valores.senha !== r.valores.conf) { dialog.showErrorBox("Velox", "As senhas mestras não são iguais."); return false; }
-  try { cofre.criar(r.valores.senha); avisarBarra(); return true; } catch (e) { dialog.showErrorBox("Velox", e.message); return false; }
+  try { cofre.criar(r.valores.senha); avisarBarra(); sincronizarDepois(500); return true; } catch (e) { dialog.showErrorBox("Velox", e.message); return false; }
 }
 
 async function aoCapturarSenha(wc, d) {
@@ -507,7 +532,7 @@ async function aoCapturarSenha(wc, d) {
     texto: existente ? `Atualizar a senha de “${d.usuario || "(sem usuário)"}” em ${host}?` : `Salvar o login de “${d.usuario || "(sem usuário)"}” em ${host}?`,
     botoes: [{ id: "salvar", rotulo: existente ? "Atualizar" : "Salvar", primario: true }, { id: "agora", rotulo: "Agora não" }, { id: "nunca", rotulo: "Nunca neste site" }],
   });
-  if (r.botao === "salvar") { try { cofre.salvar(origem, d.usuario, d.senha); } catch { /* cofre trancou no meio */ } }
+  if (r.botao === "salvar") { try { cofre.salvar(origem, d.usuario, d.senha); sincronizarDepois(); } catch { /* cofre trancou no meio */ } }
   else if (r.botao === "nunca") { try { cofre.nuncaOferecer(origem); } catch { /* ok */ } }
 }
 
@@ -575,7 +600,7 @@ const pastaDasExtensoes = () => path.join(app.getPath("userData"), "extensoes");
 // ------------------------------------------------------------------ comandos vindos das telas
 const resumoAjustes = () => ({
   bloqueio: ajustes.bloqueio, bloqueados: bloqueio ? bloqueio.bloqueados : 0, modoBloqueio: bloqueio ? bloqueio.modo : "desligado",
-  rolagem: rolagem.normalizar(ajustes.rolagem), continuar: ajustes.continuar, mostrarFavoritos: ajustes.mostrarFavoritos, buscador: ajustes.buscador,
+  rolagem: rolagem.normalizar(ajustes.rolagem), tema: temaAtual(), sincItens: { favoritos: true, tema: true, senhas: false, ...(ajustes.sincItens || {}) }, continuar: ajustes.continuar, mostrarFavoritos: ajustes.mostrarFavoritos, buscador: ajustes.buscador,
   cofre: { existe: cofre.existe(), aberto: cofre.aberto(), itens: cofre.aberto() ? cofre.lista() : [] },
   extensoes: ajustes.extensoes.map(({ id, nome, ligada, erro }) => ({ id, nome, ligada, erro: erro || "" })),
   sites: Object.entries(ajustes.permissoes).map(([origem, p]) => ({ origem, permissoes: p })),
@@ -659,6 +684,12 @@ function ligarComandos() {
   ipcMain.handle("ajustes:estado", so(() => resumoAjustes()));
   ipcMain.handle("ajustes:bloqueio", so((_e, v) => { ajustes.bloqueio = !!v; bloqueio.definir(v); gravarAjustes(); avisarBarra(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:rolagem", so((_e, r) => { ajustes.rolagem = rolagem.normalizar(r); gravarAjustes(); reaplicarRolagem(); return resumoAjustes(); }));
+  ipcMain.handle("ajustes:tema", so((_e, texto) => { ajustes.temaTexto = tema.normalizar(texto); ajustes.temaT = Date.now(); gravarAjustes(); recarregarInicios(); avisarBarra(); sincronizarDepois(); return resumoAjustes(); }));
+  ipcMain.handle("ajustes:sync-itens", so((_e, v) => {
+    const o = v || {};
+    ajustes.sincItens = { favoritos: !!o.favoritos, tema: !!o.tema, senhas: !!o.senhas };
+    gravarAjustes(); sincronizarDepois(500); return resumoAjustes();
+  }));
   ipcMain.handle("ajustes:continuar", so((_e, v) => { ajustes.continuar = !!v; gravarAjustes(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:favoritos-barra", so((_e, v) => { ajustes.mostrarFavoritos = !!v; gravarAjustes(); reposicionar(); avisarBarra(); return resumoAjustes(); }));
 
@@ -667,7 +698,7 @@ function ligarComandos() {
   ipcMain.handle("cofre:travar", so(() => { cofre.travar(); avisarBarra(); return resumoAjustes(); }));
   ipcMain.handle("cofre:revelar", so((_e, id) => tente(async () => ({ senha: cofre.revelar(id) }))));
   ipcMain.handle("cofre:copiar", so((_e, id) => tente(async () => { const s = cofre.revelar(id); clipboard.writeText(s || ""); setTimeout(() => { if (clipboard.readText() === s) clipboard.clear(); }, 30_000); return {}; })));
-  ipcMain.handle("cofre:apagar", so((_e, id) => tente(async () => { cofre.apagar(id); return {}; })));
+  ipcMain.handle("cofre:apagar", so((_e, id) => tente(async () => { cofre.apagar(id); sincronizarDepois(); return {}; })));
   ipcMain.handle("cofre:trocar", so(() => tente(async () => {
     const r = await perguntar({ titulo: "Trocar a senha mestra", altura: 360, texto: "Digite a senha mestra atual e a nova.", campos: [{ id: "atual", tipo: "password", rotulo: "Senha mestra atual" }, { id: "nova", tipo: "password", rotulo: "Nova senha mestra" }, { id: "conf", tipo: "password", rotulo: "Repita a nova" }], botoes: [{ id: "ok", rotulo: "Trocar", primario: true }, { id: "cancelar", rotulo: "Cancelar" }] });
     if (r.botao !== "ok") throw new Error("Nada foi alterado.");
@@ -753,6 +784,7 @@ async function iniciar() {
     icon: path.join(__dirname, "build", "icon.png"),
     width: 1280, height: 800, minWidth: 720, minHeight: 480,
     backgroundColor: "#070b14", title: "Velox", autoHideMenuBar: true,
+    titleBarStyle: "hidden", titleBarOverlay: { color: "#0d1530", symbolColor: "#ffffff", height: ALTURA_TOPO },
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false },
   });
   janela.setMenuBarVisibility(false);

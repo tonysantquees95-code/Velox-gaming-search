@@ -12,6 +12,8 @@
 
     if (document.activeElement !== $("rol-larg")) $("rol-larg").value = e.rolagem.largura;
     $("rol-modo").value = e.rolagem.modo; $("rol-cor").value = e.rolagem.cor; $("rol-n").textContent = "· " + e.rolagem.largura + " px";
+    desenharTema(e.tema);
+    ["favoritos", "tema", "senhas"].forEach(function (k) { $("si-" + k).checked = !!e.sincItens[k]; });
     var c = e.cofre;
     $("cofre-estado").textContent = !c.existe ? "Ainda não há cofre." : c.aberto ? "Cofre aberto" : "Cofre trancado";
     $("cofre-estado").className = c.aberto ? "ok" : "";
@@ -54,6 +56,34 @@
     $("sync-fora").hidden = e.sync.entrou; $("sync-dentro").hidden = !e.sync.entrou;
     $("sync-info").textContent = e.sync.email + " · " + e.sync.favoritos + " favoritos" + (e.sync.ultimo ? " · sincronizado às " + new Date(e.sync.ultimo).toLocaleTimeString("pt-BR") : "");
   }
+  var VGX = window.VGX, temaAtual = null;
+  var GEAR = '<circle cx="12" cy="12" r="3"/><path d="M12 3V5.5M12 18.5V21M3 12H5.5M18.5 12H21M5.6 5.6L7.4 7.4M16.6 16.6L18.4 18.4M18.4 5.6L16.6 7.4M7.4 16.6L5.6 18.4"/>';
+  function chips(id, lista, ativo, fazer, pinta) {
+    var box = $(id); box.textContent = "";
+    lista.forEach(function (x) {
+      var b = el("button"); b.type = "button"; b.dataset.ativa = String(x[0] === ativo);
+      var m = pinta ? pinta(x) : null; if (m) b.appendChild(m);
+      b.appendChild(document.createTextNode(x[1])); b.onclick = function () { fazer(x); }; box.appendChild(b);
+    });
+  }
+  function salvarTema(mud) { var t = Object.assign({}, temaAtual, mud); V.chamar("ajustes:tema", VGX.params(t)).then(desenhar); }
+  function desenharTema(texto) {
+    temaAtual = VGX.doEndereco(new URLSearchParams(texto));
+    var t = temaAtual;
+    chips("t-cores", VGX.CORES, (VGX.CORES.filter(function (c) { return c[2] === t.c1 && c[3] === t.c2; })[0] || [])[0], function (c) { salvarTema({ c1: c[2], c2: c[3] }); }, function (c) { var i = el("i"); i.style.background = "linear-gradient(135deg,#" + c[2] + ",#" + c[3] + ")"; return i; });
+    chips("t-bases", VGX.BASES, t.base, function (b) { salvarTema({ base: b[0] }); });
+    chips("t-fundos", VGX.FUNDOS, t.fu, function (f) { salvarTema({ fu: f[0] }); });
+    chips("t-pacotes", VGX.PACOTES, t.pk, function (p) { salvarTema({ pk: p[0] }); }, function (p) { var s = el("span"); s.innerHTML = VGX.pacoteSvg(p[0], GEAR, t.c1, t.c2, p[0]); return s; });
+    chips("t-formato", [["futurista", "Futurista"], ["redondo", "Redondo"]], t.fo, function (f) { salvarTema({ fo: f[0] }); });
+    $("t-an").checked = t.an;
+    if (document.activeElement !== $("t-br")) $("t-br").value = t.br;
+    if (document.activeElement !== $("t-tr")) $("t-tr").value = t.tr;
+  }
+  $("t-an").onchange = function () { salvarTema({ an: this.checked }); };
+  $("t-br").onchange = function () { salvarTema({ br: +this.value }); };
+  $("t-tr").onchange = function () { salvarTema({ tr: +this.value }); };
+  function salvarItens() { V.chamar("ajustes:sync-itens", { favoritos: $("si-favoritos").checked, tema: $("si-tema").checked, senhas: $("si-senhas").checked }).then(desenhar); }
+  ["favoritos", "tema", "senhas"].forEach(function (k) { $("si-" + k).onchange = salvarItens; });
   function recarregar() { return V.chamar("ajustes:estado").then(desenhar); }
 
   $("bloqueio").onchange = function () { V.chamar("ajustes:bloqueio", this.checked).then(desenhar); };
@@ -71,9 +101,9 @@
   $("ext-pasta").onclick = function () { V.chamar("ext:pasta").then(function (r) { $("ext-msg").textContent = r.ok ? "Carregada: " + (r.nome || "") : r.erro; recarregar(); }); };
   $("sync-entrar").onclick = function () {
     $("sync-msg").textContent = "Entrando…";
-    V.chamar("sync:entrar", $("sync-email").value, $("sync-senha").value).then(function (r) { $("sync-msg").textContent = r.ok ? "Pronto: favoritos sincronizados." : r.erro; $("sync-senha").value = ""; recarregar(); });
+    V.chamar("sync:entrar", $("sync-email").value, $("sync-senha").value).then(function (r) { $("sync-msg").textContent = r.ok ? "Pronto: sincronizado." + (r.avisos && r.avisos.length ? " (" + r.avisos.join("; ") + ")" : "") : r.erro; $("sync-senha").value = ""; recarregar(); });
   };
-  $("sync-agora").onclick = function () { V.chamar("sync:agora").then(function (r) { $("sync-msg").textContent = r.ok ? "Sincronizado." : r.erro; recarregar(); }); };
+  $("sync-agora").onclick = function () { V.chamar("sync:agora").then(function (r) { $("sync-msg").textContent = r.ok ? "Sincronizado." + (r.avisos && r.avisos.length ? " (" + r.avisos.join("; ") + ")" : "") : r.erro; recarregar(); }); };
   $("sync-sair").onclick = function () { V.chamar("sync:sair").then(desenhar); };
   recarregar();
   setInterval(recarregar, 4000);

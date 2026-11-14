@@ -30,6 +30,8 @@ class Cofre {
     this.chave = null;
     this.sal = null;
     this.itens = [];
+    this.apagados = {}; // "origem\nusuario" -> quando foi apagado (para a sincronização)
+    this.senhaMem = null; // só enquanto aberto: a sincronização cifra com ela
     this.nunca = []; // sites onde a pessoa pediu para nunca oferecer salvar
     this.ms = minutosAteTravar * 60_000;
     this.timer = null;
@@ -44,8 +46,10 @@ class Cofre {
     if (this.existe()) throw new Error("Já existe um cofre neste computador.");
     this.sal = crypto.randomBytes(16);
     this.chave = derivar(senha, this.sal);
+    this.senhaMem = String(senha);
     this.itens = [];
     this.nunca = [];
+    this.apagados = {};
     this.gravar();
     this.reiniciarRelogio();
   }
@@ -60,13 +64,17 @@ class Cofre {
     this.chave = chave;
     this.itens = Array.isArray(dados.itens) ? dados.itens : [];
     this.nunca = Array.isArray(dados.nunca) ? dados.nunca : [];
+    this.apagados = dados.apagados && typeof dados.apagados === "object" ? dados.apagados : {};
+    this.senhaMem = String(senha);
     this.reiniciarRelogio();
   }
 
   travar() {
     this.chave = null;
+    this.senhaMem = null;
     this.itens = [];
     this.nunca = [];
+    this.apagados = {};
     if (this.timer) clearTimeout(this.timer);
     this.timer = null;
     if (this.aoTravar) this.aoTravar();
@@ -84,7 +92,7 @@ class Cofre {
   }
 
   gravar() {
-    const pacote = { v: FORMATO, sal: this.sal.toString("base64"), ...cifrar(this.chave, { itens: this.itens, nunca: this.nunca }) };
+    const pacote = { v: FORMATO, sal: this.sal.toString("base64"), ...cifrar(this.chave, { itens: this.itens, nunca: this.nunca, apagados: this.apagados }) };
     const tmp = this.arquivo + ".tmp";
     fs.writeFileSync(tmp, JSON.stringify(pacote));
     fs.renameSync(tmp, this.arquivo);
@@ -126,7 +134,24 @@ class Cofre {
 
   apagar(id) {
     this.exigir();
+    const i = this.itens.find((x) => x.id === id);
+    if (i) this.apagados[i.origem + "\n" + i.usuario] = Date.now();
     this.itens = this.itens.filter((x) => x.id !== id);
+    this.gravar();
+  }
+
+  /** O que vai para a sincronização (com as senhas; só existe com o cofre aberto). */
+  paraSincronia() {
+    this.exigir();
+    return { itens: this.itens.map(({ origem, usuario, senha, atualizado }) => ({ origem, usuario, senha, atualizado })), apagados: { ...this.apagados } };
+  }
+
+  /** Troca o conteúdo pelo resultado da mescla, mantendo os ids dos itens que já existiam. */
+  aplicarSincronia(doc) {
+    this.exigir();
+    const antes = new Map(this.itens.map((i) => [i.origem + "\n" + i.usuario, i.id]));
+    this.itens = doc.itens.map((i) => ({ id: antes.get(i.origem + "\n" + i.usuario) || crypto.randomBytes(8).toString("hex"), origem: i.origem, usuario: i.usuario, senha: i.senha, atualizado: i.atualizado }));
+    this.apagados = { ...doc.apagados };
     this.gravar();
   }
 
@@ -143,6 +168,7 @@ class Cofre {
     try { decifrar(derivar(atual, Buffer.from(arq.sal, "base64")), arq); } catch { throw new Error("Senha mestra atual incorreta."); }
     this.sal = crypto.randomBytes(16);
     this.chave = derivar(nova, this.sal);
+    this.senhaMem = String(nova);
     this.gravar();
   }
 }
