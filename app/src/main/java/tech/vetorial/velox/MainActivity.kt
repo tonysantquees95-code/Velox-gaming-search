@@ -1647,6 +1647,10 @@ class MainActivity : Activity() {
             }
             telaCheia = view
             telaCheiaRetorno = retorno
+            orientacaoAntes = requestedOrientation
+            // vídeo em tela cheia preenche a tela na horizontal, como no YouTube (gira junto com o aparelho entre os dois lados)
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            if (Build.VERSION.SDK_INT >= 28) window.attributes = window.attributes.also { it.layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES }
             atualizarJanelinha()
             (window.decorView as ViewGroup).addView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             view.setBackgroundColor(Color.BLACK)
@@ -1664,9 +1668,12 @@ class MainActivity : Activity() {
         telaCheia = null
         telaCheiaRetorno?.onCustomViewHidden()
         telaCheiaRetorno = null
+        requestedOrientation = orientacaoAntes
         atualizarJanelinha()
         aplicarImersivo()
     }
+
+    private var orientacaoAntes = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(pedido: Int, resultado: Int, dados: Intent?) {
