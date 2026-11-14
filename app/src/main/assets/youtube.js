@@ -22,7 +22,10 @@
     document.addEventListener("pause", function (e) {
       var v = e.target;
       if (!v || v.tagName !== "VIDEO" || !window.__veloxFundo) return;
-      setTimeout(function () { if (v.paused && !v.ended && window.__veloxFundo) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } }, 60);
+      var agora = Date.now();
+      if (agora - (window.__veloxUltimoPlay || 0) < 1500) return; /* não brigar com o player a cada pausa */
+      window.__veloxUltimoPlay = agora;
+      setTimeout(function () { if (v.paused && !v.ended && window.__veloxFundo) { var p = v.play(); if (p && p.catch) p.catch(function () {}); } }, 80);
     }, true);
   }
   if (!ANUNCIOS) return;
@@ -88,6 +91,11 @@
       if (f) f.click();
     } catch (e) { /* segue */ }
   }
-  setInterval(pular, 300);
-  new MutationObserver(pular).observe(document.documentElement, { childList: true, subtree: true });
+  setInterval(pular, 600);
+  var agendado = false;
+  new MutationObserver(function () {
+    if (agendado) return;
+    agendado = true;
+    setTimeout(function () { agendado = false; pular(); }, 400);
+  }).observe(document.documentElement, { childList: true, subtree: true });
 })();

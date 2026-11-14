@@ -135,6 +135,28 @@ class MainActivity : Activity() {
     }
 
     private var favAntes = View.GONE
+    private var abriuTelaCheiaNaJanelinha = false
+
+    /** Acha o botão de tela cheia do player e dá um toque real nele (até 3 tentativas). */
+    private fun tocarTelaCheia(wv: WebView, tentativa: Int) {
+        if (!isInPictureInPictureMode || telaCheia != null) return
+        wv.evaluateJavascript(JS_ACHAR_TELA_CHEIA) { r ->
+            val ponto = try {
+                if (r == null || r == "null") null else JSONArray(org.json.JSONTokener(r).nextValue() as String)
+            } catch (e: Exception) { null }
+            if (ponto != null) {
+                val t = android.os.SystemClock.uptimeMillis()
+                val x = ponto.getDouble(0).toFloat(); val y = ponto.getDouble(1).toFloat()
+                val baixo = android.view.MotionEvent.obtain(t, t, android.view.MotionEvent.ACTION_DOWN, x, y, 0)
+                val cima = android.view.MotionEvent.obtain(t, t + 60, android.view.MotionEvent.ACTION_UP, x, y, 0)
+                wv.dispatchTouchEvent(baixo); wv.dispatchTouchEvent(cima)
+                baixo.recycle(); cima.recycle()
+                raizApp.postDelayed({ if (telaCheia != null) abriuTelaCheiaNaJanelinha = true else if (tentativa < 2) tocarTelaCheia(wv, tentativa + 1) }, 600)
+            } else if (tentativa < 2) {
+                raizApp.postDelayed({ tocarTelaCheia(wv, tentativa + 1) }, 600)
+            }
+        }
+    }
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
@@ -183,8 +205,13 @@ class MainActivity : Activity() {
             fecharPainel()
             favAntes = faixaFav.visibility
             for (v in listOf(barraDeCima, faixaAbas, barraDeBaixo, barra, faixaFav, flutuante)) v.visibility = View.GONE
-            if (telaCheia == null) wv?.evaluateJavascript(JS_JANELINHA, null)
+            if (telaCheia == null && wv != null) {
+                // toca de verdade no botão de tela cheia do player: aí o vídeo ocupa toda a janelinha (o Android só deixa isso com um toque real)
+                raizApp.postDelayed({ tocarTelaCheia(wv, 0) }, 700)
+                raizApp.postDelayed({ if (telaCheia == null && isInPictureInPictureMode) wv.evaluateJavascript(JS_JANELINHA, null) }, 2600)
+            }
         } else {
+            if (abriuTelaCheiaNaJanelinha) { abriuTelaCheiaNaJanelinha = false; fecharTelaCheia() }
             wv?.evaluateJavascript(JS_FORA_JANELINHA, null)
             faixaFav.visibility = favAntes
             aplicarImersivo()
@@ -1856,6 +1883,7 @@ class MainActivity : Activity() {
             "s.textContent='[data-velox-pip]{transform:none!important;filter:none!important;contain:none!important;overflow:visible!important;perspective:none!important}" +
             "video{position:fixed!important;left:0!important;top:0!important;width:100vw!important;height:100vh!important;max-width:none!important;max-height:none!important;z-index:2147483647!important;background:#000!important;object-fit:contain!important}body{overflow:hidden!important}';" +
             "document.documentElement.appendChild(s);if(v.paused){var p=v.play();if(p&&p.catch)p.catch(function(){});}})()"
+        const val JS_ACHAR_TELA_CHEIA = "(function(){var b=document.querySelector('.fullscreen-icon,.ytp-fullscreen-button,button[aria-label*=\"ela cheia\" i],button[aria-label*=\"ull screen\" i],button[aria-label*=\"ullscreen\" i]');if(!b)return null;var r=b.getBoundingClientRect();if(!r.width||!r.height)return null;var d=window.devicePixelRatio||1;return JSON.stringify([(r.left+r.width/2)*d,(r.top+r.height/2)*d]);})()"
         const val JS_FORA_JANELINHA = "(function(){var s=document.getElementById('velox-pip');if(s)s.remove();document.querySelectorAll('[data-velox-pip]').forEach(function(e){e.removeAttribute('data-velox-pip')});})()"
         const val JS_CAPTURA = "(function(){try{if(window.__veloxSenhas||!window.VeloxSenhas)return;window.__veloxSenhas=1;" +
             "function achar(f){var p=f.querySelector('input[type=password]');if(!p||!p.value)return;" +
