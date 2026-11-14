@@ -9,6 +9,7 @@
     try {
       Object.defineProperty(document, "hidden", { configurable: true, get: function () { return false; } });
       Object.defineProperty(document, "visibilityState", { configurable: true, get: function () { return "visible"; } });
+      document.hasFocus = function () { return true; };
       Object.defineProperty(document, "webkitHidden", { configurable: true, get: function () { return false; } });
       Object.defineProperty(document, "webkitVisibilityState", { configurable: true, get: function () { return "visible"; } });
       ["visibilitychange", "webkitvisibilitychange", "pagehide", "blur"].forEach(function (n) {
