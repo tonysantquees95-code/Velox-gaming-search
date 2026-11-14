@@ -74,6 +74,8 @@ class MainActivity : Activity() {
     private lateinit var bAvancar: ImageView
     private var painel: WebView? = null
     private lateinit var faixaFav: HorizontalScrollView
+    private lateinit var faixaAbas: HorizontalScrollView
+    private lateinit var abasConteudo: LinearLayout
     private lateinit var faixaConteudo: LinearLayout
     private lateinit var bEstrelaCima: TextView
     private lateinit var bEstrelaBaixo: TextView
@@ -267,6 +269,9 @@ class MainActivity : Activity() {
         faixaConteudo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL; setPadding(dp(10), dp(6), dp(10), dp(6)) }
         faixaFav = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; visibility = View.GONE; addView(faixaConteudo) }
         coluna.addView(faixaFav, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        abasConteudo = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.BOTTOM; setPadding(dp(10), dp(6), dp(10), 0) }
+        faixaAbas = HorizontalScrollView(this).apply { isHorizontalScrollBarEnabled = false; overScrollMode = View.OVER_SCROLL_NEVER; addView(abasConteudo) }
+        coluna.addView(faixaAbas, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         coluna.addView(barra, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(3)))
         coluna.addView(barraDeCima, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         coluna.addView(barraDeBaixo, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, altura).apply { setMargins(dp(10), dp(4), dp(10), dp(8)) })
@@ -315,6 +320,7 @@ class MainActivity : Activity() {
         bEstrelaBaixo.setTextColor(tema.destaque)
         faixaFav.setBackgroundColor((tema.superficie and 0x00FFFFFF) or ((255 - (tema.transparencia * 1.6f).toInt()).coerceIn(60, 255) shl 24))
         desenharFaixaFav()
+        desenharFaixaAbas()
         campo.setTextColor(tema.texto)
         campo.setHintTextColor(tema.suave)
         pintarCampo()
@@ -393,6 +399,7 @@ class MainActivity : Activity() {
         if (telaCheia != null) return
         val ligado = ajustes.imersivo
         barraDeCima.visibility = if (ligado) View.GONE else View.VISIBLE
+        faixaAbas.visibility = if (ligado) View.GONE else View.VISIBLE
         barraDeBaixo.visibility = if (ligado) View.GONE else View.VISIBLE
         barra.visibility = if (ligado) View.GONE else View.VISIBLE
         flutuante.visibility = if (ligado && painel == null) View.VISIBLE else View.GONE
@@ -1181,6 +1188,63 @@ class MainActivity : Activity() {
 
     private fun atualizarContador() {
         contador.text = abas.size.toString()
+        desenharFaixaAbas()
+    }
+
+    /** Faixa de abas colada em cima da barra de endereço: toque troca, × (ou segurar) fecha, rola para o lado quando há muitas. */
+    private fun desenharFaixaAbas() {
+        if (!::abasConteudo.isInitialized) return
+        abasConteudo.removeAllViews()
+        var ativaView: View? = null
+        for (a in abas) {
+            val ehAtual = a === atual
+            val nome = a.titulo.takeIf { it.isNotBlank() && it != "Nova aba" }
+                ?: (try { Uri.parse(a.url).host?.removePrefix("www.") } catch (e: Exception) { null })?.takeIf { it.isNotBlank() }
+                ?: "Nova aba"
+            val linha = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(16), 0, dp(4), 0)
+                val cheio = if (ehAtual) (tema.destaque and 0x00FFFFFF) or 0x55000000 else (tema.campo and 0x00FFFFFF) or 0xAA000000.toInt()
+                val borda = (tema.destaque and 0x00FFFFFF) or (if (ehAtual) 0xFF000000.toInt() else 0x66000000)
+                background = FormaDeAba(cheio, borda, dp(1).toFloat() + (if (ehAtual) 0.5f else 0f), dp(12).toFloat(), tema.redondo)
+                isClickable = true
+                setOnClickListener { if (a !== atual) mostrar(a) }
+                setOnLongClickListener { fecharAba(a); true }
+            }
+            val t = TextView(this).apply {
+                text = (if (a.anonima) "● " else "") + nome
+                textSize = 12.5f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                setTextColor(if (ehAtual) tema.texto else tema.suave)
+                if (ehAtual) setTypeface(typeface, Typeface.BOLD)
+            }
+            val x = TextView(this).apply {
+                text = "×"
+                textSize = 18f
+                gravity = Gravity.CENTER
+                contentDescription = "Fechar aba"
+                setTextColor(if (ehAtual) tema.texto else tema.suave)
+                setOnClickListener { fecharAba(a) }
+            }
+            linha.addView(t, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { })
+            t.maxWidth = dp(120)
+            linha.addView(x, LinearLayout.LayoutParams(dp(30), dp(36)))
+            abasConteudo.addView(linha, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36)).apply { rightMargin = dp(3) })
+            if (ehAtual) ativaView = linha
+        }
+        val mais = TextView(this).apply {
+            text = "＋"
+            textSize = 18f
+            gravity = Gravity.CENTER
+            contentDescription = "Nova aba"
+            setTextColor(tema.destaque)
+            background = FormaDeAba((tema.campo and 0x00FFFFFF) or 0xAA000000.toInt(), (tema.destaque and 0x00FFFFFF) or 0x66000000, dp(1).toFloat(), dp(10).toFloat(), tema.redondo)
+            setOnClickListener { novaAba(null, false) }
+        }
+        abasConteudo.addView(mais, LinearLayout.LayoutParams(dp(44), dp(36)))
+        ativaView?.let { v -> faixaAbas.post { faixaAbas.smoothScrollTo((v.left - dp(40)).coerceAtLeast(0), 0) } }
     }
 
     private fun fecharAba(aba: Aba) {
@@ -1328,6 +1392,7 @@ class MainActivity : Activity() {
 
         override fun onReceivedTitle(view: WebView, titulo: String?) {
             aba.titulo = if (titulo.isNullOrBlank() || titulo == "Velox") "Nova aba" else titulo
+            desenharFaixaAbas()
         }
 
         override fun onPermissionRequest(req: android.webkit.PermissionRequest) {

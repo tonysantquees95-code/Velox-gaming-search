@@ -333,3 +333,42 @@ class BotaoDownload(contexto: Context) : View(contexto) {
         canvas.drawPath(p, pincel)
     }
 }
+
+/** Aba da faixa de abas: trapézio inclinado (estilo futurista) ou topo arredondado (estilo redondo). A ativa fica cheia e com a borda acesa. */
+class FormaDeAba(private val preenchimento: Int, private val contorno: Int, private val espessura: Float, private val inclinacao: Float, private val redondo: Boolean) : Drawable() {
+    private val cheio = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL; color = preenchimento }
+    private val linha = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; color = contorno; strokeWidth = espessura; strokeJoin = Paint.Join.MITER }
+    private val caminho = Path()
+
+    override fun onBoundsChange(b: android.graphics.Rect) {
+        caminho.reset()
+        val m = espessura / 2f
+        val r = RectF(b.left + m, b.top + m, b.right - m, b.bottom - m)
+        if (redondo) {
+            val c = minOf(inclinacao, r.height() / 2f)
+            caminho.moveTo(r.left, r.bottom)
+            caminho.lineTo(r.left, r.top + c)
+            caminho.quadTo(r.left, r.top, r.left + c, r.top)
+            caminho.lineTo(r.right - c, r.top)
+            caminho.quadTo(r.right, r.top, r.right, r.top + c)
+            caminho.lineTo(r.right, r.bottom)
+            caminho.close()
+        } else {
+            caminho.moveTo(r.left, r.bottom)
+            caminho.lineTo(r.left + inclinacao, r.top)
+            caminho.lineTo(r.right - inclinacao, r.top)
+            caminho.lineTo(r.right, r.bottom)
+            caminho.close()
+        }
+    }
+
+    override fun draw(canvas: Canvas) {
+        canvas.drawPath(caminho, cheio)
+        canvas.drawPath(caminho, linha)
+    }
+
+    override fun setAlpha(alpha: Int) {}
+    override fun setColorFilter(cf: ColorFilter?) {}
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+}
