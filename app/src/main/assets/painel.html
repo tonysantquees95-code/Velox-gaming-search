@@ -214,6 +214,10 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
           <div class="vidro linha"><div><b>Downloads</b><small id="vindex-t">Andamento, velocidade e arquivos baixados</small></div><button class="botao" id="vindex" style="min-height:40px;padding:0 .9rem">Abrir</button></div>
           <div class="vidro linha"><div><b>Velox Gaming Search</b><small id="versao">Navegador gamer da Vetorial Tech</small></div><button class="botao primario" id="atualizar" style="min-height:40px;padding:0 .9rem">Atualizar</button></div>
           <p class="dica">O Velox procura versão nova sozinho ao abrir.</p>
+          <p class="rotulo" style="margin-top:18px">Sobre o Velox</p>
+          <div class="vidro linha"><div><b>Apresentação</b><small>Rever as funções e as permissões</small></div><button class="botao" id="sobre-tour" style="min-height:40px;padding:0 .9rem">Rever</button></div>
+          <div class="vidro linha"><div><b>Termos de uso</b><small>Ler os termos que você aceitou</small></div><button class="botao" id="sobre-termos" style="min-height:40px;padding:0 .9rem">Ler</button></div>
+          <div class="vidro linha"><div><b>O que há de novo</b><small>Tudo o que já mudou e melhorou</small></div><button class="botao" id="sobre-novidades" style="min-height:40px;padding:0 .9rem">Ver</button></div>
         </section>
       </div>
     </div>
@@ -501,6 +505,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
   var armado = false;
   $("limpar").onclick = function () { if (!armado) { armado = true; this.textContent = "Toque de novo para apagar"; var b = this; setTimeout(function () { armado = false; b.textContent = "Limpar dados"; }, 3500); } else { ir("limpar"); this.textContent = "Dados apagados"; armado = false; } };
   $("atualizar").onclick = function () { ir("atualizar"); };
+  ["sobre-tour", "sobre-termos", "sobre-novidades"].forEach(function (id) { $(id).onclick = function () { ir(id); }; });
   $("vindex").onclick = function () { ir("vindex"); };
   $("navprinc").onclick = function () { ir("padrao"); };
   if (E.padrao) { $("padrao-t").textContent = "O Velox já é o seu navegador principal"; $("navprinc").textContent = "Ativo"; }

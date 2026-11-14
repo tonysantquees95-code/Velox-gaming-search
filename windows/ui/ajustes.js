@@ -117,6 +117,7 @@
       $("atu-msg").textContent = m; b.disabled = false;
     }).catch(function () { $("atu-msg").textContent = "Não consegui procurar agora."; b.disabled = false; });
   };
+  ["tour", "termos", "novidades"].forEach(function (q) { $("sobre-" + q).onclick = function () { V.chamar("ajustes:sobre", q); }; });
   $("sync-agora").onclick = function () { V.chamar("sync:agora").then(function (r) { $("sync-msg").textContent = r.ok ? "Sincronizado: " + r.resumo : r.erro; recarregar(); }); };
   $("sync-sair").onclick = function () { V.chamar("sync:sair").then(desenhar); };
   recarregar();

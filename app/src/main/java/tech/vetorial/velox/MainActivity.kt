@@ -104,7 +104,7 @@ class MainActivity : Activity() {
         aplicarOpcoesSalvas()
         if (Build.VERSION.SDK_INT >= 33 && ajustes.segundoPlano && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 4711)
         procurarAtualizacao(false)
-        raizApp.postDelayed({ perguntarNavegadorPrincipal() }, 2600)
+        raizApp.postDelayed({ iniciarApresentacao() }, 900)
         sincronizarDepois()
         val pedido = intent?.dataString
         val salvas = ajustes.abas
@@ -781,6 +781,9 @@ class MainActivity : Activity() {
             "compartilhar" -> { fecharPainel(); compartilhar() }
             "limpar" -> limparDados()
             "atualizar" -> procurarAtualizacao(true)
+            "sobre-tour" -> { fecharPainel(); mostrarTour(0, false) {} }
+            "sobre-termos" -> { fecharPainel(); mostrarTermos(false) {} }
+            "sobre-novidades" -> { fecharPainel(); mostrarNovidades(Apresentacao.novasDesde(0)) }
             "aviso" -> Toast.makeText(this, (u.getQueryParameter("m") ?: "").take(120), Toast.LENGTH_SHORT).show()
             "vindex" -> abrirDownloads()
             "dl-pronto" -> enviarDownloads()
@@ -1343,6 +1346,80 @@ class MainActivity : Activity() {
     }
 
     /** Só na primeira abertura: pergunta se o Velox deve ser o navegador principal. */
+    // ---------------------------------------------------------------- apresentação e "o que há de novo"
+
+    private fun caixaDeTexto(texto: String): View {
+        val t = TextView(this).apply { this.text = texto; textSize = 15f; setPadding(dp(22), dp(8), dp(22), dp(8)) }
+        return android.widget.ScrollView(this).apply { addView(t) }
+    }
+
+    /** Na primeira abertura: tour, permissões e termos. Nas seguintes: só as novidades que a pessoa ainda não viu. */
+    private fun iniciarApresentacao() {
+        if (isFinishing) return
+        if (Apresentacao.precisaApresentar(ajustes.termosAceitos, ajustes.tourVisto)) {
+            mostrarTour(0, true) { mostrarPermissoes { mostrarTermos(true) { concluirApresentacao() } } }
+            return
+        }
+        val vistas = ajustes.novidadesVistas
+        val novas = if (vistas < 0) emptyList() else Apresentacao.novasDesde(vistas)
+        if (vistas < 0) ajustes.novidadesVistas = Apresentacao.ultimoId()
+        if (novas.isNotEmpty()) mostrarNovidades(novas) { perguntarNavegadorPrincipal() } else perguntarNavegadorPrincipal()
+    }
+
+    private fun concluirApresentacao() {
+        ajustes.tourVisto = true
+        ajustes.termosAceitos = Apresentacao.VERSAO_DOS_TERMOS
+        ajustes.novidadesVistas = Apresentacao.ultimoId()
+        perguntarNavegadorPrincipal()
+    }
+
+    private fun mostrarTour(i: Int, primeira: Boolean, depois: () -> Unit) {
+        if (isFinishing) return
+        val p = Apresentacao.TOUR[i]
+        val ultimo = i == Apresentacao.TOUR.size - 1
+        val b = AlertDialog.Builder(this).setCancelable(!primeira)
+            .setTitle("${p.icone}  ${p.titulo}")
+            .setView(caixaDeTexto(p.texto + "\n\n(${i + 1} de ${Apresentacao.TOUR.size})"))
+            .setPositiveButton(if (ultimo) (if (primeira) "Continuar" else "Fechar") else "Próximo") { _, _ -> if (ultimo) depois() else mostrarTour(i + 1, primeira, depois) }
+        if (i > 0) b.setNegativeButton("Voltar") { _, _ -> mostrarTour(i - 1, primeira, depois) }
+        else if (primeira) b.setNegativeButton("Pular") { _, _ -> depois() }
+        b.show()
+    }
+
+    private fun mostrarPermissoes(depois: () -> Unit) {
+        if (isFinishing) return
+        AlertDialog.Builder(this).setCancelable(false)
+            .setTitle("🔐  Permissões")
+            .setView(caixaDeTexto(Apresentacao.PERMISSOES))
+            .setPositiveButton("Entendi") { _, _ -> depois() }
+            .show()
+    }
+
+    /** Na primeira vez a pessoa precisa aceitar para usar; depois dá para reler pelos Ajustes. */
+    private fun mostrarTermos(obrigatorio: Boolean, depois: () -> Unit) {
+        if (isFinishing) return
+        val texto = Apresentacao.TERMOS.joinToString("\n\n") { (t, c) -> "$t\n$c" }
+        val b = AlertDialog.Builder(this).setCancelable(!obrigatorio)
+            .setTitle("Termos de uso do Velox")
+            .setView(caixaDeTexto(texto))
+        if (obrigatorio) {
+            b.setPositiveButton("Li e aceito") { _, _ -> depois() }
+            b.setNegativeButton("Não aceito") { _, _ -> finishAffinity() }
+        } else b.setPositiveButton("Fechar", null)
+        b.show()
+    }
+
+    private fun mostrarNovidades(itens: List<Apresentacao.Novidade>, depois: () -> Unit = {}) {
+        if (isFinishing) return
+        val versao = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
+        val texto = itens.joinToString("\n\n") { "[${Apresentacao.rotulo(it.tipo)}] ${it.titulo}\n${it.texto}" }
+        AlertDialog.Builder(this).setCancelable(false)
+            .setTitle("O que há de novo" + if (!versao.isNullOrBlank()) " · $versao" else "")
+            .setView(caixaDeTexto(texto))
+            .setPositiveButton("Entendi") { _, _ -> ajustes.novidadesVistas = Apresentacao.ultimoId(); depois() }
+            .show()
+    }
+
     private fun perguntarNavegadorPrincipal() {
         if (ajustes.perguntouPadrao || isFinishing || ehNavegadorPrincipal()) return
         ajustes.perguntouPadrao = true

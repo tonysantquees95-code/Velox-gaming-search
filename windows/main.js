@@ -13,6 +13,7 @@ const sincronia = require("./sincronia");
 const atualizador = require("./atualizador");
 const rolagem = require("./rolagem");
 const tema = require("./tema");
+const apresentacao = require("./apresentacao");
 
 const ALTURA_BARRA = 104; // endereço e botões ficam embaixo, como no celular
 const ALTURA_TOPO = 36; // abas na barra de título, como no Chrome
@@ -809,6 +810,12 @@ function ligarComandos() {
 
   ipcMain.handle("ajustes:procurar-atualizacao", so(() => procurarAtualizacao(true)));
   ipcMain.handle("ajustes:estado", so(() => resumoAjustes()));
+  ipcMain.handle("ajustes:sobre", so(async (_e, qual) => {
+    if (qual === "tour") await mostrarTour(false);
+    else if (qual === "termos") await mostrarTermos(false);
+    else if (qual === "novidades") await mostrarNovidades(apresentacao.novasDesde(0));
+    return true;
+  }));
   ipcMain.handle("ajustes:bloqueio", so((_e, v) => { ajustes.bloqueio = !!v; bloqueio.definir(v); gravarAjustes(); avisarBarra(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:buscar-fotos", so((_e, q) => { criarAba("https://www.bing.com/images/search?q=" + encodeURIComponent(String(q || "wallpaper").slice(0, 80)) + "&qft=+filterui:imagesize-large"); return {}; }));
   ipcMain.handle("ajustes:escolher-fundo", so(async () => {
@@ -946,6 +953,7 @@ async function iniciar() {
     // os recursos pesados carregam depois de a janela aparecer
     bloqueio.iniciar([principal, anonima]).then(avisarBarra).catch(() => undefined);
     ligarExtensoes().catch(() => undefined);
+    setTimeout(() => apresentar().catch(() => undefined), 700);
     sincronizarDepois(1500);
     setInterval(() => sincronizarDepois(100), 5 * 60_000);
     setTimeout(() => procurarAtualizacao().catch(() => undefined), 20_000);
@@ -954,6 +962,55 @@ async function iniciar() {
   janela.on("closed", () => { janela = null; });
 }
 
+
+// ---------------------------------------------------------------- apresentação e "o que há de novo"
+async function caixa(opcoes) {
+  const r = await dialog.showMessageBox(janela && !janela.isDestroyed() ? janela : undefined, { type: "none", noLink: true, cancelId: -1, ...opcoes });
+  return r.response;
+}
+/** Telas passando: Próximo / Voltar / Pular. Devolve true se chegou ao fim. */
+async function mostrarTour(primeira) {
+  const T = apresentacao.TOUR;
+  let i = 0;
+  while (i < T.length) {
+    const p = T[i];
+    const ultimo = i === T.length - 1;
+    const botoes = [ultimo ? (primeira ? "Continuar" : "Fechar") : "Próximo"];
+    if (i > 0) botoes.push("Voltar"); else if (primeira) botoes.push("Pular");
+    const r = await caixa({ title: "Velox", message: `${p.icone}  ${p.titulo}`, detail: `${p.texto}\n\n(${i + 1} de ${T.length})`, buttons: botoes, defaultId: 0 });
+    if (r === 0) { i++; continue; }
+    if (r === 1 && i > 0) { i--; continue; }
+    return primeira && r === 1; // "Pular" na primeira vez segue para as permissões
+  }
+  return true;
+}
+async function mostrarPermissoes() {
+  await caixa({ title: "Velox", message: "🔐  Permissões", detail: apresentacao.PERMISSOES, buttons: ["Entendi"], defaultId: 0 });
+}
+/** Na primeira vez é preciso aceitar; depois dá para reler pelos Ajustes. */
+async function mostrarTermos(obrigatorio) {
+  const r = await caixa({ title: "Velox", message: "Termos de uso do Velox", detail: apresentacao.textoDosTermos(), buttons: obrigatorio ? ["Li e aceito", "Não aceito"] : ["Fechar"], defaultId: 0 });
+  return !obrigatorio || r === 0;
+}
+async function mostrarNovidades(itens) {
+  if (!itens.length) { await caixa({ title: "Velox", message: "O que há de novo", detail: "Nada de novo por aqui ainda.", buttons: ["Fechar"] }); return; }
+  await caixa({ title: "Velox", message: `O que há de novo · versão 1.${atualizador.numeroDaVersao(app.getVersion())}`, detail: apresentacao.textoDasNovidades(itens), buttons: ["Entendi"], defaultId: 0 });
+}
+/** Primeira abertura: tour, permissões e termos. Nas seguintes: só as novidades que a pessoa ainda não viu. */
+async function apresentar() {
+  if (apresentacao.precisaApresentar(ajustes)) {
+    await mostrarTour(true);
+    await mostrarPermissoes();
+    if (!(await mostrarTermos(true))) { app.quit(); return; }
+    ajustes.tourVisto = true; ajustes.termosAceitos = apresentacao.VERSAO_DOS_TERMOS; ajustes.novidadesVistas = apresentacao.ultimoId();
+    gravarAgora();
+    return;
+  }
+  const vistas = Number.isInteger(ajustes.novidadesVistas) ? ajustes.novidadesVistas : -1;
+  if (vistas < 0) { ajustes.novidadesVistas = apresentacao.ultimoId(); gravarAgora(); return; }
+  const novas = apresentacao.novasDesde(vistas);
+  if (novas.length) { await mostrarNovidades(novas); ajustes.novidadesVistas = apresentacao.ultimoId(); gravarAgora(); }
+}
 
 // ---------------------------------------------------------------- atualização automática
 let atualizando = false;

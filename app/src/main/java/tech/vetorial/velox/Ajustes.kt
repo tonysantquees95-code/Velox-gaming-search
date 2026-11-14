@@ -92,6 +92,20 @@ class Ajustes(contexto: Context) {
         get() = p.getString("favoritos", "[]") ?: "[]"
         set(v) { p.edit().putString("favoritos", v).apply() }
 
+    /** Versão dos termos que a pessoa aceitou (0 = nunca aceitou) e se já viu o tour. */
+    var termosAceitos: Int
+        get() = p.getInt("termos_aceitos", 0)
+        set(v) { p.edit().putInt("termos_aceitos", v).apply() }
+
+    var tourVisto: Boolean
+        get() = p.getBoolean("tour_visto", false)
+        set(v) { p.edit().putBoolean("tour_visto", v).apply() }
+
+    /** Maior id de "O que há de novo" que a pessoa já viu (-1 = nunca guardou: primeira instalação, a apresentação já explica). */
+    var novidadesVistas: Int
+        get() = p.getInt("novidades_vistas", -1)
+        set(v) { p.edit().putInt("novidades_vistas", v).apply() }
+
     /** Já perguntou na primeira abertura se o Velox deve ser o navegador principal. */
     var perguntouPadrao: Boolean
         get() = p.getBoolean("perguntou_padrao", false)

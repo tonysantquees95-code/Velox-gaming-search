@@ -26,6 +26,7 @@
       "rolagem.js",
       "tema.js",
       "atualizador.js",
+      "apresentacao.js",
       "jogo.js",
       "desempenho.js",
       "build/icon.png",
