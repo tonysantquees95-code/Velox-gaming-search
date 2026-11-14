@@ -267,6 +267,12 @@ class IconeTraco(private val tracos: List<Path>, private val pontos: List<FloatA
             "recarregar" -> IconeTraco(listOf(
                 p { arcTo(RectF(5f, 5f, 19f, 19f), 0f, 315f) },
                 p { moveTo(19f, 4f); lineTo(19f, 8f); lineTo(15f, 8f) }), emptyList())
+            "ajustes" -> IconeTraco(listOf(
+                p { arcTo(RectF(9f, 9f, 15f, 15f), 0f, 359f); close() },
+                p { moveTo(12f, 3f); lineTo(12f, 5.5f) }, p { moveTo(12f, 18.5f); lineTo(12f, 21f) },
+                p { moveTo(3f, 12f); lineTo(5.5f, 12f) }, p { moveTo(18.5f, 12f); lineTo(21f, 12f) },
+                p { moveTo(5.6f, 5.6f); lineTo(7.4f, 7.4f) }, p { moveTo(16.6f, 16.6f); lineTo(18.4f, 18.4f) },
+                p { moveTo(18.4f, 5.6f); lineTo(16.6f, 7.4f) }, p { moveTo(7.4f, 16.6f); lineTo(5.6f, 18.4f) }), emptyList())
             else -> IconeTraco(listOf(
                 p {
                     moveTo(7f, 8f); lineTo(17f, 8f); quadTo(21f, 8f, 21f, 12f); lineTo(21f, 14f)

@@ -14,7 +14,7 @@ import java.net.URL
 /** Foto de fundo e ícones próprios da barra: ficam em arquivos privados do app, já reduzidos. */
 object Imagens {
     const val LIMITE_BYTES = 15 * 1024 * 1024
-    val SLOTS = listOf("voltar", "avancar", "inicio", "recarregar", "painel")
+    val SLOTS = listOf("voltar", "avancar", "inicio", "recarregar", "painel", "ajustes")
 
     fun slotValido(s: String?): Boolean = s != null && s in SLOTS
 

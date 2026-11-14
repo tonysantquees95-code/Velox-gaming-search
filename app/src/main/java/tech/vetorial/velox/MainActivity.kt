@@ -60,7 +60,6 @@ class MainActivity : Activity() {
     private lateinit var barra: BarraNeon
     private lateinit var conteudo: FrameLayout
     private lateinit var puxar: SwipeRefreshLayout
-    private lateinit var contador: TextView
     private lateinit var barraDeCima: LinearLayout
     private lateinit var barraDeBaixo: LinearLayout
     private lateinit var logo: LogoVgx
@@ -228,15 +227,6 @@ class MainActivity : Activity() {
         bAvancar = botao("avancar", "Avançar") { atual?.webView?.let { if (it.canGoForward()) it.goForward() } }
         val bInicio = botao("inicio", "Início") { abrirTexto(INICIO) }
         val bRecarregar = botao("recarregar", "Recarregar") { atual?.webView?.reload() }
-        contador = TextView(this).apply {
-            textSize = 14f
-            gravity = Gravity.CENTER
-            setTypeface(typeface, Typeface.BOLD)
-            contentDescription = "Abas"
-            isClickable = true
-            isFocusable = true
-            setOnClickListener { abrirPainel("abas") }
-        }
         bEstrelaBaixo = TextView(this).apply {
             text = "★"
             textSize = 22f
@@ -247,12 +237,11 @@ class MainActivity : Activity() {
             setOnClickListener { alternarFaixaFav() }
         }
         val bPainel = botao("painel", "Painel do Velox: modo jogo, visual e mais") { abrirPainel("jogo") }
+        val bAjustes = botao("ajustes", "Ajustes") { abrirPainel("mais") }
         val altura = dp(54)
         for (b in listOf(bVoltar, bAvancar, bInicio, bRecarregar)) barraDeBaixo.addView(b, LinearLayout.LayoutParams(0, altura, 1f))
-        val caixaAbas = FrameLayout(this)
-        caixaAbas.addView(contador, FrameLayout.LayoutParams(dp(32), dp(28), Gravity.CENTER))
         barraDeBaixo.addView(bEstrelaBaixo, LinearLayout.LayoutParams(0, altura, 1f))
-        barraDeBaixo.addView(caixaAbas, LinearLayout.LayoutParams(0, altura, 1f))
+        barraDeBaixo.addView(bAjustes, LinearLayout.LayoutParams(0, altura, 1f))
         barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1f))
 
         // como no Brave: a página em cima e, embaixo, a faixa de favoritos, o endereço e os botões
@@ -326,12 +315,6 @@ class MainActivity : Activity() {
         pintarCampo()
         logo.cores(tema.destaque, tema.secundaria)
         barra.cores(tema.destaque, tema.secundaria)
-        contador.setTextColor(tema.destaque)
-        contador.background = GradientDrawable().apply {
-            setColor(Color.TRANSPARENT)
-            cornerRadius = if (tema.redondo) dp(10).toFloat() else dp(3).toFloat()
-            setStroke(dp(2), tema.destaque)
-        }
         flutuante.setColorFilter(tema.sobreDestaque)
         flutuante.background = GradientDrawable().apply {
             shape = if (tema.redondo) GradientDrawable.OVAL else GradientDrawable.RECTANGLE
@@ -597,7 +580,7 @@ class MainActivity : Activity() {
 
     private fun opcao(chave: String?, ligado: Boolean) {
         when (chave) {
-            "ad" -> { ajustes.bloquearAnuncios = ligado; atual?.webView?.reload() }
+            "ad" -> { ajustes.bloquearAnuncios = ligado; for (a in abas) ligarBloqueioYoutube(a); atual?.webView?.reload() }
             "escuro" -> { ajustes.sitesEscuros = ligado; for (a in abas) aplicarEscuro(a.webView); atual?.webView?.reload() }
             "imersivo" -> { ajustes.imersivo = ligado; aplicarImersivo() }
             "tela" -> { ajustes.telaLigada = ligado; aplicarTela() }
@@ -1155,6 +1138,7 @@ class MainActivity : Activity() {
         if (!anonima) wv.addJavascriptInterface(PonteSenhas(aba), "VeloxSenhas")
         wv.webViewClient = navegador(aba)
         wv.webChromeClient = cromo(aba)
+        ligarBloqueioYoutube(aba)
         wv.setOnLongClickListener { v ->
             val r = (v as WebView).hitTestResult
             val extra = r.extra
@@ -1175,6 +1159,19 @@ class MainActivity : Activity() {
         atualizarContador()
     }
 
+    private val scriptsYoutube = HashMap<Aba, androidx.webkit.ScriptHandler>()
+    private val jsYoutube: String by lazy { try { assets.open("youtube.js").bufferedReader().use { it.readText() } } catch (e: Exception) { "" } }
+
+    /** Coloca (ou tira) o script que corta os anúncios do YouTube antes da página rodar. */
+    private fun ligarBloqueioYoutube(aba: Aba) {
+        scriptsYoutube.remove(aba)?.remove()
+        if (!ajustes.bloquearAnuncios || jsYoutube.isEmpty()) return
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+        try {
+            scriptsYoutube[aba] = androidx.webkit.WebViewCompat.addDocumentStartJavaScript(aba.webView, jsYoutube, setOf("https://www.youtube.com", "https://m.youtube.com", "https://music.youtube.com", "https://youtube.com"))
+        } catch (e: Exception) { /* sem suporte nesta versão do WebView */ }
+    }
+
     private fun mostrar(aba: Aba) {
         atual?.let { conteudo.removeView(it.webView) }
         atual = aba
@@ -1187,7 +1184,6 @@ class MainActivity : Activity() {
     }
 
     private fun atualizarContador() {
-        contador.text = abas.size.toString()
         desenharFaixaAbas()
     }
 
@@ -1540,7 +1536,7 @@ class MainActivity : Activity() {
     }
 
     private fun menuDaImagem(url: String) {
-        val rotulos = mapOf("voltar" to "Voltar", "avancar" to "Avançar", "inicio" to "Início", "recarregar" to "Recarregar", "painel" to "Painel")
+        val rotulos = mapOf("voltar" to "Voltar", "avancar" to "Avançar", "inicio" to "Início", "recarregar" to "Recarregar", "painel" to "Painel", "ajustes" to "Ajustes")
         val opcoes = ArrayList<String>()
         val acoes = ArrayList<() -> Unit>()
         val direto = iconeEscolhido

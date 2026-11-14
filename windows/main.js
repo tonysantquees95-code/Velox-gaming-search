@@ -501,6 +501,17 @@ const so = (fn) => (e, ...a) => (dasInternas(e) ? fn(e, ...a) : undefined);
 function ligarComandos() {
   // barra (janela principal)
   const daBarra = (fn) => (e, ...a) => (janela && e.sender === janela.webContents ? fn(e, ...a) : undefined);
+  // script que corta os anúncios do YouTube: só vai para páginas do youtube e só com o bloqueio ligado
+  let scriptYoutube = null;
+  ipcMain.on("yt:script", (e) => {
+    e.returnValue = "";
+    try {
+      const h = new URL(e.senderFrame ? e.senderFrame.url : e.sender.getURL()).hostname;
+      if (!ajustes.bloqueio || !(h === "youtube.com" || h.endsWith(".youtube.com"))) return;
+      if (scriptYoutube === null) scriptYoutube = fs.readFileSync(path.join(__dirname, "inicio", "youtube.js"), "utf8");
+      e.returnValue = scriptYoutube;
+    } catch (err) { /* sem script */ }
+  });
   ipcMain.on("nova-aba", daBarra(() => criarAba(null, { interna: "inicio" })));
   ipcMain.on("nova-anonima", daBarra(() => criarAba(null, { interna: "inicio", anonima: true })));
   ipcMain.on("fechar-aba", daBarra((_e, id) => fecharAba(id)));

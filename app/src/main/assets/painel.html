@@ -351,7 +351,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
 
   /* modo jogo */
   var CHAVES = [
-    ["ad", "Bloquear anúncios", "Barra anúncios e rastreadores"],
+    ["ad", "Bloquear anúncios", "Barra anúncios, rastreadores e anúncios do YouTube"],
     ["escuro", "Sites no escuro", "Força o modo escuro nas páginas"],
     ["imersivo", "Tela cheia imersiva", "Esconde as barras para jogar e ver vídeo"],
     ["tela", "Manter a tela ligada", "Não apaga a tela enquanto o Velox está aberto"],
@@ -435,12 +435,13 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
   $("notema").onclick = function () { E.op.notema = !E.op.notema; this.dataset.lig = String(E.op.notema); ir("opc", { k: "notema", v: E.op.notema ? 1 : 0 }); };
 
   /* barra de baixo: pacote e ícones de cada botão */
-  var SLOTS = [["voltar", "Voltar"], ["avancar", "Avançar"], ["inicio", "Início"], ["recarregar", "Recarregar"], ["painel", "Painel"]];
+  var SLOTS = [["voltar", "Voltar"], ["avancar", "Avançar"], ["inicio", "Início"], ["recarregar", "Recarregar"], ["painel", "Painel"], ["ajustes", "Ajustes"]];
   var PADRAO_SVG = {
     voltar: '<path d="M15 5l-7 7 7 7"/>', avancar: '<path d="M9 5l7 7-7 7"/>', inicio: '<path d="M4 11l8-7 8 7M6 10v10h12V10"/>',
-    recarregar: '<path d="M19 12a7 7 0 1 1-2.1-5M19 4v4h-4"/>', painel: I.jogo
+    recarregar: '<path d="M19 12a7 7 0 1 1-2.1-5M19 4v4h-4"/>', painel: I.jogo,
+    ajustes: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/>'
   };
-  var MIOLO = { voltar: PADRAO_SVG.voltar, avancar: PADRAO_SVG.avancar, inicio: PADRAO_SVG.inicio, recarregar: PADRAO_SVG.recarregar, painel: PADRAO_SVG.painel };
+  var MIOLO = { voltar: PADRAO_SVG.voltar, avancar: PADRAO_SVG.avancar, inicio: PADRAO_SVG.inicio, recarregar: PADRAO_SVG.recarregar, painel: PADRAO_SVG.painel, ajustes: PADRAO_SVG.ajustes };
   var DICA_PACOTE = { linha: "Traço médio, o padrão", fino: "Delicado e leve", grossa: "Forte e fácil de ver", duo: "Gradiente do tema", aurora: "Gradiente invertido", cor: "Na cor de destaque", neon: "Brilho aceso", reto: "Pontas retas, gamer", sombra: "Com sombra colorida" };
   var uidN = 0;
   function icone(pk, slot) { uidN++; return V.pacoteSvg(pk, MIOLO[slot], T.c1, T.c2, "i" + uidN); }
@@ -449,13 +450,13 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     V.PACOTES.forEach(function (p) {
       var b = el("button", "pct"); b.dataset.ativo = String(T.pk === p[0]);
       var l = el("div", "linha-ic");
-      ["voltar", "inicio", "recarregar", "painel"].forEach(function (s) { l.insertAdjacentHTML("beforeend", icone(p[0], s)); });
+      ["voltar", "inicio", "recarregar", "painel", "ajustes"].forEach(function (s) { l.insertAdjacentHTML("beforeend", icone(p[0], s)); });
       b.appendChild(l); b.appendChild(el("b", "", p[1])); b.appendChild(el("small", "", DICA_PACOTE[p[0]] || ""));
       b.onclick = function () { T.pk = p[0]; desenharBarra(); salvar(); };
       pg.appendChild(b);
     });
     var pv = $("previa-barra"); pv.innerHTML = "";
-    ["voltar", "avancar", "inicio", "recarregar", "painel"].forEach(function (s) {
+    ["voltar", "avancar", "inicio", "recarregar", "painel", "ajustes"].forEach(function (s) {
       var c = el("div", "ic"), img = E.icones[s];
       if (img) c.style.backgroundImage = "url(" + img + ")"; else c.innerHTML = icone(T.pk, s);
       pv.appendChild(c);

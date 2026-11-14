@@ -1,5 +1,13 @@
 // Roda dentro de cada página (isolado): percebe formulários de login para oferecer salvar a senha e preenche quando a pessoa pede.
-const { ipcRenderer } = require("electron");
+const { ipcRenderer, webFrame } = require("electron");
+
+// no YouTube, injeta o bloqueio de anúncios na própria página antes dos scripts dela
+try {
+  if (/(^|\.)youtube\.com$/.test(location.hostname)) {
+    const src = ipcRenderer.sendSync("yt:script");
+    if (src) webFrame.executeJavaScript(src);
+  }
+} catch (e) { /* segue sem bloqueio */ }
 
 const visivel = (el) => !!(el && (el.offsetWidth || el.offsetHeight || el.getClientRects().length));
 
