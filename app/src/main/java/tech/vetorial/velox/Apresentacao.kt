@@ -41,7 +41,8 @@ object Apresentacao {
     )
 
     val NOVIDADES = listOf(
-        Novidade(1, "2026-11-14", "novo", "Apresentação e novidades", "Na primeira abertura o Velox mostra as funções, explica as permissões e pede o aceite dos termos. Depois de cada atualização, esta tela conta o que mudou.")
+        Novidade(1, "2026-11-14", "novo", "Apresentação e novidades", "Na primeira abertura o Velox mostra as funções, explica as permissões e pede o aceite dos termos. Depois de cada atualização, esta tela conta o que mudou."),
+        Novidade(2, "2026-11-14", "correcao", "Janelinha de vídeo", "Ao sair do YouTube com o vídeo rodando, a janelinha agora mostra só o vídeo, sem as abas, o endereço e a barra de jogo do Velox.")
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }
