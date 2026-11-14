@@ -17,6 +17,8 @@ html, body { margin:0; height:100%; background:var(--bg); color:var(--tx); font:
 #ferramentas { height:46px; padding:0 8px; gap:4px; }
 #ferramentas button { width:34px; height:34px; border-radius:10px; border:0; background:transparent; color:var(--tx); font-size:20px; cursor:pointer; }
 #ferramentas button:hover:not(:disabled) { background:rgba(255,255,255,.1); }
+#ferramentas #gamer { width:42px; border-radius:12px; color:#ff4d63; background:#2a0a14; border:1.5px solid #ff1f3d; box-shadow:0 0 6px rgba(255,31,61,.75), 0 0 14px rgba(255,31,61,.4), inset 0 0 6px rgba(255,31,61,.25); display:flex; align-items:center; justify-content:center; }
+#ferramentas #gamer:hover:not(:disabled) { background:#3a0e1c; box-shadow:0 0 8px rgba(255,31,61,.95), 0 0 20px rgba(255,31,61,.55), inset 0 0 8px rgba(255,31,61,.35); }
 #ferramentas button:disabled { opacity:.3; cursor:default; }
 #estrela.cheia { color:var(--c1); text-shadow:0 0 8px var(--c1); }
 #endereco { flex:1; height:34px; border-radius:17px; border:1px solid rgba(34,211,238,.35); background:rgba(20,30,64,.85); color:var(--tx); padding:0 16px; font-size:14px; outline:none; user-select:text; }

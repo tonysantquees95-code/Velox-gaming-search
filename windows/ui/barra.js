@@ -54,6 +54,7 @@
   $("g-fundo").onclick = function () { V.enviar("escolher-fundo"); };
   $("g-sem-fundo").onclick = function () { V.enviar("remover-fundo"); };
   $("g-trans").oninput = function () { V.enviar("transparencia", this.value); };
+  $("gamer").onclick = function () { V.enviar("modo-gamer"); };
   $("g-gamer").onclick = function () { V.enviar("modo-gamer"); $("gaveta").hidden = true; };
   $("g-pos").onchange = function () { V.enviar("posicao-gamebar", this.value); };
   $("g-bus").onchange = function () { V.enviar("buscador", this.value); };

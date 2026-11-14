@@ -304,13 +304,20 @@ class MainActivity : Activity() {
             isFocusable = true
             setOnClickListener { alternarFaixaFav() }
         }
-        val bPainel = botao("painel", "Painel do Velox: modo jogo, visual e mais") { abrirPainel("jogo") }
+        // botão do modo gamer: maior, vermelho e com a borda acesa como as letras do VX; toque liga o modo gamer, segurar abre o painel
+        val bPainel = botao("painel", "Ligar o modo gamer (segure para abrir o painel)") { ligarModoGamer() }
+        bPainel.setOnLongClickListener { abrirPainel("jogo"); true }
+        bPainel.background = android.graphics.drawable.LayerDrawable(arrayOf<android.graphics.drawable.Drawable>(
+            GradientDrawable().apply { cornerRadius = dp(15).toFloat(); setStroke(dp(5), 0x33FF1F3D) },
+            GradientDrawable().apply { cornerRadius = dp(14).toFloat(); setStroke(dp(3), 0x66FF1F3D) },
+            GradientDrawable().apply { cornerRadius = dp(13).toFloat(); setColor(0xFF2A0A14.toInt()); setStroke(dp(2) - 1, 0xFFFF1F3D.toInt()) }
+        )).also { ld -> for (i in 0..2) ld.setLayerInset(i, dp(i), dp(i), dp(i), dp(i)) }
         val bAjustes = botao("ajustes", "Ajustes") { abrirPainel("mais") }
         val altura = dp(54)
         for (b in listOf(bVoltar, bAvancar, bInicio, bRecarregar)) barraDeBaixo.addView(b, LinearLayout.LayoutParams(0, altura, 1f))
         barraDeBaixo.addView(bEstrelaBaixo, LinearLayout.LayoutParams(0, altura, 1f))
         barraDeBaixo.addView(bAjustes, LinearLayout.LayoutParams(0, altura, 1f))
-        barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1f))
+        barraDeBaixo.addView(bPainel, LinearLayout.LayoutParams(0, altura, 1.35f).apply { setMargins(dp(5), dp(2), dp(5), dp(2)) })
 
         // como no Brave: a página em cima e, embaixo, a faixa de favoritos, o endereço e os botões
         // puxar a página para baixo recarrega (só quando a página está no topo e não é a tela inicial)
@@ -412,7 +419,7 @@ class MainActivity : Activity() {
 
     /** Ícones da barra: os seus (foto) quando existirem, senão o desenho do pacote escolhido. */
     private fun aplicarIcones() {
-        fun pintar(slot: String, v: ImageView, pad: Int) {
+        fun pintar(slot: String, v: ImageView, pad: Int, cor: Int? = null) {
             val proprio = iconesProprios.getOrPut(slot) { Imagens.carregarIcone(this, slot)?.let { Imagens.arredondar(it, 0.22f) } }
             if (proprio != null) {
                 v.clearColorFilter()
@@ -420,16 +427,16 @@ class MainActivity : Activity() {
                 v.setPadding(dp(pad - 4), dp(pad - 4), dp(pad - 4), dp(pad - 4))
             } else {
                 val d = IconeTraco.criar(if (slot == "som" && somMudo) "mudo" else slot)
-                d.cor = tema.texto
-                d.c1 = tema.destaque
-                d.c2 = tema.secundaria
+                d.cor = cor ?: tema.texto
+                d.c1 = cor ?: tema.destaque
+                d.c2 = if (cor != null) 0xFFFF1F3D.toInt() else tema.secundaria
                 d.pacote = tema.pacote
                 v.clearColorFilter()
                 v.setImageDrawable(d)
                 v.setPadding(dp(pad), dp(pad), dp(pad), dp(pad))
             }
         }
-        for ((slot, v) in botoes) pintar(slot, v, 15)
+        for ((slot, v) in botoes) pintar(slot, v, if (slot == "painel") 13 else 15, if (slot == "painel") 0xFFFF4D63.toInt() else null)
         for ((slot, v) in botoesGb) pintar(slot, v, 11) // a game bar usa o mesmo pacote e as mesmas cores da barra de baixo
     }
 
@@ -457,6 +464,15 @@ class MainActivity : Activity() {
 
     private val botoesGb = LinkedHashMap<String, ImageView>()
     private lateinit var gbRecolher: ImageView
+
+    /** Liga o modo gamer com o que a pessoa já escolheu no painel (lado da game bar, escudo, tela ligada…). */
+    private fun ligarModoGamer() {
+        if (!ajustes.imersivo) Toast.makeText(this, "Modo gamer ligado", Toast.LENGTH_SHORT).show()
+        ajustes.imersivo = true
+        gbRecolhida = false
+        fecharPainel()
+        aplicarImersivo()
+    }
 
     private fun montarGameBar() {
         gameBar = LinearLayout(this).apply { visibility = View.GONE; setPadding(dp(4), dp(4), dp(4), dp(4)) }
