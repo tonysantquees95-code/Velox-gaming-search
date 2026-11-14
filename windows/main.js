@@ -807,6 +807,7 @@ function ligarComandos() {
   ipcMain.on("download-cancelar", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d && d.item && d.estado === "baixando") d.item.cancel(); }));
   ipcMain.on("download-limpar", so(() => { for (let i = downloads.length - 1; i >= 0; i--) if (downloads[i].estado !== "baixando") downloads.splice(i, 1); avisarDownloads(); }));
 
+  ipcMain.handle("ajustes:procurar-atualizacao", so(() => procurarAtualizacao(true)));
   ipcMain.handle("ajustes:estado", so(() => resumoAjustes()));
   ipcMain.handle("ajustes:bloqueio", so((_e, v) => { ajustes.bloqueio = !!v; bloqueio.definir(v); gravarAjustes(); avisarBarra(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:buscar-fotos", so((_e, q) => { criarAba("https://www.bing.com/images/search?q=" + encodeURIComponent(String(q || "wallpaper").slice(0, 80)) + "&qft=+filterui:imagesize-large"); return {}; }));
@@ -958,14 +959,19 @@ async function iniciar() {
 let atualizando = false;
 let versaoAvisada = 0;
 
-async function procurarAtualizacao() {
-  if (atualizando || !app.isPackaged || process.env.VELOX_TESTE === "1") return;
+/** `manual`: pedido pelo botão de Ajustes: sempre responde com o resultado e não deixa de avisar de uma versão que já foi avisada. */
+async function procurarAtualizacao(manual = false) {
+  if (atualizando) return manual ? { estado: "ocupado" } : undefined;
+  if (!app.isPackaged || process.env.VELOX_TESTE === "1") return manual ? { estado: "teste", versao: app.getVersion() } : undefined;
   atualizando = true;
+  let resultado = { estado: "erro", erro: "Não consegui consultar as atualizações agora." };
   try {
     const r = await net.fetch(atualizador.ENDERECO, { headers: { accept: "application/json" } });
-    if (!r.ok) return;
+    if (!r.ok) return resultado;
     const d = atualizador.decidir(app.getVersion(), await r.json());
-    if (d.acao === "nada" || d.numero <= versaoAvisada) return;
+    if (d.acao === "nada") return (resultado = { estado: "em-dia", versao: app.getVersion() });
+    if (d.numero <= versaoAvisada && !manual) return;
+    resultado = { estado: "nova", nova: `1.${d.numero}` };
     const portatil = !!process.env.PORTABLE_EXECUTABLE_FILE;
     if (d.acao === "avisar" || portatil) {
       versaoAvisada = d.numero;
@@ -994,6 +1000,7 @@ async function procurarAtualizacao() {
   } finally {
     atualizando = false;
   }
+  return manual ? resultado : undefined;
 }
 
 // teste de fumaça no CI: abre o Velox de verdade, espera carregar e sai com código 0 (ou 1 se algo quebrar)

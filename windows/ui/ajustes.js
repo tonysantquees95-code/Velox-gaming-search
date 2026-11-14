@@ -110,6 +110,13 @@
     $("sync-msg").textContent = "Entrando…";
     V.chamar("sync:entrar", $("sync-email").value, $("sync-senha").value).then(function (r) { $("sync-msg").textContent = r.ok ? "Pronto: " + r.resumo : r.erro; $("sync-senha").value = ""; recarregar(); });
   };
+  $("atu-procurar").onclick = function () {
+    var b = this; b.disabled = true; $("atu-msg").textContent = "Procurando…";
+    V.chamar("ajustes:procurar-atualizacao").then(function (r) {
+      var m = !r ? "Não consegui procurar agora." : r.estado === "em-dia" ? "O Velox já está na versão mais nova (" + r.versao + ")." : r.estado === "nova" ? "Há uma versão nova (" + r.nova + "). A janela de instalação já apareceu." : r.estado === "ocupado" ? "Já estou procurando…" : r.estado === "teste" ? "Atualização desligada neste modo de teste." : (r.erro || "Não consegui procurar agora.");
+      $("atu-msg").textContent = m; b.disabled = false;
+    }).catch(function () { $("atu-msg").textContent = "Não consegui procurar agora."; b.disabled = false; });
+  };
   $("sync-agora").onclick = function () { V.chamar("sync:agora").then(function (r) { $("sync-msg").textContent = r.ok ? "Sincronizado: " + r.resumo : r.erro; recarregar(); }); };
   $("sync-sair").onclick = function () { V.chamar("sync:sair").then(desenhar); };
   recarregar();
