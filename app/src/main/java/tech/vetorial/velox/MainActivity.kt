@@ -131,7 +131,9 @@ class MainActivity : Activity() {
         val a = atual
         ajustes.abaAtual = if (a == null) 0 else normais.indexOf(a).coerceAtLeast(0)
         ajustes.bloqueadosTotal = bloqueadosTotal.get()
-        if (ajustes.segundoPlano) verificarPlayerDeFundo() else atual?.webView?.onPause()
+        // indo para a janelinha de vídeo: o vídeo segue tocando lá, não pausa
+        if (emJanelinha || saindoParaJanelinha) { /* segue */ }
+        else if (ajustes.segundoPlano) verificarPlayerDeFundo() else atual?.webView?.onPause()
         cofre.travar()
         CookieManager.getInstance().flush()
     }
@@ -142,8 +144,9 @@ class MainActivity : Activity() {
         if (telaCheia != null) {
             // vídeo em tela cheia: a janelinha mostra só o vídeo, como no app do YouTube
             if (!janelinhaPermitida()) { pedirJanelinha(); return }
+            saindoParaJanelinha = true
             try { enterPictureInPictureMode(paramsJanelinha()) }
-            catch (e: Exception) { Toast.makeText(this, "Não deu para abrir a janelinha: " + (e.message ?: "sem suporte"), Toast.LENGTH_LONG).show() }
+            catch (e: Exception) { saindoParaJanelinha = false; Toast.makeText(this, "Não deu para abrir a janelinha: " + (e.message ?: "sem suporte"), Toast.LENGTH_LONG).show() }
         } else {
             val u = atual?.webView?.url ?: atual?.url ?: ""
             val video = Regex("^https://(www\\.|m\\.|music\\.)?youtube\\.com/(watch|shorts)").containsMatchIn(u)
@@ -152,6 +155,8 @@ class MainActivity : Activity() {
     }
 
     private var avisouJanelinha = false
+    private var saindoParaJanelinha = false
+    private var perguntouSegundoPlano = false
 
     private fun paramsJanelinha(): android.app.PictureInPictureParams {
         val b = android.app.PictureInPictureParams.Builder().setAspectRatio(android.util.Rational(16, 9))
@@ -199,6 +204,7 @@ class MainActivity : Activity() {
     override fun onPictureInPictureModeChanged(emJanelinha: Boolean, config: android.content.res.Configuration) {
         super.onPictureInPictureModeChanged(emJanelinha, config)
         this.emJanelinha = emJanelinha
+        saindoParaJanelinha = false
         if (emJanelinha) fecharPainel()
         aplicarImersivo()
         if (emJanelinha) atual?.webView?.scrollTo(0, 0)
@@ -253,6 +259,7 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         emSegundoPlano = false
+        saindoParaJanelinha = false
         raizApp.removeCallbacks(monitorPlayer)
         SegundoPlano.desligar(this)
         atual?.webView?.onResume()
@@ -1864,11 +1871,29 @@ class MainActivity : Activity() {
             (window.decorView as ViewGroup).addView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             view.setBackgroundColor(Color.BLACK)
             window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            pedirSegundoPlanoParaJanelinha()
         }
 
         override fun onHideCustomView() {
             fecharTelaCheia()
         }
+    }
+
+    /** A janelinha de vídeo só funciona direito com o modo segundo plano ligado: pergunta (uma vez por abertura) quando o vídeo vai para a tela cheia. */
+    private fun pedirSegundoPlanoParaJanelinha() {
+        if (!ajustes.janelinha || ajustes.segundoPlano || perguntouSegundoPlano || isFinishing) return
+        perguntouSegundoPlano = true
+        AlertDialog.Builder(this)
+            .setTitle("Ativar o segundo plano?")
+            .setMessage("Para usar a janelinha de vídeo, o Velox precisa do modo segundo plano ligado: assim o vídeo continua tocando quando você sai do Velox. Quer ativar agora?")
+            .setPositiveButton("Ativar") { _, _ ->
+                ajustes.segundoPlano = true
+                for (a in abas) ligarBloqueioYoutube(a)
+                if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED) requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 4711)
+                Toast.makeText(this, "Segundo plano ativado. Agora é só sair para ver a janelinha.", Toast.LENGTH_LONG).show()
+            }
+            .setNegativeButton("Agora não", null)
+            .show()
     }
 
     private fun fecharTelaCheia() {
