@@ -111,7 +111,7 @@ object Sync {
     // ---------------------------------------------------------------- tema (um documento por assunto)
     class SenhaDiferente : Exception("A senha mestra deste aparelho é diferente da do outro. Use a mesma nos dois para sincronizar as senhas.")
 
-    data class TemaRes(val mudouLocal: Boolean, val t: Long, val tema: String)
+    data class TemaRes(val mudouLocal: Boolean, val t: Long, val tema: String, val acao: String = "")
 
     private fun docRemoto(token: String, chave: String): Pair<JSONObject?, Int> {
         val lista = chamar(token, "GET", "/id/sync", null)
@@ -130,12 +130,12 @@ object Sync {
             val rTema = valor?.optString("tema").orEmpty()
             val rT = valor?.optLong("t", 0L) ?: 0L
             val remotoOk = valor != null && rTema.isNotBlank()
-            if (remotoOk && rT > t) return TemaRes(true, rT, rTema)
-            if (remotoOk && rT == t) return TemaRes(false, rT, rTema)
-            if (t <= 0L || tema.isBlank()) return TemaRes(false, t, tema)
+            if (remotoOk && rT > t) return TemaRes(true, rT, rTema, "recebido do outro aparelho")
+            if (remotoOk && rT == t) return TemaRes(false, rT, rTema, "igual nos dois")
+            if (t <= 0L || tema.isBlank()) return TemaRes(false, t, tema, "nada para enviar ainda")
             try {
                 chamar(token, "PUT", "/id/sync/velox-tema", JSONObject().put("valor", JSONObject().put("t", t).put("tema", tema)).put("versao", versao))
-                return TemaRes(false, t, tema)
+                return TemaRes(false, t, tema, "enviado")
             } catch (e: Falha) {
                 if (e.status != 409) throw e
             }

@@ -55,6 +55,7 @@
 
     $("sync-fora").hidden = e.sync.entrou; $("sync-dentro").hidden = !e.sync.entrou;
     $("sync-info").textContent = e.sync.email + " · " + e.sync.favoritos + " favoritos" + (e.sync.ultimo ? " · sincronizado às " + new Date(e.sync.ultimo).toLocaleTimeString("pt-BR") : "");
+    $("sync-msg").textContent = e.sync.resumo || $("sync-msg").textContent;
   }
   var VGX = window.VGX, temaAtual = null;
   var GEAR = '<circle cx="12" cy="12" r="3"/><path d="M12 3V5.5M12 18.5V21M3 12H5.5M18.5 12H21M5.6 5.6L7.4 7.4M16.6 16.6L18.4 18.4M18.4 5.6L16.6 7.4M7.4 16.6L5.6 18.4"/>';
@@ -101,9 +102,9 @@
   $("ext-pasta").onclick = function () { V.chamar("ext:pasta").then(function (r) { $("ext-msg").textContent = r.ok ? "Carregada: " + (r.nome || "") : r.erro; recarregar(); }); };
   $("sync-entrar").onclick = function () {
     $("sync-msg").textContent = "Entrando…";
-    V.chamar("sync:entrar", $("sync-email").value, $("sync-senha").value).then(function (r) { $("sync-msg").textContent = r.ok ? "Pronto: sincronizado." + (r.avisos && r.avisos.length ? " (" + r.avisos.join("; ") + ")" : "") : r.erro; $("sync-senha").value = ""; recarregar(); });
+    V.chamar("sync:entrar", $("sync-email").value, $("sync-senha").value).then(function (r) { $("sync-msg").textContent = r.ok ? "Pronto: " + r.resumo : r.erro; $("sync-senha").value = ""; recarregar(); });
   };
-  $("sync-agora").onclick = function () { V.chamar("sync:agora").then(function (r) { $("sync-msg").textContent = r.ok ? "Sincronizado." + (r.avisos && r.avisos.length ? " (" + r.avisos.join("; ") + ")" : "") : r.erro; recarregar(); }); };
+  $("sync-agora").onclick = function () { V.chamar("sync:agora").then(function (r) { $("sync-msg").textContent = r.ok ? "Sincronizado: " + r.resumo : r.erro; recarregar(); }); };
   $("sync-sair").onclick = function () { V.chamar("sync:sair").then(desenhar); };
   recarregar();
   setInterval(recarregar, 4000);

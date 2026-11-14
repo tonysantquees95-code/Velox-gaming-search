@@ -13,6 +13,24 @@
     menu: '<path d="M12 5.5h.01M12 12h.01M12 18.5h.01"/>',
     gamer: '<path d="M7 8H17Q21 8 21 12V14C21 17 17 18 15 15L14 14H10L9 15C7 18 3 17 3 14V12Q3 8 7 8Z"/><path d="M8 10.5V13.5M6.5 12H9.5"/><path d="M16 11.5h.01M18 13h.01"/>'
   };
+  /* contornos em SVG com cantos cortados (o mesmo desenho do celular) */
+  var NS = "http://www.w3.org/2000/svg";
+  function contorno(el) {
+    var w = el.clientWidth, h = el.clientHeight; if (!w || !h) return;
+    var svg = el.querySelector(":scope > svg.contorno");
+    if (!svg) { svg = document.createElementNS(NS, "svg"); svg.setAttribute("class", "contorno"); svg.innerHTML = '<polygon class="cheio"/><polyline class="linha"/>'; el.insertBefore(svg, el.firstChild); }
+    svg.setAttribute("width", w); svg.setAttribute("height", h); svg.setAttribute("viewBox", "0 0 " + w + " " + h);
+    var m = 0.75, x2 = w - m, y2 = h - m, pts, fecha = true;
+    if (el.dataset.corte === "aba") { var k = Math.min(13, h * 0.6); pts = [[m, y2 + 2], [k, m], [x2 - k, m], [x2, y2 + 2]]; fecha = false; }
+    else { var c = el.dataset.corte.split(",").map(Number), tl = c[0], tr = c[1], br = c[2], bl = c[3];
+      pts = [[m, tl + m], [tl + m, m], [x2 - tr, m], [x2, tr + m], [x2, y2 - br], [x2 - br, y2], [bl + m, y2], [m, y2 - bl]]; }
+    var s = pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ");
+    svg.querySelector(".cheio").setAttribute("points", s);
+    svg.querySelector(".linha").setAttribute("points", s + (fecha ? " " + s.split(" ")[0] : ""));
+  }
+  function contornos() { document.querySelectorAll(".corte").forEach(contorno); }
+  window.addEventListener("resize", contornos);
+  if (window.ResizeObserver) { var ro = new ResizeObserver(contornos); ["botoes", "campo", "gamer"].forEach(function (id) { ro.observe($(id)); }); }
   var uid = 0, pacote = "", cores = "";
   function pintar(el, nome) {
     el.innerHTML = window.VGX.pacoteSvg(pacote, ICONES[nome], cores.split("/")[0], cores.split("/")[1], ++uid);
@@ -25,6 +43,8 @@
   function aplicarTema(texto) {
     var P = new URLSearchParams(texto || ""), S = document.documentElement.style;
     [["c1", "--c1"], ["c2", "--c2"], ["bg", "--bg"], ["sup", "--sup"], ["campo", "--campo"], ["su", "--su"], ["tx", "--tx"]].forEach(function (p) { if (/^[0-9a-f]{6}$/i.test(P.get(p[0]) || "")) S.setProperty(p[1], "#" + P.get(p[0])); });
+    if (/^[0-9a-f]{6}$/i.test(P.get("c1") || "")) { S.setProperty("--neon", "#" + P.get("c1")); S.setProperty("--neon-rgb", parseInt(P.get("c1").slice(0, 2), 16) + "," + parseInt(P.get("c1").slice(2, 4), 16) + "," + parseInt(P.get("c1").slice(4, 6), 16)); }
+    if (/^[0-9a-f]{6}$/i.test(P.get("c2") || "")) { S.setProperty("--neon2", "#" + P.get("c2")); S.setProperty("--neon2-rgb", parseInt(P.get("c2").slice(0, 2), 16) + "," + parseInt(P.get("c2").slice(2, 4), 16) + "," + parseInt(P.get("c2").slice(4, 6), 16)); }
     var novoPacote = P.get("pk") || "linha", novasCores = (P.get("c1") || "22d3ee") + "/" + (P.get("c2") || "a78bfa");
     if (novoPacote !== pacote || novasCores !== cores) { pacote = novoPacote; cores = novasCores; pintarTudo(); }
   }
@@ -36,8 +56,8 @@
     aplicarTema(e.tema);
     var abas = $("abas"); abas.textContent = "";
     e.abas.forEach(function (a) {
-      var d = document.createElement("div");
-      d.className = "aba" + (a.id === e.ativa ? " ativa" : "") + (a.carregando ? " carregando" : "") + (a.anonima ? " anonima" : "");
+      var d = document.createElement("div"); d.dataset.corte = "aba";
+      d.className = "aba corte" + (a.id === e.ativa ? " ativa" : "") + (a.carregando ? " carregando" : "") + (a.anonima ? " anonima" : "");
       var t = document.createElement("span"); t.textContent = a.titulo; t.title = a.url || a.titulo;
       var x = document.createElement("b"); x.textContent = "×"; x.title = "Fechar aba";
       x.onclick = function (ev) { ev.stopPropagation(); V.enviar("fechar-aba", a.id); };
@@ -62,6 +82,7 @@
       b.onclick = function () { V.enviar("abrir-favorito", f.u); };
       fav.appendChild(b);
     });
+    contornos();
     document.documentElement.style.setProperty("--alfa", String(Math.max(0.15, 1 - e.transparencia / 100)));
     $("fundo").style.backgroundImage = e.fundo ? 'url("' + e.fundo + '")' : "none";
   }
@@ -97,5 +118,6 @@
   $("busca-prox").onclick = function () { V.enviar("busca", { texto: $("busca-texto").value, proximo: true }); };
   $("busca-ant").onclick = function () { V.enviar("busca", { texto: $("busca-texto").value, proximo: false }); };
   $("busca-fechar").onclick = function () { V.enviar("busca-fechar"); };
+  setTimeout(contornos, 0);
   V.enviar("barra-pronta");
 })();

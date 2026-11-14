@@ -69,12 +69,12 @@ async function sincronizarTema(token, local) {
   for (let tentativa = 0; tentativa < 2; tentativa++) {
     const atual = await doc(token, "velox-tema");
     const remoto = atual && atual.valor && typeof atual.valor.tema === "string" ? { t: Number(atual.valor.t) || 0, tema: atual.valor.tema } : null;
-    if (remoto && remoto.t > (local.t || 0)) return { mudouLocal: true, doc: remoto };
-    if (remoto && remoto.t === (local.t || 0)) return { mudouLocal: false, doc: remoto };
-    if (!(local.t > 0) || !local.tema) return { mudouLocal: false, doc: remoto };
+    if (remoto && remoto.t > (local.t || 0)) return { mudouLocal: true, doc: remoto, acao: "recebido" };
+    if (remoto && remoto.t === (local.t || 0)) return { mudouLocal: false, doc: remoto, acao: "igual" };
+    if (!(local.t > 0) || !local.tema) return { mudouLocal: false, doc: remoto, acao: "nada" };
     try {
       await chamar(token, "PUT", "/id/sync/velox-tema", { valor: { t: local.t, tema: local.tema }, versao: atual ? atual.versao : 0 });
-      return { mudouLocal: false, doc: { t: local.t, tema: local.tema } };
+      return { mudouLocal: false, doc: { t: local.t, tema: local.tema }, acao: "enviado" };
     } catch (e) { if (e.status !== 409) throw e; }
   }
   throw new Error("Outro aparelho está mudando o tema agora. Tente de novo.");

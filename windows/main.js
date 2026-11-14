@@ -14,7 +14,7 @@ const atualizador = require("./atualizador");
 const rolagem = require("./rolagem");
 const tema = require("./tema");
 
-const ALTURA_BARRA = 84; // endereço e botões ficam embaixo, como no celular
+const ALTURA_BARRA = 104; // endereço e botões ficam embaixo, como no celular
 const ALTURA_TOPO = 36; // abas na barra de título, como no Chrome
 const BUSCADORES = {
   google: (q) => "https://www.google.com/search?q=" + encodeURIComponent(q),
@@ -80,7 +80,7 @@ function enderecoInicio() {
   abriuUmaVez = true;
   return u.toString();
 }
-const enderecoInterno = (nome) => pathToFileURL(path.join(__dirname, "ui", INTERNAS[nome])).toString();
+const enderecoInterno = (nome) => { const u = pathToFileURL(path.join(__dirname, "ui", INTERNAS[nome])); u.search = temaAtual(); return u.toString(); };
 const origemDe = (url) => { try { const u = new URL(url); return /^https?:$/.test(u.protocol) ? u.origin : ""; } catch { return ""; } };
 
 // ------------------------------------------------------------------ abas
@@ -418,10 +418,12 @@ async function sincronizarAgora() {
   sincronizando = true;
   const escolhas = { favoritos: true, tema: true, senhas: false, ...(ajustes.sincItens || {}) };
   const avisos = [];
+  const resumo = [];
   try {
     if (escolhas.favoritos) {
       const r = await sincronia.sincronizar(tokenSync, { favoritos: ajustes.favoritos, apagados: ajustes.apagados });
       if (r.mudouLocal) { ajustes.favoritos = r.doc.favoritos; ajustes.apagados = r.doc.apagados; reposicionar(); }
+      resumo.push("favoritos: " + ajustes.favoritos.length);
     }
     if (escolhas.tema) {
       try {
@@ -429,6 +431,7 @@ async function sincronizarAgora() {
         const r = await sincronia.sincronizarTema(tokenSync, { t, tema: ajustes.temaTexto ? tema.normalizar(ajustes.temaTexto) : "" });
         if (r.mudouLocal) { ajustes.temaTexto = tema.normalizar(r.doc.tema); ajustes.temaT = r.doc.t; recarregarInicios(); }
         else if (!ajustes.temaT && t) ajustes.temaT = t;
+        resumo.push("tema: " + ({ recebido: "recebido do outro aparelho", enviado: "enviado", igual: "igual nos dois", nada: "nada para enviar ainda (o outro aparelho não mandou)" }[r.acao] || "ok"));
       } catch (e) { if (e.status === 401) throw e; avisos.push("tema: " + (e.message || "falhou")); }
     }
     if (escolhas.senhas) {
@@ -437,13 +440,15 @@ async function sincronizarAgora() {
         try {
           const r = await sincronia.sincronizarSenhas(tokenSync, cofre.paraSincronia(), cofre.senhaMem);
           if (r.mudouLocal) cofre.aplicarSincronia(r.doc);
+          resumo.push("senhas: " + r.doc.itens.length);
         } catch (e) { if (e.status === 401) throw e; avisos.push("senhas: " + (e.message || "falhou")); }
       }
     }
     ajustes.sync.ultimo = Date.now();
+    ajustes.sync.resumo = [...resumo, ...avisos].join(" · ");
     gravarAjustes();
     avisarBarra();
-    return { ok: true, total: ajustes.favoritos.length, avisos };
+    return { ok: true, total: ajustes.favoritos.length, avisos, resumo: ajustes.sync.resumo };
   } catch (e) {
     if (e.status === 401) { tokenSync = ""; ajustes.sync.token = ""; gravarAjustes(); return { ok: false, erro: "A sessão do Vetorial ID acabou. Entre de novo." }; }
     return { ok: false, erro: e.message || "Não consegui sincronizar agora." };
@@ -489,6 +494,16 @@ async function baixarComoFundo(url) {
 }
 function recarregarInicios() {
   for (const a of abas) if (a.interna === "inicio") a.view.webContents.loadURL(enderecoInicio());
+  aplicarTemaNasTelas();
+}
+/** Telas internas, janela e botões do Windows passam a usar as cores do tema na hora. */
+function aplicarTemaNasTelas() {
+  const t = temaAtual();
+  for (const a of abas) if (a.interna && a.interna !== "inicio" && !a.view.webContents.isDestroyed()) a.view.webContents.send("tema", t);
+  if (janela && !janela.isDestroyed()) {
+    const c = tema.doTexto(t);
+    try { janela.setBackgroundColor("#" + c.bg); janela.setTitleBarOverlay({ color: "#" + c.sup, symbolColor: "#ffffff", height: ALTURA_TOPO }); } catch { /* sem barra integrada */ }
+  }
 }
 
 // ------------------------------------------------------------------ downloads
@@ -540,7 +555,7 @@ function perguntar(def) {
     ipcMain.once(canal, (_e, r) => fim(r));
     j.on("closed", () => fim({ botao: "fechar", valores: {} }));
     j.once("ready-to-show", () => j.show());
-    j.loadFile(path.join(__dirname, "ui", "dialogo.html"), { hash: encodeURIComponent(JSON.stringify({ ...def, id })) });
+    j.loadFile(path.join(__dirname, "ui", "dialogo.html"), { query: Object.fromEntries(new URLSearchParams(temaAtual())), hash: encodeURIComponent(JSON.stringify({ ...def, id })) });
   });
 }
 
@@ -652,7 +667,7 @@ const resumoAjustes = () => ({
   cofre: { existe: cofre.existe(), aberto: cofre.aberto(), itens: cofre.aberto() ? cofre.lista() : [] },
   extensoes: ajustes.extensoes.map(({ id, nome, ligada, erro }) => ({ id, nome, ligada, erro: erro || "" })),
   sites: Object.entries(ajustes.permissoes).map(([origem, p]) => ({ origem, permissoes: p })),
-  sync: { email: ajustes.sync.email, entrou: !!tokenSync, ultimo: ajustes.sync.ultimo, favoritos: ajustes.favoritos.length },
+  sync: { email: ajustes.sync.email, entrou: !!tokenSync, ultimo: ajustes.sync.ultimo, favoritos: ajustes.favoritos.length, resumo: ajustes.sync.resumo || "" },
   versao: app.getVersion(),
 });
 const tente = async (f) => { try { return { ok: true, ...(await f()) }; } catch (e) { return { ok: false, erro: e && e.message ? e.message : String(e) }; } };
@@ -864,11 +879,12 @@ async function iniciar() {
     icon: path.join(__dirname, "build", "icon.png"),
     width: 1280, height: 800, minWidth: 720, minHeight: 480,
     backgroundColor: "#070b14", title: "Velox", autoHideMenuBar: true,
-    titleBarStyle: "hidden", titleBarOverlay: { color: "#0d1530", symbolColor: "#ffffff", height: ALTURA_TOPO },
+    titleBarStyle: "hidden", titleBarOverlay: { color: "#" + tema.doTexto(temaAtual()).sup, symbolColor: "#ffffff", height: ALTURA_TOPO },
     webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false },
   });
   janela.setMenuBarVisibility(false);
   janela.loadFile(path.join(__dirname, "ui", "index.html"));
+  janela.on("focus", () => sincronizarDepois(1500));
   janela.on("resize", () => { reposicionar(); ajustarModoGamer(); if (pop && pop.aberta) { posicionarPop(); enviarPop(); } });
   janela.on("maximize", () => setTimeout(reposicionar, 30));
   janela.on("unmaximize", () => setTimeout(reposicionar, 30));

@@ -993,7 +993,7 @@ class MainActivity : Activity() {
                         try { cofre.aplicarSincronia(sr.first.itens.map { Cofre.Item("", it.origem, it.usuario, it.senha, it.atualizado) }, sr.first.apagados) } catch (e: Exception) { /* trancou no meio */ }
                     }
                     ajustes.syncUltimo = System.currentTimeMillis()
-                    if (avisar) reabrirPainel("conta", "Sincronizado" + (if (df != null) " (" + df.favoritos.size + " favoritos)" else "") + "." + (if (avisos.isNotEmpty()) " " + avisos.joinToString("; ") else ""))
+                    if (avisar) reabrirPainel("conta", "Sincronizado" + (if (df != null) " (" + df.favoritos.size + " favoritos)" else "") + (if (tr != null && tr.acao.isNotEmpty()) " · tema: " + tr.acao else "") + "." + (if (avisos.isNotEmpty()) " " + avisos.joinToString("; ") else ""))
                 }
             } catch (e: Exception) {
                 runOnUiThread {
