@@ -47,6 +47,11 @@ html[data-formato="futurista"] .cor { border-radius: 8px; }
 #matiz { background: linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00); border-radius: 8px; height: 14px; -webkit-appearance: none; appearance: none; margin: 10px 0; }
 #matiz::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 3px solid var(--neon); }
 input[type="range"] { width: 100%; accent-color: var(--neon); height: 34px; }
+input[type="checkbox"] { -webkit-appearance: none; appearance: none; width: 24px; height: 24px; margin: 0; flex: none; border-radius: 8px; border: 1px solid rgba(255,255,255,.3); background: rgba(255,255,255,.06); display: inline-grid; place-content: center; }
+html[data-formato="redondo"] input[type="checkbox"] { border-radius: 50%; }
+input[type="checkbox"]::after { content: ""; width: 6px; height: 12px; border: solid #04101c; border-width: 0 3px 3px 0; transform: translateY(-1px) rotate(45deg) scale(0); transition: transform .12s; }
+input[type="checkbox"]:checked { background: linear-gradient(135deg, var(--neon), var(--neon2)); border-color: var(--neon); box-shadow: 0 0 10px rgba(var(--neon-rgb), .5); }
+input[type="checkbox"]:checked::after { transform: translateY(-1px) rotate(45deg) scale(1); }
 .previa { padding: 12px; margin-bottom: 14px; display: flex; align-items: center; gap: 12px; }
 .previa .vgx { width: 120px; flex: none; }
 .previa p { margin: 0; font-size: 12px; color: var(--su); }

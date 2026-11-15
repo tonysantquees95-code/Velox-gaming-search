@@ -4,6 +4,15 @@
   function btn(texto, fn, cls) { var b = el("button", texto, cls); b.onclick = fn; return b; }
   var PERM = { media: "câmera/microfone", geolocation: "localização", notifications: "notificações", midi: "MIDI", "clipboard-read": "área de transferência", "display-capture": "gravação de tela" };
 
+  // preenche a parte "já andada" das barras (a cor do tema) conforme o valor
+  function faixas() {
+    Array.prototype.forEach.call(document.querySelectorAll("input[type=range]"), function (r) {
+      var mn = +r.min || 0, mx = +r.max || 100;
+      r.style.setProperty("--p", (mx > mn ? ((+r.value - mn) / (mx - mn)) * 100 : 0) + "%");
+    });
+  }
+  document.addEventListener("input", function (ev) { if (ev.target && ev.target.type === "range") faixas(); });
+
   function desenhar(e) {
     $("versao").textContent = "Versão " + e.versao;
     $("bloqueio").checked = e.bloqueio; $("continuar").checked = e.continuar; $("barrafav").checked = e.mostrarFavoritos;
@@ -13,6 +22,7 @@
     if (document.activeElement !== $("rol-larg")) $("rol-larg").value = e.rolagem.largura;
     $("rol-modo").value = e.rolagem.modo; $("rol-cor").value = e.rolagem.cor; $("rol-n").textContent = "· " + e.rolagem.largura + " px";
     desenharTema(e.tema);
+    faixas();
     $("f-estado").textContent = e.temFundo ? "· foto de fundo ligada" : "· sem foto de fundo";
     ["favoritos", "tema", "senhas"].forEach(function (k) { $("si-" + k).checked = !!e.sincItens[k]; });
     var c = e.cofre;

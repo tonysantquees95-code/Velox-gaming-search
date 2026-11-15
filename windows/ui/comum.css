@@ -24,3 +24,16 @@ input:focus{outline:none;border-color:var(--c1)}
 .chips button[data-ativa="true"]{border-color:var(--c1);box-shadow:0 0 8px color-mix(in srgb,var(--c1) 45%,transparent)}
 .chips button i{width:16px;height:16px;border-radius:50%;display:inline-block}
 .chips button svg{width:22px;height:22px}
+/* Caixas de marcar, barras e listas no visual do Velox (cores do tema instalado), no lugar do padrão azul/branco do sistema */
+input[type=checkbox]{-webkit-appearance:none;appearance:none;width:22px;height:22px;margin:0;flex:none;border-radius:7px;border:1px solid rgba(255,255,255,.28);background:var(--campo);cursor:pointer;display:inline-grid;place-content:center;transition:border-color .15s,box-shadow .15s,background .15s}
+input[type=checkbox]:hover{border-color:var(--c1)}
+input[type=checkbox]::after{content:"";width:6px;height:11px;border:solid #04101c;border-width:0 2.5px 2.5px 0;transform:translateY(-1px) rotate(45deg) scale(0);transition:transform .12s}
+input[type=checkbox]:checked{background:linear-gradient(135deg,var(--c1),var(--c2));border-color:var(--c1);box-shadow:0 0 8px color-mix(in srgb,var(--c1) 45%,transparent)}
+input[type=checkbox]:checked::after{transform:translateY(-1px) rotate(45deg) scale(1)}
+input[type=checkbox]:focus-visible,input[type=range]:focus-visible,select:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+input[type=range]{-webkit-appearance:none;appearance:none;height:22px;background:transparent;cursor:pointer;min-width:120px;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,var(--c1),var(--c2) var(--p,50%),rgba(255,255,255,.16) var(--p,50%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-6px;border-radius:50%;background:var(--tx);border:2px solid var(--c1);box-shadow:0 0 8px color-mix(in srgb,var(--c1) 55%,transparent)}
+select{-webkit-appearance:none;appearance:none;background:var(--campo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238fa0cf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--tx);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:8px 32px 8px 12px;font:inherit;cursor:pointer;max-width:100%}
+select:hover,select:focus{border-color:var(--c1);outline:none}
+select option{background:var(--sup);color:var(--tx)}

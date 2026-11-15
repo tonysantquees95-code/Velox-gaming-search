@@ -33,6 +33,7 @@ const NOVIDADES = [
   { id: 1, data: "2026-11-14", tipo: "novo", titulo: "Apresentação e novidades", texto: "Na primeira abertura o Velox mostra as funções, explica as permissões e pede o aceite dos termos. Depois de cada atualização, esta tela conta o que mudou." },
   { id: 2, data: "2026-11-14", tipo: "melhoria", titulo: "Caixas no visual do Velox", texto: "Os avisos e perguntas do Velox (apresentação, atualização, escolha de login) agora abrem na janelinha com o visual do app, e não mais na caixa cinza do Windows." },
   { id: 3, data: "2026-11-14", tipo: "melhoria", titulo: "Engrenagem nos Ajustes", texto: "A engrenagem de Ajustes agora é uma engrenagem de verdade, não mais parecida com um sol." },
+  { id: 4, data: "2026-11-15", tipo: "melhoria", titulo: "Seletores no visual do Velox", texto: "As caixas de marcar, as barras deslizantes e as listas de escolha dos Ajustes agora usam as cores e o formato do tema, no lugar do azul e branco padrão do sistema." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

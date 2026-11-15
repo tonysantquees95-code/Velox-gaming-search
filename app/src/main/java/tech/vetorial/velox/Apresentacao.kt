@@ -45,6 +45,7 @@ object Apresentacao {
         Novidade(2, "2026-11-14", "correcao", "Janelinha de vídeo", "Ao sair do YouTube com o vídeo rodando, a janelinha agora mostra só o vídeo, sem as abas, o endereço e a barra de jogo do Velox. E, se o modo segundo plano estiver desligado, o Velox pergunta se você quer ativar para a janelinha funcionar."),
         Novidade(3, "2026-11-14", "melhoria", "Caixas no visual do Velox", "Os avisos e perguntas do Velox agora seguem o visual do app: cantos recortados, as cores e o brilho do seu tema, em vez do cinza padrão do Android."),
         Novidade(4, "2026-11-14", "melhoria", "Engrenagem nos Ajustes", "A engrenagem de Ajustes agora é uma engrenagem de verdade, não mais parecida com um sol."),
+        Novidade(5, "2026-11-15", "melhoria", "Seletores no visual do Velox", "As caixas de marcar dos Ajustes agora usam as cores e o formato do tema, no lugar do azul padrão do sistema."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }
