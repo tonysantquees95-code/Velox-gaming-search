@@ -69,7 +69,7 @@
       d.onclick = function () { V.enviar("mostrar-aba", a.id); };
       d.onauxclick = function (ev) { if (ev.button === 1) V.enviar("fechar-aba", a.id); };
       d.appendChild(t); d.appendChild(x);
-      if (a.carregando) { var pg = document.createElement("i"); pg.className = "prog"; pg.style.width = Math.max(a.progresso || 0, 6) + "%"; d.appendChild(pg); }
+      if (a.carregando) { var pg = document.createElement("i"); pg.className = "prog"; pg.style.setProperty("--p", String(Math.max(a.progresso || 0, 6))); d.appendChild(pg); }
       (e.verticais ? lat : abas).appendChild(d);
     });
     if (!e.verticais) {

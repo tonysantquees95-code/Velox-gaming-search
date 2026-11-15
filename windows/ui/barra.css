@@ -26,7 +26,10 @@ html, body { margin:0; height:100%; color:var(--tx); font:14px "Segoe UI", syste
 .aba b:hover { background:rgba(255,255,255,.15); }
 .aba { position:relative; }
 /* barrinha de carregamento embaixo da aba, nas cores do tema */
-.aba .prog { position:absolute; left:0; bottom:0; height:3px; border-radius:0 2px 2px 0; background:linear-gradient(90deg, var(--c2), var(--c1)); box-shadow:0 0 8px color-mix(in srgb, var(--c1) 60%, transparent); transition:width .35s ease-out; pointer-events:none; }
+.aba .prog { position:absolute; left:20px; bottom:3px; height:2px; width:calc((100% - 34px) * var(--p, 6) / 100); border-radius:2px; background:linear-gradient(90deg, var(--c2), var(--c1)); box-shadow:0 0 6px color-mix(in srgb, var(--c1) 60%, transparent); transition:width .35s ease-out; pointer-events:none; }
+/* a regra do contorno (.corte > :not(svg)) põe os filhos em "relative"; aqui a barra volta a ficar solta, embaixo do nome, sem mexer nele */
+.aba.corte > i.prog { position:absolute; z-index:2; }
+.aba.carregando::after { content:""; position:absolute; left:20px; right:14px; bottom:3px; height:2px; border-radius:2px; background:rgba(255,255,255,.1); pointer-events:none; }
 .aba.anonima { --borda:rgba(167,139,250,.7); }
 .aba.anonima span::before { content:"🕶 "; }
 #mais { flex:0 0 30px; height:26px; border-radius:8px; background:transparent; color:var(--c1); border:0; font-size:20px; cursor:pointer; align-self:center; }
@@ -83,7 +86,7 @@ body.vertical #abas { display:none; }
 .aba-v span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
 .aba-v b { width:18px; height:18px; border-radius:50%; text-align:center; line-height:18px; font-weight:400; }
 .aba-v b:hover { background:rgba(255,255,255,.15); }
-.aba-v .prog { position:absolute; left:0; bottom:0; height:3px; background:linear-gradient(90deg, var(--c2), var(--c1)); transition:width .35s ease-out; pointer-events:none; }
+.aba-v .prog { position:absolute; left:0; bottom:0; height:3px; width:calc(100% * var(--p, 6) / 100); background:linear-gradient(90deg, var(--c2), var(--c1)); transition:width .35s ease-out; pointer-events:none; }
 .aba-v.anonima { border-color:rgba(167,139,250,.5); }
 #lateral-nova { height:34px; border-radius:9px; border:1px solid color-mix(in srgb, var(--c1) 30%, transparent); background:rgba(255,255,255,.05); color:var(--c1); font:inherit; cursor:pointer; }
 #lateral-nova:hover { border-color:var(--c1); background:color-mix(in srgb, var(--c1) 14%, transparent); }
