@@ -12,3 +12,9 @@
 - Tour → permissões explicadas → termos a aceitar (diálogos em `MainActivity.kt` e `windows/main.js`; conteúdo nos mesmos arquivos `Apresentacao`).
 - Função nova: acrescente (ou ajuste) um passo em `TOUR`. Permissão nova: explique o porquê em `PERMISSOES` ANTES de pedir. Mudou o texto dos termos: suba `VERSAO_DOS_TERMOS`.
 - Também ficam em Painel › Mais › Sobre o Velox (Android) e Ajustes › Sobre o Velox (Windows).
+
+## Visual: telinhas e ícones seguem o padrão do app
+- Toda janelinha, caixa ou menu novo usa o visual do próprio Velox (formato, cantos, fonte, cores do tema instalado), nunca o cinza padrão do sistema.
+- Todo ícone novo segue o padrão dos ícones que já existem: traço fino arredondado (stroke ~1.9, `currentColor`, sem preenchimento), tamanho igual ao dos vizinhos e cores do tema. No Windows os ícones ficam em `IC` (`ui/pop.js`) e no Android no `Visual.kt`/`vgx.js`.
+- As janelinhas do Windows (`ui/dialogo.html`, `ui/pop.html`) têm CSP sem `unsafe-inline`: o estilo vai em arquivo `.css`, nunca em `<style>` ou `style=""` dentro da página.
+

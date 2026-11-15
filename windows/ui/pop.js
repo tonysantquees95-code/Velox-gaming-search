@@ -6,6 +6,8 @@
     anon: '<path d="M4 13l2-6h12l2 6M3 13h18M8 18a2 2 0 100-4 2 2 0 000 4zM16 18a2 2 0 100-4 2 2 0 000 4z"/>',
     hist: '<path d="M4 12a8 8 0 108-8 8 8 0 00-6 2.7M4 4v4h4M12 8v4l3 2"/>',
     down: '<path d="M12 4v11M7.5 11L12 15.5 16.5 11M5 20h14"/>',
+    abrir: '<path d="M14 4h6v6M20 4l-9 9M18 14v5H5V6h5"/>',
+    pasta: '<path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>',
     fav: '<path d="M12 3.5L14.6 8.8L20.5 9.7L16.2 13.8L17.2 19.6L12 16.9L6.8 19.6L7.8 13.8L3.5 9.7L9.4 8.8Z"/>',
     zoom: '<circle cx="11" cy="11" r="6"/><path d="M16 16l4 4M11 8v6M8 11h6"/>',
     imp: '<path d="M7 9V4h10v5M7 17H5v-6h14v6h-2M7 14h10v6H7z"/>',
@@ -61,15 +63,24 @@
     var x = el("button", null, "×"); x.title = "Fechar"; x.onclick = acao("fechar"); cab.appendChild(x); c.appendChild(cab);
     if (!D.downloads.length) c.appendChild(el("div", "vazio", "Nenhum download por aqui ainda."));
     D.downloads.forEach(function (d) {
-      var b = el("button", "dl"); b.type = "button";
+      var b = el("div", "dl");
       b.appendChild(el("b", null, d.nome));
       var pct = d.total ? Math.round((d.recebido / d.total) * 100) : 0;
       var linha = d.estado === "baixando" ? (d.total ? tamanho(d.recebido) + " de " + tamanho(d.total) + " · " + pct + "%" : tamanho(d.recebido)) + (d.velocidade ? " · " + tamanho(d.velocidade) + "/s" : "")
         : d.estado === "pronto" ? tamanho(d.total || d.recebido) + " · concluído" : d.estado === "pausado" ? "Pausado" : d.estado === "cancelado" ? "Cancelado" : "Não deu certo";
       b.appendChild(el("small", null, linha));
       if (d.estado === "baixando") { var bar = el("div", "barra"), i = el("i"); i.style.width = (d.total ? pct : 30) + "%"; bar.appendChild(i); b.appendChild(bar); }
-      b.onclick = d.estado === "pronto" ? acao("download-abrir", d.id) : null;
-      b.title = d.estado === "pronto" ? "Abrir" : d.nome;
+      b.title = d.nome;
+      if (d.estado === "pronto") {
+        // dois botões com os ícones do app: abrir o arquivo agora, ou só mostrar onde ele ficou
+        var acoes = el("div", "dl-acoes");
+        [["abrir", "Abrir", "download-abrir"], ["pasta", "Abrir pasta", "download-pasta"]].forEach(function (a) {
+          var bt = el("button", "dl-bt"); bt.type = "button"; bt.title = a[1];
+          bt.appendChild(icone(a[0])); bt.appendChild(el("span", null, a[1]));
+          bt.onclick = acao(a[2], d.id); acoes.appendChild(bt);
+        });
+        b.appendChild(acoes);
+      }
       c.appendChild(b);
     });
     c.appendChild(sep());

@@ -18,7 +18,7 @@
     e.onclick = function () { responder(b.id); }; $("botoes").appendChild(e);
   });
   var primeiro = campos.length ? $("c-" + campos[0].id) : null;
-  if (primeiro) primeiro.focus();
+  if (primeiro) { primeiro.focus(); primeiro.select(); }
   document.addEventListener("keydown", function (ev) {
     if (ev.key === "Enter") { var p = botoes.filter(function (b) { return b.primario; })[0]; if (p) responder(p.id); }
     if (ev.key === "Escape") responder("cancelar");

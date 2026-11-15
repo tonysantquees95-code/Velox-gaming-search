@@ -20,7 +20,7 @@ html, body { margin:0; height:100%; background:transparent; color:var(--tx); fon
 .cab { display:flex; align-items:center; justify-content:space-between; padding:6px 8px 6px 12px; font-weight:700; }
 .cab button { width:28px; height:28px; border:0; border-radius:50%; background:transparent; color:var(--su); font-size:18px; cursor:pointer; }
 .cab button:hover { background:rgba(255,255,255,.1); color:var(--tx); }
-.dl { display:block; width:100%; padding:8px 12px; border:0; border-radius:9px; background:transparent; color:var(--tx); font:inherit; text-align:left; cursor:pointer; }
+.dl { display:block; width:100%; box-sizing:border-box; padding:8px 12px; border:0; border-radius:9px; background:transparent; color:var(--tx); font:inherit; text-align:left; }
 .dl:hover { background:color-mix(in srgb, var(--c1) 12%, transparent); }
 .dl b { display:block; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .dl small { color:var(--su); }
@@ -28,3 +28,7 @@ html, body { margin:0; height:100%; background:transparent; color:var(--tx); fon
 .barra i { display:block; height:100%; background:linear-gradient(90deg, var(--c2), var(--c1)); }
 .vazio { padding:14px 12px; color:var(--su); }
 .item .fav-ic { width:16px; height:16px; border-radius:3px; flex:0 0 auto; }
+.dl-acoes { display:flex; gap:6px; margin-top:8px; }
+.dl-bt { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:8px; border:1px solid color-mix(in srgb, var(--c1) 30%, transparent); background:rgba(255,255,255,.05); color:var(--tx); font:inherit; font-size:12px; cursor:pointer; }
+.dl-bt:hover { border-color:var(--c1); background:color-mix(in srgb, var(--c1) 16%, transparent); }
+.dl-bt svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }

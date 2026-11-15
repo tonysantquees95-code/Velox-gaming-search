@@ -39,6 +39,7 @@ const NOVIDADES = [
   { id: 7, data: "2026-11-15", tipo: "novo", titulo: "Renomear favoritos e ícone do site", texto: "Clique com o botão direito em um favorito para trocar o nome e deixar curtinho. Agora cada favorito também mostra o ícone do site na frente do nome, para achar mais rápido." },
   { id: 8, data: "2026-11-15", tipo: "novo", titulo: "Downloads em várias partes", texto: "Quando o site aceita, o Velox baixa o arquivo em várias partes ao mesmo tempo, o que ajuda muito em sites que limitam a velocidade de cada conexão. Se o site não aceitar, o download continua normal, sem você precisar fazer nada." },
   { id: 9, data: "2026-11-15", tipo: "correcao", titulo: "Zoom com Ctrl e a roda do mouse", texto: "Segurar o Ctrl e girar a roda do mouse (ou os dois dedos no touchpad) agora aproxima e afasta a página, como nos outros navegadores. O tradutor automático do Chromium também foi desligado." },
+  { id: 10, data: "2026-11-15", tipo: "melhoria", titulo: "Abrir arquivo e abrir pasta nos downloads", texto: "Na lista de downloads recentes, cada arquivo pronto agora tem os botões Abrir e Abrir pasta, para você escolher entre abrir na hora ou só ver onde ele ficou. A caixinha de renomear favorito também foi arrumada." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

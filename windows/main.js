@@ -855,6 +855,7 @@ function ligarComandos() {
       else if (nome === "favoritar") alternarFavorito();
       else if (nome === "fav-barra") { ajustes.mostrarFavoritos = !ajustes.mostrarFavoritos; gravarAjustes(); avisarBarra(); }
       else if (nome === "personalizar") menuPersonalizar();
+      else if (nome === "download-pasta") { const d = downloads.find((x) => x.id === arg); if (d) shell.showItemInFolder(d.caminho); }
       else if (nome === "download-abrir") { const d = downloads.find((x) => x.id === arg); if (d) shell.openPath(d.caminho); }
     }
     if (fica) enviarPop();
