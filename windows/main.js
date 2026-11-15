@@ -100,7 +100,7 @@ function estadoDasAbas() {
   const at = ativa;
   return {
     ativa: at ? at.id : null,
-    abas: abas.map((a) => ({ id: a.id, titulo: a.titulo || (a.interna === "inicio" ? "Início" : a.interna === "downloads" ? "Downloads" : a.interna === "ajustes" ? "Ajustes" : a.interna === "historico" ? "Histórico" : "Nova aba"), url: a.url || "", carregando: !!a.carregando, anonima: !!a.anonima })),
+    abas: abas.map((a) => ({ id: a.id, titulo: a.titulo || (a.interna === "inicio" ? "Início" : a.interna === "downloads" ? "Downloads" : a.interna === "ajustes" ? "Ajustes" : a.interna === "historico" ? "Histórico" : "Nova aba"), url: a.url || "", carregando: !!a.carregando, progresso: Math.round(a.progresso || 0), anonima: !!a.anonima })),
     voltar: !!(at && at.view.webContents.navigationHistory.canGoBack()),
     avancar: !!(at && at.view.webContents.navigationHistory.canGoForward()),
     favorita: !!(at && at.url && ajustes.favoritos.some((f) => f.u === at.url)),
@@ -160,11 +160,23 @@ function criarAba(destino, opcoes = {}) {
   wc.once("did-fail-load", revelar);
   setTimeout(revelar, 1500);
 
-  wc.on("dom-ready", () => aplicarRolagem(aba));
+  wc.on("dom-ready", () => {
+    aplicarRolagem(aba);
+    if (aba.interna === "inicio") { try { view.setBackgroundColor("#00000000"); } catch { /* sem suporte */ } }
+    else if (!aba.interna) { try { view.setBackgroundColor("#ffffffff"); } catch { /* sem suporte */ } } // páginas de fora sem fundo próprio ficam brancas, como em qualquer navegador
+  });
   wc.on("page-favicon-updated", (_e, lista) => { if (!aba.anonima && lista && lista[0]) { aba.favicon = lista[0]; guardarIcone(aba); } });
   wc.on("page-title-updated", (_e, t) => { aba.titulo = t; historicoTitulo(aba); avisarBarra(); });
-  wc.on("did-start-loading", () => { aba.carregando = true; avisarBarra(); });
-  wc.on("did-stop-loading", () => { aba.carregando = false; avisarBarra(); });
+  // barrinha de carregamento embaixo da aba: sobe por etapas e vai andando devagar enquanto espera o site
+  const parar = () => { if (aba.relogioProg) { clearInterval(aba.relogioProg); aba.relogioProg = null; } };
+  wc.on("did-start-loading", () => {
+    aba.carregando = true; aba.progresso = 8; parar();
+    aba.relogioProg = setInterval(() => { if (aba.progresso < 90) { aba.progresso += (90 - aba.progresso) * 0.07; avisarBarra(); } }, 400);
+    avisarBarra();
+  });
+  wc.on("did-stop-loading", () => { parar(); aba.carregando = false; aba.progresso = 0; avisarBarra(); });
+  wc.on("did-navigate", () => { if (aba.carregando) aba.progresso = Math.max(aba.progresso || 0, 45); });
+  wc.on("dom-ready", () => { if (aba.carregando) { aba.progresso = Math.max(aba.progresso || 0, 75); avisarBarra(); } });
   wc.on("did-navigate", (_e, url) => { aba.url = aba.interna ? "" : url; historicoVisita(aba, url); avisarBarra(); });
   wc.on("did-navigate-in-page", (_e, url) => { if (!aba.interna) aba.url = url; avisarBarra(); });
   wc.on("will-navigate", (e, url) => {
@@ -302,7 +314,7 @@ function fecharAba(id) {
 function acaoVelox(aba, u) {
   if (u.hostname === "buscar") {
     const destino = resolverEntrada(u.searchParams.get("q") || "");
-    if (destino) { aba.interna = null; aba.view.setBackgroundColor("#ffffffff"); aba.view.webContents.loadURL(destino); }
+    if (destino) { aba.interna = null; aba.view.webContents.loadURL(destino); }
   }
 }
 
@@ -311,8 +323,7 @@ function irPara(texto) {
   const destino = resolverEntrada(texto);
   if (!destino) return;
   if (ativa.interna && ativa.interna !== "inicio") { criarAba(destino); return; } // telas internas têm acesso especial: nunca navegam para fora
-  ativa.interna = null;
-  ativa.view.setBackgroundColor("#ffffffff");
+  ativa.interna = null; // o fundo branco só entra quando a página nova chegar (dom-ready): até lá continua a tela de antes
   ativa.view.webContents.loadURL(destino);
 }
 
@@ -825,7 +836,7 @@ function ligarComandos() {
   ipcMain.on("voltar", daBarra(() => ativa && ativa.view.webContents.navigationHistory.goBack()));
   ipcMain.on("avancar", daBarra(() => ativa && ativa.view.webContents.navigationHistory.goForward()));
   ipcMain.on("recarregar", daBarra(() => ativa && (ativa.carregando ? ativa.view.webContents.stop() : ativa.view.webContents.reload())));
-  ipcMain.on("inicio", daBarra(() => { if (ativa) { ativa.interna = "inicio"; ativa.view.setBackgroundColor("#00000000"); ativa.view.webContents.loadURL(enderecoInicio()); } }));
+  ipcMain.on("inicio", daBarra(() => { if (ativa) { ativa.interna = "inicio"; ativa.view.webContents.loadURL(enderecoInicio()); } }));
   ipcMain.on("favorito", daBarra(alternarFavorito));
   ipcMain.on("menu-mais", daBarra(() => abrirPop("menu")));
   ipcMain.on("pop-abrir", daBarra((_e, tipo, ancora) => { ancoras[tipo === "menu" ? "menu" : "baixados"] = Number(ancora) || 0; abrirPop(tipo === "menu" ? "menu" : "downloads"); }));

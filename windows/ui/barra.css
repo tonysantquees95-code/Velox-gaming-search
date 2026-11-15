@@ -22,7 +22,9 @@ html, body { margin:0; height:100%; color:var(--tx); font:14px "Segoe UI", syste
 .aba span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
 .aba b { width:18px; height:18px; border-radius:50%; text-align:center; line-height:18px; font-weight:400; }
 .aba b:hover { background:rgba(255,255,255,.15); }
-.aba.carregando span::before { content:"◌ "; color:var(--c1); }
+.aba { position:relative; }
+/* barrinha de carregamento embaixo da aba, nas cores do tema */
+.aba .prog { position:absolute; left:0; bottom:0; height:3px; border-radius:0 2px 2px 0; background:linear-gradient(90deg, var(--c2), var(--c1)); box-shadow:0 0 8px color-mix(in srgb, var(--c1) 60%, transparent); transition:width .35s ease-out; pointer-events:none; }
 .aba.anonima { --borda:rgba(167,139,250,.7); }
 .aba.anonima span::before { content:"🕶 "; }
 #mais { flex:0 0 30px; height:26px; border-radius:8px; background:transparent; color:var(--c1); border:0; font-size:20px; cursor:pointer; align-self:center; }

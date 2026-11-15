@@ -63,7 +63,9 @@
       x.onclick = function (ev) { ev.stopPropagation(); V.enviar("fechar-aba", a.id); };
       d.onclick = function () { V.enviar("mostrar-aba", a.id); };
       d.onauxclick = function (ev) { if (ev.button === 1) V.enviar("fechar-aba", a.id); };
-      d.appendChild(t); d.appendChild(x); abas.appendChild(d);
+      d.appendChild(t); d.appendChild(x);
+      if (a.carregando) { var pg = document.createElement("i"); pg.className = "prog"; pg.style.width = Math.max(a.progresso || 0, 6) + "%"; d.appendChild(pg); }
+      abas.appendChild(d);
     });
     var m = document.createElement("button"); m.id = "mais"; m.textContent = "+"; m.title = "Nova aba (Ctrl+T)";
     m.onclick = function () { V.enviar("nova-aba"); }; abas.appendChild(m);
