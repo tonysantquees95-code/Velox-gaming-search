@@ -78,7 +78,10 @@
     $("chave").className = "ic" + (e.cofreAberto ? " aberta" : "");
     var fav = $("favoritos"); fav.textContent = "";
     e.favoritos.forEach(function (f) {
-      var b = document.createElement("button"); b.textContent = f.n; b.title = f.u;
+      var b = document.createElement("button"); b.title = f.n + "\n" + f.u + "\nBotão direito: renomear";
+      if (f.i) { var im = document.createElement("img"); im.src = f.i; im.alt = ""; b.appendChild(im); }
+      b.appendChild(document.createTextNode(f.n));
+      b.oncontextmenu = function (ev) { ev.preventDefault(); V.enviar("renomear-favorito", f.u); };
       b.onclick = function () { V.enviar("abrir-favorito", f.u); };
       fav.appendChild(b);
     });

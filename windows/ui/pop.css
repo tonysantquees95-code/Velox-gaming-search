@@ -27,3 +27,4 @@ html, body { margin:0; height:100%; background:transparent; color:var(--tx); fon
 .barra { height:4px; margin-top:6px; border-radius:2px; background:rgba(255,255,255,.12); overflow:hidden; }
 .barra i { display:block; height:100%; background:linear-gradient(90deg, var(--c2), var(--c1)); }
 .vazio { padding:14px 12px; color:var(--su); }
+.item .fav-ic { width:16px; height:16px; border-radius:3px; flex:0 0 auto; }

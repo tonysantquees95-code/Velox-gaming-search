@@ -699,7 +699,7 @@ class MainActivity : Activity() {
             .put("foto", fotoFundo != null)
             .put("vindex", vindexInstalado())
             .put("walls", JSONArray(Imagens.listarWallpapers(this)))
-            .put("fav", JSONArray(ajustes.favoritosJson))
+            .put("fav", favoritosParaPainel())
             .put("padrao", ehNavegadorPrincipal())
             .put("sync", JSONObject().put("email", ajustes.syncEmail).put("logado", ajustes.syncToken.isNotBlank()).put("ultimo", ajustes.syncUltimo)
                 .put("itens", JSONObject().put("f", ajustes.syncFavoritos).put("t", ajustes.syncTema).put("s", ajustes.syncSenhas)))
@@ -815,6 +815,7 @@ class MainActivity : Activity() {
             "dl-retentar" -> u.getQueryParameter("id")?.toLongOrNull()?.let { retentarDownload(it) }
             "dl-apagar" -> { u.getQueryParameter("id")?.toLongOrNull()?.let { id -> try { (getSystemService(DOWNLOAD_SERVICE) as DownloadManager).remove(id); baixando.remove(id) } catch (e: Exception) { /* já não existe */ }; enviarDownloads() } }
             "fav-add" -> { favoritarPaginaAtual(); if (u.getQueryParameter("fica") != "1") fecharPainel() else abrirPainel("favoritos", true) }
+            "fav-ren" -> { painelFavAberto = true; u.getQueryParameter("i")?.toIntOrNull()?.let { pedirNomeFavorito(it) } }
             "fav-del" -> { u.getQueryParameter("i")?.toIntOrNull()?.let { removerFavorito(it) }; abrirPainel("favoritos", true) }
             "fav-abrir" -> { fecharPainel(); u.getQueryParameter("u")?.let { abrirTexto(it) } }
             "padrao" -> { fecharPainel(); pedirNavegadorPrincipal() }
@@ -897,6 +898,80 @@ class MainActivity : Activity() {
             // lista estragada: recomeça vazia
         }
         return r
+    }
+
+    private val iconesNaMemoria = HashMap<String, Bitmap>()
+    private var painelFavAberto = false
+
+    private fun favoritosParaPainel(): JSONArray {
+        val icones = mapaJson(ajustes.iconesJson)
+        val r = JSONArray()
+        for ((t, u) in listaFavoritos()) r.put(JSONObject().put("t", t).put("u", u).put("i", icones.optString(origemDe(u), "")))
+        return r
+    }
+
+    private fun iconeDoFavorito(u: String): Bitmap? {
+        val o = origemDe(u)
+        iconesNaMemoria[o]?.let { return it }
+        val txt = mapaJson(ajustes.iconesJson).optString(o, "")
+        if (txt.isEmpty()) return null
+        return try {
+            val b = Base64.decode(txt, Base64.DEFAULT)
+            android.graphics.BitmapFactory.decodeByteArray(b, 0, b.size)?.also { iconesNaMemoria[o] = it }
+        } catch (e: Exception) { null }
+    }
+
+    /** Guarda o ícone de uma página que é favorita (ou acabou de virar), pequeno, só neste aparelho. */
+    private fun guardarIcone(url: String?, icone: Bitmap?) {
+        val o = origemDe(url)
+        if (o.isEmpty() || icone == null || icone.width <= 0) return
+        if (listaFavoritos().none { origemDe(it.second) == o }) return
+        val mapa = mapaJson(ajustes.iconesJson)
+        if (mapa.has(o)) return
+        try {
+            val peq = Bitmap.createScaledBitmap(icone, 48, 48, true)
+            val saida = java.io.ByteArrayOutputStream()
+            peq.compress(Bitmap.CompressFormat.PNG, 100, saida)
+            mapa.put(o, Base64.encodeToString(saida.toByteArray(), Base64.NO_WRAP))
+            ajustes.iconesJson = mapa.toString()
+            iconesNaMemoria[o] = peq
+            desenharFaixaFav()
+        } catch (e: Exception) {
+            // sem ícone: fica só o nome
+        }
+    }
+
+    /** Pergunta o novo nome do favorito (caixa no visual do app) e sincroniza. */
+    private fun pedirNomeFavorito(i: Int) {
+        val l = listaFavoritos()
+        if (i !in l.indices) return
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val campo = EditText(this).apply {
+            setText(l[i].first)
+            setSelectAllOnFocus(true)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            maxLines = 1
+        }
+        col.addView(campo)
+        CaixaVelox(this, tema).setTitle("Nome do favorito").setMessage("Escolha um nome curto para este favorito.").setView(col)
+            .setPositiveButton("Salvar") { _, _ -> renomearFavorito(i, campo.text.toString()) }
+            .setNegativeButton("Cancelar") { _, _ -> painelFavAberto = false }
+            .setOnCancelListener { painelFavAberto = false }
+            .show()
+    }
+
+    private fun renomearFavorito(i: Int, nome: String) {
+        val n = nome.trim().take(60)
+        val l = listaFavoritos()
+        if (n.isEmpty() || i !in l.indices || l[i].first == n) return
+        val u = l[i].second
+        l[i] = Pair(n, u)
+        gravarFavoritos(l)
+        val tempos = mapaJson(ajustes.favTempoJson)
+        tempos.put(u, System.currentTimeMillis())
+        ajustes.favTempoJson = tempos.toString()
+        sincronizarDepois()
+        if (painelFavAberto) { painelFavAberto = false; abrirPainel("favoritos", true) }
     }
 
     private fun gravarFavoritos(l: List<Pair<String, String>>) {
@@ -1266,6 +1341,7 @@ class MainActivity : Activity() {
         l.add(Pair(a.titulo.ifBlank { host }.take(60), u))
         gravarFavoritos(l)
         marcarFavorito(u, true)
+        iconesNaMemoria[origemDe(u)]?.let { guardarIcone(u, it) }
         Toast.makeText(this, "Adicionada aos favoritos.", Toast.LENGTH_SHORT).show()
     }
 
@@ -1296,7 +1372,7 @@ class MainActivity : Activity() {
     private fun desenharFaixaFav() {
         if (!::faixaConteudo.isInitialized) return
         faixaConteudo.removeAllViews()
-        fun chip(texto: String, destaque: Boolean, acao: () -> Unit, longo: (() -> Unit)? = null) {
+        fun chip(texto: String, destaque: Boolean, acao: () -> Unit, longo: (() -> Unit)? = null, icone: Bitmap? = null) {
             val t = TextView(this).apply {
                 text = texto
                 textSize = 13f
@@ -1305,6 +1381,12 @@ class MainActivity : Activity() {
                 setTextColor(if (destaque) tema.sobreDestaque else tema.texto)
                 gravity = Gravity.CENTER
                 setPadding(dp(14), 0, dp(14), 0)
+                if (icone != null) {
+                    val d = android.graphics.drawable.BitmapDrawable(resources, icone)
+                    d.setBounds(0, 0, dp(16), dp(16))
+                    setCompoundDrawables(d, null, null, null)
+                    compoundDrawablePadding = dp(6)
+                }
                 background = GradientDrawable().apply {
                     cornerRadius = dp(18).toFloat()
                     setColor(if (destaque) tema.destaque else (tema.campo and 0x00FFFFFF) or 0xCC000000.toInt())
@@ -1320,10 +1402,7 @@ class MainActivity : Activity() {
         val l = listaFavoritos()
         if (l.isEmpty()) chip("Nenhum favorito ainda", false, {})
         for ((i, f) in l.withIndex()) {
-            chip(f.first, false, { abrirTexto(f.second) }, {
-                Toast.makeText(this, "Favorito removido.", Toast.LENGTH_SHORT).show()
-                removerFavorito(i)
-            })
+            chip(f.first, false, { abrirTexto(f.second) }, { pedirNomeFavorito(i) }, iconeDoFavorito(f.second))
         }
     }
 
@@ -1812,6 +1891,13 @@ class MainActivity : Activity() {
             if (aba !== atual) return
             barra.progresso = if (novo >= 100) 0 else novo
             atualizarSetas()
+        }
+
+        override fun onReceivedIcon(view: WebView, icone: Bitmap?) {
+            if (aba.anonima || icone == null) return
+            val o = origemDe(view.url)
+            if (o.isNotEmpty()) iconesNaMemoria.putIfAbsent(o, icone)
+            guardarIcone(view.url, icone)
         }
 
         override fun onReceivedTitle(view: WebView, titulo: String?) {

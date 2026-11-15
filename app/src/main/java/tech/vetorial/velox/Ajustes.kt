@@ -116,6 +116,11 @@ class Ajustes(contexto: Context) {
         get() = p.getString("fav_tempo", "{}") ?: "{}"
         set(v) { p.edit().putString("fav_tempo", v).apply() }
 
+    /** Ícones dos sites favoritos (origem → imagem PNG pequena em base64). Ficam só neste aparelho. */
+    var iconesJson: String
+        get() = p.getString("fav_icones", "{}") ?: "{}"
+        set(v) { p.edit().putString("fav_icones", v).apply() }
+
     var apagadosJson: String
         get() = p.getString("fav_apagados", "{}") ?: "{}"
         set(v) { p.edit().putString("fav_apagados", v).apply() }

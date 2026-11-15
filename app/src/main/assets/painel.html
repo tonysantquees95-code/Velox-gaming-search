@@ -90,9 +90,12 @@ html.esq .gaveta { right: auto; left: 0; width: min(86vw, 360px); border-left: 0
 html.esq .trilho { display: none; }
 html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%); }
 @keyframes entra-e { from { transform: translateX(-46px); opacity: 0 } }
-.fav { position: relative; min-height: 56px; padding: 8px 44px 8px 12px; margin-bottom: 8px; text-align: left; display: flex; flex-direction: column; justify-content: center; cursor: pointer; }
+.fav { position: relative; min-height: 56px; padding: 8px 84px 8px 12px; margin-bottom: 8px; text-align: left; display: flex; flex-direction: column; justify-content: center; cursor: pointer; }
 .fav b { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fav small { color: var(--su); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fav .linha { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.fav .ic { width: 18px; height: 18px; border-radius: 4px; flex: 0 0 auto; }
+.fav .ed { position: absolute; top: 50%; right: 42px; transform: translateY(-50%); width: 38px; height: 38px; background: none; border: 0; color: var(--su); font-size: 17px; cursor: pointer; }
 .fav .x { position: absolute; top: 50%; right: 4px; transform: translateY(-50%); width: 38px; height: 38px; background: none; border: 0; color: var(--su); font-size: 20px; cursor: pointer; }
 .grade-w { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
 .grade-w .w { position: relative; aspect-ratio: 9 / 16; border-radius: 10px; border: 1px solid var(--borda); background: rgba(255,255,255,.06) center/cover no-repeat; cursor: pointer; padding: 0; }
@@ -276,10 +279,13 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     if (!E.fav.length) { g.appendChild(el("p", "vazio", "Nenhum favorito ainda.")); return; }
     E.fav.forEach(function (f, i) {
       var h = ""; try { h = new URL(f.u).hostname; } catch (e) {}
-      var c = el("div", "vidro fav"); c.appendChild(el("b", "", f.t || h)); c.appendChild(el("small", "", h));
+      var c = el("div", "vidro fav"); var li = el("div", "linha");
+      if (f.i) { var im = el("img", "ic"); im.src = "data:image/png;base64," + f.i; im.alt = ""; li.appendChild(im); }
+      li.appendChild(el("b", "", f.t || h)); c.appendChild(li); c.appendChild(el("small", "", h));
       c.onclick = function () { ir("fav-abrir", { u: f.u }); };
       var x = el("button", "x", "×"); x.setAttribute("aria-label", "Remover favorito"); x.onclick = function (ev) { ev.stopPropagation(); ir("fav-del", { i: i }); };
-      c.appendChild(x); g.appendChild(c);
+      var ed = el("button", "ed", "✎"); ed.setAttribute("aria-label", "Renomear favorito"); ed.onclick = function (ev) { ev.stopPropagation(); ir("fav-ren", { i: i }); };
+      c.appendChild(ed); c.appendChild(x); g.appendChild(c);
     });
   }
   $("fav-add").onclick = function () { ir("fav-add", { fica: 1 }); };

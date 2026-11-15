@@ -6,7 +6,7 @@
   var campos = def.campos || [], botoes = def.botoes || [{ id: "ok", rotulo: "OK", primario: true }];
   campos.forEach(function (c) {
     var l = document.createElement("label"); l.textContent = c.rotulo; l.htmlFor = "c-" + c.id;
-    var i = document.createElement("input"); i.type = c.tipo === "password" ? "password" : "text"; i.id = "c-" + c.id; i.autocomplete = "off";
+    var i = document.createElement("input"); i.type = c.tipo === "password" ? "password" : "text"; i.id = "c-" + c.id; i.autocomplete = "off"; if (c.valor) i.value = c.valor;
     $("campos").appendChild(l); $("campos").appendChild(i);
   });
   function responder(botao) {

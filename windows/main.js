@@ -108,7 +108,7 @@ function estadoDasAbas() {
     fundo: ajustes.fundo ? pathToFileURL(ajustes.fundo).toString() : "",
     transparencia: ajustes.transparencia,
     buscador: ajustes.buscador,
-    favoritos: ajustes.mostrarFavoritos ? ajustes.favoritos.map((f) => ({ n: f.n, u: f.u })) : [],
+    favoritos: ajustes.mostrarFavoritos ? ajustes.favoritos.map(paraTela) : [],
     bloqueio: ajustes.bloqueio,
     bloqueados: bloqueio ? bloqueio.bloqueados : 0,
     cofreAberto: !!(cofre && cofre.aberto()),
@@ -160,6 +160,7 @@ function criarAba(destino, opcoes = {}) {
   setTimeout(revelar, 1500);
 
   wc.on("dom-ready", () => aplicarRolagem(aba));
+  wc.on("page-favicon-updated", (_e, lista) => { if (!aba.anonima && lista && lista[0]) { aba.favicon = lista[0]; guardarIcone(aba); } });
   wc.on("page-title-updated", (_e, t) => { aba.titulo = t; historicoTitulo(aba); avisarBarra(); });
   wc.on("did-start-loading", () => { aba.carregando = true; avisarBarra(); });
   wc.on("did-stop-loading", () => { aba.carregando = false; avisarBarra(); });
@@ -331,7 +332,7 @@ function dadosPop() {
     zoom: Math.round(Math.pow(1.2, nivel) * 100), tela: janela.isFullScreen(),
     downloads: resumoDownloads().slice(0, 8),
     historico: ajustes.historico.filter((h) => /^https?:/i.test(h.u)).slice(0, 8).map((h) => ({ n: h.n || "", u: h.u })),
-    favoritos: ajustes.favoritos.map((f) => ({ n: f.n, u: f.u })),
+    favoritos: ajustes.favoritos.map(paraTela),
     mostrarFavoritos: !!ajustes.mostrarFavoritos,
     favorita: !!(ativa && ativa.url && ajustes.favoritos.some((f) => f.u === ativa.url)),
   };
@@ -402,6 +403,32 @@ function atalhos(e, input) {
 }
 
 // ------------------------------------------------------------------ favoritos
+function paraTela(f) { const o = origemDe(f.u); return { n: f.n, u: f.u, i: (ajustes.icones && ajustes.icones[o]) || "" }; }
+/** guarda o ícone do site (só dos que são favoritos) como imagem pequena; fica só neste aparelho */
+async function guardarIcone(aba) {
+  try {
+    const o = origemDe(aba.url);
+    if (!o || !aba.favicon || !ajustes.favoritos.some((f) => origemDe(f.u) === o)) return;
+    if (ajustes.icones && ajustes.icones[o]) return;
+    const r = await net.fetch(aba.favicon);
+    if (!r.ok) return;
+    const buf = Buffer.from(await r.arrayBuffer());
+    const tipo = (r.headers.get("content-type") || "image/x-icon").split(";")[0];
+    if (!buf.length || buf.length > 30000 || !/^image\//.test(tipo)) return;
+    ajustes.icones = { ...(ajustes.icones || {}), [o]: `data:${tipo};base64,${buf.toString("base64")}` };
+    gravarAjustes(); avisarBarra();
+  } catch (_) { /* sem ícone: fica só o nome */ }
+}
+async function renomearFavorito(u) {
+  const f = ajustes.favoritos.find((x) => x.u === u);
+  if (!f) return;
+  const r = await perguntar({ titulo: "Nome do favorito", texto: "Escolha um nome curto para este favorito.", altura: 260, campos: [{ id: "nome", tipo: "text", rotulo: "Nome", valor: f.n }], botoes: [{ id: "ok", rotulo: "Salvar", primario: true }, { id: "cancelar", rotulo: "Cancelar" }] });
+  if (r.botao !== "ok") return;
+  const n = String(r.valores.nome || "").trim().slice(0, 40);
+  if (!n || n === f.n) return;
+  f.n = n; f.t = Date.now();
+  gravarAjustes(); avisarBarra(); enviarPop(); sincronizarDepois();
+}
 function alternarFavorito() {
   if (!ativa || !ativa.url || !/^https?:/i.test(ativa.url)) return;
   const i = ajustes.favoritos.findIndex((f) => f.u === ativa.url);
@@ -412,6 +439,7 @@ function alternarFavorito() {
   reposicionar();
   avisarBarra();
   sincronizarDepois();
+  if (i < 0) guardarIcone(ativa);
 }
 
 // ------------------------------------------------------------------ sincronização com o Vetorial ID
@@ -756,6 +784,7 @@ function ligarComandos() {
   const daPop = (fn) => (e, ...a) => (pop && e.sender === pop.view.webContents ? fn(e, ...a) : undefined);
   ipcMain.on("pop:pronto", daPop(() => enviarPop()));
   ipcMain.on("pop:fechar", daPop(() => fecharPop()));
+  ipcMain.on("pop:renomear", daPop((_e, u) => { fecharPop(); renomearFavorito(String(u)); }));
   ipcMain.on("pop:sub", daPop((_e, s) => { pop.sub = ["historico", "favoritos", "downloads"].includes(s) ? s : null; enviarPop(); }));
   ipcMain.on("pop:acao", daPop((_e, nome, arg) => {
     const fica = nome === "zoom+" || nome === "zoom-";
@@ -795,6 +824,7 @@ function ligarComandos() {
     ativa.view.webContents.findInPage(texto, { forward: proximo !== false, findNext: true });
   }));
   ipcMain.on("busca-fechar", daBarra(() => fecharBusca()));
+  ipcMain.on("renomear-favorito", daBarra((_e, u) => { renomearFavorito(String(u)); }));
   ipcMain.on("abrir-favorito", daBarra((_e, u) => { if (/^https?:/i.test(u)) irPara(u); }));
 
   // páginas das web: formulários de login

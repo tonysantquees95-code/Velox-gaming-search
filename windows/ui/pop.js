@@ -90,7 +90,9 @@
     c.appendChild(sep());
     c.appendChild(el("div", "titulo", "Favoritos"));
     if (!D.favoritos.length) c.appendChild(el("div", "vazio", "Nenhum favorito ainda."));
-    D.favoritos.forEach(function (f) { var b = item(f.n, { vazioIcone: true, clique: acao("ir", f.u) }); b.title = f.u; c.appendChild(b); });
+    D.favoritos.forEach(function (f) { var b = item(f.n, { vazioIcone: !f.i, clique: acao("ir", f.u) }); b.title = f.u + "\nBotão direito: renomear";
+      if (f.i) { var im = el("img", "fav-ic"); im.src = f.i; im.alt = ""; b.insertBefore(im, b.firstChild); }
+      b.oncontextmenu = function (ev) { ev.preventDefault(); V.enviar("pop:renomear", f.u); }; c.appendChild(b); });
   }
 
   function aplicarTema(texto) {

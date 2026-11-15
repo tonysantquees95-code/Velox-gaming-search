@@ -54,6 +54,8 @@ button.ic:disabled { opacity:.3; cursor:default; }
 #favoritos { flex:1; display:flex; gap:6px; align-items:center; height:32px; padding:0 6px; overflow-x:auto; }
 #favoritos::-webkit-scrollbar { display:none; }
 #favoritos button { flex:0 0 auto; max-width:150px; height:26px; padding:0 10px; border-radius:6px; border:1px solid color-mix(in srgb, var(--c1) 30%, transparent); background:rgba(255,255,255,.05); color:var(--tx); font-size:12px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#favoritos button { display:flex; align-items:center; gap:6px; }
+#favoritos button img { width:14px; height:14px; border-radius:3px; flex:0 0 auto; }
 #favoritos button:hover { border-color:var(--c1); }
 /* botão gamer: vermelho, cantos cortados, com uma luz branca correndo */
 #gamer-caixa { flex:0 0 118px; height:100%; display:block; margin-left:6px; filter:drop-shadow(0 0 5px rgba(255,31,61,.75)); }
