@@ -188,6 +188,12 @@ function criarAba(destino, opcoes = {}) {
     Menu.buildFromTemplate(itens).popup();
   });
   wc.on("before-input-event", (e, input) => atalhos(e, input));
+  // Ctrl + roda do mouse (ou dois dedos no touchpad) aproxima e afasta a página, como no Chrome
+  wc.on("zoom-changed", (_e, sentido) => {
+    if (wc.isDestroyed()) return;
+    wc.setZoomLevel(Math.max(-3, Math.min(5, wc.getZoomLevel() + (sentido === "in" ? 0.5 : -0.5))));
+    if (pop) enviarPop();
+  });
 
   abas.push(aba);
   if (especial) wc.loadURL(enderecoInterno(interna));
@@ -1160,6 +1166,8 @@ app.commandLine.appendSwitch("enable-features", "ParallelDownloading<VeloxPD,Net
 app.commandLine.appendSwitch("force-fieldtrials", "VeloxPD/On");
 app.commandLine.appendSwitch("force-fieldtrial-params", "VeloxPD.On:enable_parallel_download/true/request_count/8/min_slice_size/262144/min_file_size/2097152");
 app.commandLine.appendSwitch("enable-quic");
+// sem tradutor automático do Chromium: quem quiser traduzir pede por conta própria
+app.commandLine.appendSwitch("disable-features", "Translate,TranslateUI,TranslateSubFrames");
 
 const unica = app.requestSingleInstanceLock();
 if (!unica) app.quit();
