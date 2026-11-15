@@ -85,6 +85,7 @@
     chips("t-cores", VGX.CORES, (VGX.CORES.filter(function (c) { return c[2] === t.c1 && c[3] === t.c2; })[0] || [])[0], function (c) { salvarTema({ c1: c[2], c2: c[3] }); }, function (c) { var i = el("i"); i.style.background = "linear-gradient(135deg,#" + c[2] + ",#" + c[3] + ")"; return i; });
     chips("t-bases", VGX.BASES, t.base, function (b) { salvarTema({ base: b[0] }); });
     chips("t-fundos", VGX.FUNDOS, t.fu, function (f) { salvarTema({ fu: f[0] }); });
+    chips("t-estilos", VGX.ESTILOS, t.ti, function (e) { salvarTema({ ti: e[0] }); });
     chips("t-pacotes", VGX.PACOTES, t.pk, function (p) { salvarTema({ pk: p[0] }); }, function (p) { var s = el("span"); s.innerHTML = VGX.pacoteSvg(p[0], GEAR, t.c1, t.c2, p[0]); return s; });
     chips("t-formato", [["futurista", "Futurista"], ["redondo", "Redondo"]], t.fo, function (f) { salvarTema({ fo: f[0] }); });
     chips("t-luz", VGX.LUZES, t.lz, function (l) { salvarTema({ lz: l[0] }); });
@@ -92,6 +93,7 @@
     $("t-an").checked = t.an;
     if (document.activeElement !== $("t-br")) $("t-br").value = t.br;
     if (document.activeElement !== $("t-tr")) $("t-tr").value = t.tr;
+    if (document.activeElement !== $("t-dim")) $("t-dim").value = t.dim;
   }
   function buscarFotos() { V.chamar("ajustes:buscar-fotos", $("f-busca").value.trim() || "wallpaper"); }
   $("f-buscar").onclick = buscarFotos;
@@ -101,6 +103,7 @@
   $("t-an").onchange = function () { salvarTema({ an: this.checked }); };
   $("t-br").onchange = function () { salvarTema({ br: +this.value }); };
   $("t-tr").onchange = function () { salvarTema({ tr: +this.value }); };
+  $("t-dim").onchange = function () { salvarTema({ dim: +this.value }); };
   function salvarItens() { V.chamar("ajustes:sync-itens", { favoritos: $("si-favoritos").checked, tema: $("si-tema").checked, senhas: $("si-senhas").checked }).then(desenhar); }
   ["favoritos", "tema", "senhas"].forEach(function (k) { $("si-" + k).onchange = salvarItens; });
   function recarregar() { return V.chamar("ajustes:estado").then(desenhar); }

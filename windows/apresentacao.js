@@ -35,6 +35,7 @@ const NOVIDADES = [
   { id: 3, data: "2026-11-14", tipo: "melhoria", titulo: "Engrenagem nos Ajustes", texto: "A engrenagem de Ajustes agora é uma engrenagem de verdade, não mais parecida com um sol." },
   { id: 4, data: "2026-11-15", tipo: "melhoria", titulo: "Seletores no visual do Velox", texto: "As caixas de marcar, as barras deslizantes e as listas de escolha dos Ajustes agora usam as cores e o formato do tema, no lugar do azul e branco padrão do sistema." },
   { id: 5, data: "2026-11-15", tipo: "novo", titulo: "Luz do logo com a cor que você quiser", texto: "Em Ajustes › Tema você escolhe a luz que corre em volta das letras do Velox: a padrão, RGB (muda de cor), branca ou uma cor de sua escolha. Vale no celular e no computador." },
+  { id: 6, data: "2026-11-15", tipo: "melhoria", titulo: "Tema igual ao do celular", texto: "Nos Ajustes do Windows agora dá para escolher o estilo dos atalhos da página inicial e o quanto escurecer a foto de fundo, como já era no celular." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };
