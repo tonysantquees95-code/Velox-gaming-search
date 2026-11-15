@@ -14,6 +14,10 @@
     achar: '<circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/>',
     gamer: '<path d="M7 8H17Q21 8 21 12V14C21 17 17 18 15 15L14 14H10L9 15C7 18 3 17 3 14V12Q3 8 7 8Z"/><path d="M8 10.5V13.5M6.5 12H9.5"/>',
     cfg: '<path d="M10.32 5.00 L10.87 2.47 L13.13 2.47 L13.68 5.00 L15.76 5.86 L17.94 4.46 L19.54 6.06 L18.14 8.24 L19.00 10.32 L21.53 10.87 L21.53 13.13 L19.00 13.68 L18.14 15.76 L19.54 17.94 L17.94 19.54 L15.76 18.14 L13.68 19.00 L13.13 21.53 L10.87 21.53 L10.32 19.00 L8.24 18.14 L6.06 19.54 L4.46 17.94 L5.86 15.76 L5.00 13.68 L2.47 13.13 L2.47 10.87 L5.00 10.32 L5.86 8.24 L4.46 6.06 L6.06 4.46 L8.24 5.86 Z" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.1"/>',
+    dividir: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M12 5v14"/>',
+    captura: '<path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><circle cx="12" cy="12" r="2.5"/>',
+    vertical: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M9.5 5v14M5.5 9h2M5.5 12h2M5.5 15h2"/>',
+    organizar: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><path d="M14 17h6M17 14v6"/>',
     cores: '<circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="9" r="1"/><circle cx="15" cy="14" r="1"/>'
   };
   function el(tag, cls, texto) { var e = document.createElement(tag); if (cls) e.className = cls; if (texto != null) e.textContent = texto; return e; }
@@ -51,11 +55,42 @@
     c.appendChild(z);
     c.appendChild(sep());
     c.appendChild(item("Imprimir…", { icone: "imp", atalho: "Ctrl+P", clique: acao("imprimir") }));
+    c.appendChild(item(D.dividida ? "Fechar tela dividida" : "Tela dividida", { icone: "dividir", clique: acao("dividir") }));
+    c.appendChild(item("Captura de tela", { icone: "captura", atalho: "Ctrl+Shift+S", clique: acao("captura") }));
     c.appendChild(item("Localizar na página…", { icone: "achar", atalho: "Ctrl+F", clique: acao("localizar") }));
     c.appendChild(item("Modo gamer", { icone: "gamer", atalho: "Ctrl+Shift+G", clique: acao("gamer") }));
     c.appendChild(sep());
     c.appendChild(item("Personalizar…", { icone: "cores", clique: acao("personalizar") }));
     c.appendChild(item("Ajustes", { icone: "cfg", clique: acao("ajustes") }));
+  }
+
+  var filtro = "";
+  function desenharAbas(c) {
+    c.appendChild(item(D.verticais ? "Desligar abas verticais" : "Ligar abas verticais", { icone: "vertical", clique: acao("abas-verticais") }));
+    c.appendChild(item("Organizar guias", { icone: "organizar", clique: acao("organizar") }));
+    c.appendChild(sep());
+    var cx = el("div", "busca"); cx.appendChild(icone("achar"));
+    var inp = el("input"); inp.type = "text"; inp.placeholder = "Pesquisar guias"; inp.value = filtro; inp.spellcheck = false;
+    cx.appendChild(inp); cx.appendChild(el("span", "atalho", "Ctrl+Shift+A")); c.appendChild(cx);
+    var lista = el("div", "lista"); c.appendChild(lista);
+    function listar() {
+      lista.textContent = "";
+      var q = filtro.trim().toLowerCase();
+      var achadas = D.abas.filter(function (a) { return !q || (a.titulo + " " + a.url).toLowerCase().indexOf(q) >= 0; });
+      lista.appendChild(el("div", "titulo", "Guias abertas"));
+      if (!achadas.length) lista.appendChild(el("div", "vazio", "Nenhuma guia com esse nome."));
+      achadas.forEach(function (a) {
+        var b = item(a.titulo || "Nova aba", { icone: a.anonima ? "anon" : "aba", aberto: a.id === D.ativa, clique: acao("ir-aba", a.id) });
+        b.title = a.url || a.titulo; lista.appendChild(b);
+      });
+      var rec = D.fechadas.filter(function (f) { return !q || (f.n + " " + f.u).toLowerCase().indexOf(q) >= 0; });
+      lista.appendChild(el("div", "titulo", "Fechadas recentemente"));
+      if (!rec.length) lista.appendChild(el("div", "vazio", "Nenhuma guia fechada ainda."));
+      rec.forEach(function (f) { var b = item(f.n, { icone: "hist", clique: acao("reabrir", f.u) }); b.title = f.u; lista.appendChild(b); });
+    }
+    inp.oninput = function () { filtro = inp.value; listar(); };
+    listar();
+    setTimeout(function () { inp.focus(); }, 0);
   }
 
   function desenharDownloads(c, comTitulo) {
@@ -115,8 +150,12 @@
     D = d; aplicarTema(d.tema);
     var p = $("principal"), s = $("sub"); p.textContent = ""; s.textContent = ""; s.hidden = true;
     var direita = Math.max(8, d.larg - d.x);
-    p.style.right = direita + "px"; p.hidden = false;
-    if (d.tipo === "menu") {
+    p.className = "cartao" + (d.tipo === "abas" ? " topo" : "");
+    p.style.right = direita + "px"; p.style.left = "auto"; p.hidden = false;
+    if (d.tipo === "abas") {
+      p.style.left = "8px"; p.style.right = "auto"; p.style.width = "340px";
+      if (!p.firstChild) desenharAbas(p);
+    } else if (d.tipo === "menu") {
       p.style.width = "300px"; desenharMenu(p);
       if (d.sub) {
         s.hidden = false; s.style.width = d.sub === "downloads" ? "340px" : "320px";

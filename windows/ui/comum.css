@@ -37,3 +37,18 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 select{-webkit-appearance:none;appearance:none;background:var(--campo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238fa0cf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 10px center;color:var(--tx);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:8px 32px 8px 12px;font:inherit;cursor:pointer;max-width:100%}
 select:hover,select:focus{border-color:var(--c1);outline:none}
 select option{background:var(--sup);color:var(--tx)}
+
+/* Ajustes em página: menu à esquerda e a seção escolhida ao lado */
+main.com-menu{max-width:1040px}
+.pagina{display:flex;gap:22px;align-items:flex-start}
+.menu-aj{flex:0 0 250px;position:sticky;top:16px;display:flex;flex-direction:column;gap:4px}
+.cab-aj{margin-bottom:10px}
+.busca-aj{margin:0 0 8px;flex:none;width:100%;box-sizing:border-box}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;min-height:38px;padding:0 12px;border:1px solid transparent;border-radius:10px;background:transparent;text-align:left}
+.nav-item svg{width:19px;height:19px;flex:0 0 19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;color:var(--c1)}
+.nav-item:hover{background:color-mix(in srgb,var(--c1) 10%,transparent);border-color:transparent}
+.nav-item.ativo{background:color-mix(in srgb,var(--c1) 18%,transparent);border-color:var(--c1)}
+.corpo-aj{flex:1;min-width:0}
+.ver-aj .cartao{margin-top:0}
+.ver-aj .cartao[hidden]{display:none}
+@media (max-width:760px){.pagina{flex-direction:column}.menu-aj{position:static;flex:none;width:100%}}

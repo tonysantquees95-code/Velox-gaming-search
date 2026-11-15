@@ -88,12 +88,80 @@ const origemDe = (url) => { try { const u = new URL(url); return /^https?:$/.tes
 // ------------------------------------------------------------------ abas
 const temaAtual = () => tema.normalizar(ajustes.temaTexto || TEMA);
 const alturaBarra = () => ALTURA_BARRA;
-function limites() {
+const LARGURA_LATERAL = 240; // lista de abas quando estão na vertical
+let divisao = null; // tela dividida: { aba } = a página do lado direito (a ativa fica à esquerda)
+function limites(lado) {
   const [l, a] = janela.getContentSize();
   const h = alturaBarra();
-  return { x: 0, y: ALTURA_TOPO, width: l, height: Math.max(0, a - h - ALTURA_TOPO) };
+  const x0 = ajustes.abasVerticais ? LARGURA_LATERAL : 0;
+  const largura = Math.max(0, l - x0);
+  const alto = Math.max(0, a - h - ALTURA_TOPO);
+  if (!divisao) return { x: x0, y: ALTURA_TOPO, width: largura, height: alto };
+  const metade = Math.floor((largura - 4) / 2);
+  return lado === "dir" ? { x: x0 + metade + 4, y: ALTURA_TOPO, width: largura - metade - 4, height: alto } : { x: x0, y: ALTURA_TOPO, width: metade, height: alto };
 }
-function reposicionar() { if (ativa && !janela.isFullScreen()) ativa.view.setBounds(limites()); }
+function posicionarPaginas() {
+  if (!janela || janela.isDestroyed()) return;
+  if (janela.isFullScreen()) return;
+  if (ativa) ativa.view.setBounds(limites("esq"));
+  if (divisao) divisao.aba.view.setBounds(limites("dir"));
+}
+function reposicionar() { posicionarPaginas(); }
+function alternarDivisao() {
+  if (!janela || janela.isDestroyed() || !ativa) return;
+  if (jogo.ligado) return;
+  if (divisao) {
+    const dir = divisao.aba;
+    divisao = null;
+    try { janela.contentView.removeChildView(dir.view); } catch { /* já fora */ }
+    posicionarPaginas(); avisarBarra();
+    return;
+  }
+  const esq = ativa;
+  const antes = abas.length;
+  criarAba(null, { interna: "inicio" });
+  const nova = abas[abas.length - 1];
+  if (abas.length === antes || !nova || nova === esq) return;
+  ativa = esq;
+  divisao = { aba: nova };
+  janela.contentView.addChildView(esq.view);
+  janela.contentView.addChildView(nova.view);
+  posicionarPaginas();
+  esq.view.webContents.focus();
+  avisarBarra();
+}
+function organizarGuias() {
+  const ordem = [];
+  const grupos = new Map();
+  for (const a of abas) {
+    let site = "";
+    if (a.interna) site = "~interna";
+    else { try { site = new URL(a.url).hostname.replace(/^www\./, ""); } catch { site = "~outras"; } }
+    if (!grupos.has(site)) { grupos.set(site, []); ordem.push(site); }
+    grupos.get(site).push(a);
+  }
+  abas = ordem.flatMap((g) => grupos.get(g));
+  avisarBarra();
+  avisar("Guias organizadas: as do mesmo site ficaram juntas.");
+}
+function alternarVerticais() {
+  ajustes.abasVerticais = !ajustes.abasVerticais;
+  gravarAjustes(); posicionarPaginas(); avisarBarra();
+}
+function avisar(texto, extra) { if (janela && !janela.isDestroyed()) janela.webContents.send("aviso", { texto, ...(extra || {}) }); }
+async function capturar() {
+  if (!ativa || ativa.view.webContents.isDestroyed()) return;
+  try {
+    const img = await ativa.view.webContents.capturePage();
+    clipboard.writeImage(img);
+    const pasta = path.join(app.getPath("pictures"), "Velox");
+    fs.mkdirSync(pasta, { recursive: true });
+    const d = new Date(), p = (n) => String(n).padStart(2, "0");
+    const arquivo = path.join(pasta, `Captura ${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.png`);
+    fs.writeFileSync(arquivo, img.toPNG());
+    avisar("Captura copiada e salva em Imagens\\Velox.", { arquivo });
+  } catch { avisar("Não consegui fazer a captura agora."); }
+}
 
 let busca = { aberta: false, resultado: null };
 function estadoDasAbas() {
@@ -105,6 +173,9 @@ function estadoDasAbas() {
     avancar: !!(at && at.view.webContents.navigationHistory.canGoForward()),
     favorita: !!(at && at.url && ajustes.favoritos.some((f) => f.u === at.url)),
     interna: at ? at.interna : null,
+    verticais: !!ajustes.abasVerticais,
+    dividida: !!divisao,
+    ladoDireito: divisao ? divisao.aba.id : null,
     tema: temaAtual(),
     fundo: ajustes.fundo ? pathToFileURL(ajustes.fundo).toString() : "",
     transparencia: ajustes.transparencia,
@@ -232,6 +303,7 @@ function ajustarModoGamer() {
 }
 function alternarModoGamer(liga) {
   if (!janela || liga === jogo.ligado) return;
+  if (liga && divisao) alternarDivisao();
   if (liga) {
     if (!jogo.view) {
       jogo.view = new WebContentsView({ webPreferences: { preload: path.join(__dirname, "preload.js"), contextIsolation: true, nodeIntegration: false, sandbox: true } });
@@ -289,10 +361,13 @@ async function acaoDoJogo(nome) {
 function mostrar(aba) {
   fecharPop();
   if (busca.aberta) fecharBusca();
-  if (ativa && ativa !== aba) janela.contentView.removeChildView(ativa.view);
+  if (divisao && aba === divisao.aba) { if (ativa && ativa !== aba) divisao.aba = ativa; } // trocou de lado: a que estava à esquerda vai para a direita
+  else if (ativa && ativa !== aba) janela.contentView.removeChildView(ativa.view);
   ativa = aba;
   janela.contentView.addChildView(aba.view);
-  aba.view.setBounds(janela.isFullScreen() ? { x: 0, y: 0, width: janela.getContentSize()[0], height: janela.getContentSize()[1] } : limites());
+  if (divisao) janela.contentView.addChildView(divisao.aba.view);
+  if (janela.isFullScreen()) aba.view.setBounds({ x: 0, y: 0, width: janela.getContentSize()[0], height: janela.getContentSize()[1] });
+  else posicionarPaginas();
   aba.view.webContents.focus();
   if (jogo.ligado) ajustarModoGamer();
   avisarBarra();
@@ -304,10 +379,17 @@ function fecharAba(id) {
   const aba = abas[i];
   if (!aba.interna && !aba.anonima && /^https?:/i.test(aba.url)) { fechadas.push(aba.url); if (fechadas.length > 20) fechadas.shift(); }
   abas.splice(i, 1);
-  if (ativa === aba) { janela.contentView.removeChildView(aba.view); ativa = null; }
+  let preferida = null;
+  if (divisao && (divisao.aba === aba || ativa === aba)) {
+    preferida = divisao.aba === aba ? null : divisao.aba; // se fechou a da esquerda, a da direita ocupa a tela toda
+    try { janela.contentView.removeChildView(aba.view); } catch { /* já fora */ }
+    divisao = null;
+  }
+  if (ativa === aba) { try { janela.contentView.removeChildView(aba.view); } catch { /* já fora */ } ativa = null; }
   aba.view.webContents.close();
   if (!abas.length) criarAba(null, { interna: "inicio" });
-  else if (!ativa) mostrar(abas[Math.min(i, abas.length - 1)]);
+  else if (!ativa) mostrar(preferida && abas.includes(preferida) ? preferida : abas[Math.min(i, abas.length - 1)]);
+  else if (preferida === null && !divisao) { posicionarPaginas(); avisarBarra(); }
   else avisarBarra();
 }
 
@@ -347,6 +429,10 @@ function dadosPop() {
   const nivel = wc && !wc.isDestroyed() ? wc.getZoomLevel() : 0;
   return {
     tipo: pop.tipo, sub: pop.sub, x: pop.tipo === "menu" ? ancoras.menu || l - 20 : ancoras.baixados || l - 120, larg: l, tema: temaAtual(),
+    verticais: !!ajustes.abasVerticais, dividida: !!divisao,
+    ativa: ativa ? ativa.id : null,
+    abas: abas.map((a) => ({ id: a.id, titulo: a.titulo || (a.interna ? "Velox" : "Nova aba"), url: a.interna ? "" : a.url || "", anonima: !!a.anonima })),
+    fechadas: fechadas.slice(-8).reverse().map((u) => ({ u, n: (() => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } })() })),
     zoom: Math.round(Math.pow(1.2, nivel) * 100), tela: janela.isFullScreen(),
     downloads: resumoDownloads().slice(0, 8),
     historico: ajustes.historico.filter((h) => /^https?:/i.test(h.u)).slice(0, 8).map((h) => ({ n: h.n || "", u: h.u })),
@@ -394,7 +480,9 @@ function atalhos(e, input) {
   if (input.type !== "keyDown") return;
   const ctrl = input.control || input.meta;
   const k = input.key.toLowerCase();
-  if (ctrl && input.shift && k === "t") { e.preventDefault(); const u = fechadas.pop(); if (u) criarAba(u); }
+  if (ctrl && input.shift && k === "s") { e.preventDefault(); void capturar(); }
+  else if (ctrl && input.shift && k === "a") { e.preventDefault(); abrirPop("abas"); }
+  else if (ctrl && input.shift && k === "t") { e.preventDefault(); const u = fechadas.pop(); if (u) criarAba(u); }
   else if (ctrl && k === "t") { e.preventDefault(); criarAba(null, { interna: "inicio" }); }
   else if (ctrl && k === "w") { e.preventDefault(); if (ativa) fecharAba(ativa.id); }
   else if (ctrl && k === "l") { e.preventDefault(); janela.webContents.focus(); janela.webContents.send("focar-endereco"); }
@@ -839,7 +927,11 @@ function ligarComandos() {
   ipcMain.on("inicio", daBarra(() => { if (ativa) { ativa.interna = "inicio"; ativa.view.webContents.loadURL(enderecoInicio()); } }));
   ipcMain.on("favorito", daBarra(alternarFavorito));
   ipcMain.on("menu-mais", daBarra(() => abrirPop("menu")));
-  ipcMain.on("pop-abrir", daBarra((_e, tipo, ancora) => { ancoras[tipo === "menu" ? "menu" : "baixados"] = Number(ancora) || 0; abrirPop(tipo === "menu" ? "menu" : "downloads"); }));
+  ipcMain.on("pop-abrir", daBarra((_e, tipo, ancora) => {
+    if (tipo === "abas") { abrirPop("abas"); return; }
+    ancoras[tipo === "menu" ? "menu" : "baixados"] = Number(ancora) || 0; abrirPop(tipo === "menu" ? "menu" : "downloads");
+  }));
+  ipcMain.on("mostrar-arquivo", daBarra((_e, arq) => { if (typeof arq === "string" && arq) shell.showItemInFolder(arq); }));
   ipcMain.on("ancoras", daBarra((_e, a) => { if (a && typeof a === "object") ancoras = { menu: Number(a.menu) || 0, baixados: Number(a.baixados) || 0 }; }));
   ipcMain.on("pop-fechar", daBarra(() => fecharPop()));
   const daPop = (fn) => (e, ...a) => (pop && e.sender === pop.view.webContents ? fn(e, ...a) : undefined);
@@ -863,6 +955,12 @@ function ligarComandos() {
       else if (nome === "imprimir") { if (ativa) ativa.view.webContents.print(); }
       else if (nome === "localizar") abrirBusca();
       else if (nome === "gamer") alternarModoGamer(true);
+      else if (nome === "dividir") alternarDivisao();
+      else if (nome === "captura") setTimeout(() => void capturar(), 150);
+      else if (nome === "abas-verticais") alternarVerticais();
+      else if (nome === "organizar") organizarGuias();
+      else if (nome === "ir-aba") { const a = abas.find((x) => x.id === Number(arg)); if (a) mostrar(a); }
+      else if (nome === "reabrir") { const i = fechadas.lastIndexOf(String(arg)); if (i >= 0) { fechadas.splice(i, 1); criarAba(String(arg)); } }
       else if (nome === "favoritar") alternarFavorito();
       else if (nome === "fav-barra") { ajustes.mostrarFavoritos = !ajustes.mostrarFavoritos; gravarAjustes(); avisarBarra(); }
       else if (nome === "personalizar") menuPersonalizar();

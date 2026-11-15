@@ -32,3 +32,9 @@ html, body { margin:0; height:100%; background:transparent; color:var(--tx); fon
 .dl-bt { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:8px; border:1px solid color-mix(in srgb, var(--c1) 30%, transparent); background:rgba(255,255,255,.05); color:var(--tx); font:inherit; font-size:12px; cursor:pointer; }
 .dl-bt:hover { border-color:var(--c1); background:color-mix(in srgb, var(--c1) 16%, transparent); }
 .dl-bt svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; }
+.cartao.topo { top:6px; bottom:auto; }
+.busca { display:flex; align-items:center; gap:8px; margin:4px 4px 2px; padding:0 10px; height:34px; border-radius:9px; border:1px solid var(--c1); background:color-mix(in srgb, var(--campo) 80%, transparent); }
+.busca svg { width:18px; height:18px; flex:0 0 18px; fill:none; stroke:currentColor; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round; color:var(--c1); }
+.busca input { flex:1; min-width:0; border:0; outline:0; background:transparent; color:var(--tx); font:inherit; user-select:text; }
+.busca .atalho { color:var(--su); font-size:12px; }
+.lista { max-height:360px; overflow-y:auto; }

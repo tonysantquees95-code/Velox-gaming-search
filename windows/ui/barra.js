@@ -10,6 +10,7 @@
     ajustes: '<path d="M10.32 5.00 L10.87 2.47 L13.13 2.47 L13.68 5.00 L15.76 5.86 L17.94 4.46 L19.54 6.06 L18.14 8.24 L19.00 10.32 L21.53 10.87 L21.53 13.13 L19.00 13.68 L18.14 15.76 L19.54 17.94 L17.94 19.54 L15.76 18.14 L13.68 19.00 L13.13 21.53 L10.87 21.53 L10.32 19.00 L8.24 18.14 L6.06 19.54 L4.46 17.94 L5.86 15.76 L5.00 13.68 L2.47 13.13 L2.47 10.87 L5.00 10.32 L5.86 8.24 L4.46 6.06 L6.06 4.46 L8.24 5.86 Z" stroke-linejoin="round"/><circle cx="12" cy="12" r="3.1"/>',
     chave: '<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13L20 3M17 6L20 9M14 9L16.5 11.5"/>',
     estrela: '<path d="M12 3.5L14.6 8.8L20.5 9.7L16.2 13.8L17.2 19.6L12 16.9L6.8 19.6L7.8 13.8L3.5 9.7L9.4 8.8Z"/>',
+    chevron: '<path d="M7 10L12 15L17 10"/>',
     menu: '<path d="M12 5.5h.01M12 12h.01M12 18.5h.01"/>',
     gamer: '<path d="M7 8H17Q21 8 21 12V14C21 17 17 18 15 15L14 14H10L9 15C7 18 3 17 3 14V12Q3 8 7 8Z"/><path d="M8 10.5V13.5M6.5 12H9.5"/><path d="M16 11.5h.01M18 13h.01"/>'
   };
@@ -36,7 +37,7 @@
     el.innerHTML = window.VGX.pacoteSvg(pacote, ICONES[nome], cores.split("/")[0], cores.split("/")[1], ++uid);
   }
   function pintarTudo() {
-    ["voltar", "avancar", "inicio", "recarregar", "chave", "estrela", "menu", "ajustes"].forEach(function (n) { pintar($(n), n); });
+    ["voltar", "avancar", "inicio", "recarregar", "chave", "estrela", "menu", "ajustes", "chevron"].forEach(function (n) { pintar($(n), n); });
     pintar(document.querySelector("#gamer .inc"), "gamer");
   }
   /* tema do navegador (o mesmo do celular): cores nas variáveis e pacote de ícones */
@@ -55,9 +56,13 @@
     estado = e;
     aplicarTema(e.tema);
     var abas = $("abas"); abas.textContent = "";
+    var lat = $("lateral-abas"); lat.textContent = "";
+    document.body.classList.toggle("vertical", !!e.verticais);
+    $("lateral").hidden = !e.verticais;
     e.abas.forEach(function (a) {
-      var d = document.createElement("div"); d.dataset.corte = "aba";
-      d.className = "aba corte" + (a.id === e.ativa ? " ativa" : "") + (a.carregando ? " carregando" : "") + (a.anonima ? " anonima" : "");
+      var d = document.createElement("div");
+      if (!e.verticais) d.dataset.corte = "aba";
+      d.className = (e.verticais ? "aba-v" : "aba corte") + (a.id === e.ativa ? " ativa" : "") + (a.id === e.ladoDireito ? " lado" : "") + (a.carregando ? " carregando" : "") + (a.anonima ? " anonima" : "");
       var t = document.createElement("span"); t.textContent = a.titulo; t.title = a.url || a.titulo;
       var x = document.createElement("b"); x.textContent = "×"; x.title = "Fechar aba";
       x.onclick = function (ev) { ev.stopPropagation(); V.enviar("fechar-aba", a.id); };
@@ -65,10 +70,12 @@
       d.onauxclick = function (ev) { if (ev.button === 1) V.enviar("fechar-aba", a.id); };
       d.appendChild(t); d.appendChild(x);
       if (a.carregando) { var pg = document.createElement("i"); pg.className = "prog"; pg.style.width = Math.max(a.progresso || 0, 6) + "%"; d.appendChild(pg); }
-      abas.appendChild(d);
+      (e.verticais ? lat : abas).appendChild(d);
     });
-    var m = document.createElement("button"); m.id = "mais"; m.textContent = "+"; m.title = "Nova aba (Ctrl+T)";
-    m.onclick = function () { V.enviar("nova-aba"); }; abas.appendChild(m);
+    if (!e.verticais) {
+      var m = document.createElement("button"); m.id = "mais"; m.textContent = "+"; m.title = "Nova aba (Ctrl+T)";
+      m.onclick = function () { V.enviar("nova-aba"); }; abas.appendChild(m);
+    }
     $("voltar").disabled = !e.voltar; $("avancar").disabled = !e.avancar;
     $("estrela").className = "ic" + (e.favorita ? " cheia" : "");
     $("estrela").disabled = !e.abas.some(function (a) { return a.id === e.ativa && /^https?:/i.test(a.url); });
@@ -106,7 +113,15 @@
   function enviarAncoras() { V.enviar("ancoras", ancoras()); }
   window.addEventListener("resize", enviarAncoras); enviarAncoras();
   $("menu").onclick = function () { V.enviar("pop-abrir", "menu", ancoras().menu); };
-  document.addEventListener("pointerdown", function (ev) { if (!ev.target.closest("#menu, #baixados")) V.enviar("pop-fechar"); });
+  $("chevron").onclick = function () { V.enviar("pop-abrir", "abas", 0); };
+  $("lateral-nova").onclick = function () { V.enviar("nova-aba"); };
+  /* aviso curto (captura de tela, guias organizadas…) */
+  var tAviso = 0;
+  V.ouvir("aviso", function (a) {
+    $("aviso-texto").textContent = a.texto; $("aviso-abrir").hidden = !a.arquivo; $("aviso-abrir").onclick = function () { V.enviar("mostrar-arquivo", a.arquivo); };
+    $("aviso").hidden = false; clearTimeout(tAviso); tAviso = setTimeout(function () { $("aviso").hidden = true; }, a.arquivo ? 7000 : 3500);
+  });
+  document.addEventListener("pointerdown", function (ev) { if (!ev.target.closest("#menu, #baixados, #chevron")) V.enviar("pop-fechar"); });
   $("ajustes").onclick = function () { V.enviar("abrir-interna", "ajustes"); };
   $("chave").onclick = function () { V.enviar("chave"); };
   /* busca na página (Ctrl+F) */

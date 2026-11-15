@@ -14,7 +14,9 @@ html, body { margin:0; height:100%; color:var(--tx); font:14px "Segoe UI", syste
 
 /* abas na barra de título, como no Chrome: o espaço vazio arrasta a janela e os botões do Windows ficam à direita */
 #topo { position:fixed; top:0; left:0; right:0; height:36px; background:color-mix(in srgb, var(--sup) calc(var(--alfa) * 100%), transparent); border-bottom:1px solid color-mix(in srgb, var(--c1) 25%, transparent); -webkit-app-region:drag; }
-#abas { position:absolute; top:0; bottom:0; left:env(titlebar-area-x, 0); width:env(titlebar-area-width, 100%); display:flex; align-items:flex-end; padding:5px 8px 0; gap:2px; overflow-x:auto; overflow-y:hidden; }
+#chevron { position:absolute; left:6px; top:3px; z-index:3; -webkit-app-region:no-drag; width:30px; height:30px; flex:0 0 30px; }
+#chevron svg { width:20px; height:20px; }
+#abas { position:absolute; top:0; bottom:0; left:calc(env(titlebar-area-x, 0px) + 38px); width:calc(env(titlebar-area-width, 100%) - 38px); display:flex; align-items:flex-end; padding:5px 8px 0; gap:2px; overflow-x:auto; overflow-y:hidden; }
 #abas > * { -webkit-app-region:no-drag; }
 #abas::-webkit-scrollbar { display:none; }
 .aba { flex:0 1 210px; min-width:100px; height:31px; display:flex; align-items:center; gap:6px; padding:0 14px 0 20px; color:var(--su); cursor:default; --borda:color-mix(in srgb, var(--c1) 35%, transparent); --fill:transparent; }
@@ -67,3 +69,26 @@ button.ic:disabled { opacity:.3; cursor:default; }
 #gamer .inc svg { width:28px; height:28px; display:block; }
 #gamer i { position:absolute; top:0; left:12px; width:46px; height:2px; background:linear-gradient(90deg, transparent, #fff, transparent); animation:luz 2.6s linear infinite; pointer-events:none; z-index:2; }
 @keyframes luz { 0% { left:8px; } 50% { left:calc(100% - 54px); } 100% { left:8px; } }
+
+/* abas na vertical (como no Edge): lista à esquerda, páginas ao lado */
+body.vertical #abas { display:none; }
+#lateral { position:fixed; left:0; top:36px; bottom:104px; width:240px; display:flex; flex-direction:column; gap:6px; padding:8px; background:color-mix(in srgb, var(--sup) calc(var(--alfa) * 100%), transparent); border-right:1px solid color-mix(in srgb, var(--c1) 25%, transparent); }
+#lateral[hidden] { display:none; }
+#lateral-abas { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:4px; }
+#lateral-abas::-webkit-scrollbar { width:6px; } #lateral-abas::-webkit-scrollbar-thumb { background:color-mix(in srgb, var(--c1) 40%, transparent); border-radius:99px; }
+.aba-v { position:relative; display:flex; align-items:center; gap:6px; min-height:34px; padding:0 8px 0 12px; border-radius:9px; border:1px solid transparent; color:var(--su); cursor:default; overflow:hidden; }
+.aba-v:hover { background:rgba(255,255,255,.07); }
+.aba-v.ativa { color:var(--tx); border-color:var(--c1); background:color-mix(in srgb, var(--c1) 16%, transparent); }
+.aba-v.lado::after { content:"◫"; color:var(--c2); }
+.aba-v span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; }
+.aba-v b { width:18px; height:18px; border-radius:50%; text-align:center; line-height:18px; font-weight:400; }
+.aba-v b:hover { background:rgba(255,255,255,.15); }
+.aba-v .prog { position:absolute; left:0; bottom:0; height:3px; background:linear-gradient(90deg, var(--c2), var(--c1)); transition:width .35s ease-out; pointer-events:none; }
+.aba-v.anonima { border-color:rgba(167,139,250,.5); }
+#lateral-nova { height:34px; border-radius:9px; border:1px solid color-mix(in srgb, var(--c1) 30%, transparent); background:rgba(255,255,255,.05); color:var(--c1); font:inherit; cursor:pointer; }
+#lateral-nova:hover { border-color:var(--c1); background:color-mix(in srgb, var(--c1) 14%, transparent); }
+/* aviso curto */
+#aviso { position:fixed; left:50%; bottom:116px; transform:translateX(-50%); z-index:5; display:flex; align-items:center; gap:12px; padding:10px 16px; border-radius:12px; background:color-mix(in srgb, var(--sup) 96%, #000); border:1px solid var(--c1); box-shadow:0 10px 30px rgba(0,0,0,.55), 0 0 14px color-mix(in srgb, var(--c1) 25%, transparent); font-size:13px; }
+#aviso[hidden] { display:none; }
+#aviso button { height:28px; padding:0 10px; border-radius:8px; border:1px solid color-mix(in srgb, var(--c1) 40%, transparent); background:rgba(255,255,255,.06); color:var(--tx); font:inherit; font-size:12px; cursor:pointer; }
+#aviso button:hover { border-color:var(--c1); }
