@@ -10,6 +10,7 @@ const { Medidor, SCRIPT_FPS } = require("./desempenho");
 const { limitesBarra, proxima: proximaPosicao, valida: posicaoValida } = require("./jogo");
 const { idDaLoja, baixarDaLoja } = require("./crx");
 const sincronia = require("./sincronia");
+const baixador = require("./baixador");
 const atualizador = require("./atualizador");
 const rolagem = require("./rolagem");
 const tema = require("./tema");
@@ -564,7 +565,7 @@ function menuDeEdicao(wc) {
 
 // ------------------------------------------------------------------ downloads
 function ligarDownloads(ses) {
-  ses.on("will-download", (_e, item) => {
+  ses.on("will-download", (_e, item, wc) => {
     const caminho = path.join(app.getPath("downloads"), item.getFilename());
     item.setSavePath(caminho);
     const d = { id: Date.now() + Math.random(), nome: item.getFilename(), caminho, total: item.getTotalBytes(), recebido: 0, estado: "baixando", velocidade: 0, item };
@@ -572,6 +573,7 @@ function ligarDownloads(ses) {
     let ultimoAviso = 0;
     downloads.unshift(d);
     item.on("updated", (_ev, estado) => {
+      if (d.emPartes) return;
       d.recebido = item.getReceivedBytes();
       d.total = item.getTotalBytes() || d.total;
       const agora = Date.now();
@@ -580,15 +582,57 @@ function ligarDownloads(ses) {
       if (agora - ultimoAviso >= 250) { ultimoAviso = agora; avisarDownloads(); } // o evento chega a cada pedaço: não repinta a tela a cada um
     });
     item.once("done", (_ev, estado) => {
+      if (d.emPartes) return; // o download em partes tomou o lugar deste
       d.estado = estado === "completed" ? "pronto" : estado === "cancelled" ? "cancelado" : "falhou";
       d.velocidade = 0;
       avisarDownloads();
     });
     avisarDownloads();
     abrirPop("downloads");
+    tentarEmPartes(ses, item, d, wc);
   });
 }
-const resumoDownloads = () => downloads.map(({ item, ...d }) => d);
+/**
+ * Se o site aceita pedidos por faixa, troca o download comum por um em várias conexões (bem mais rápido
+ * onde cada conexão é limitada). Se não aceitar, o download comum continua sem ninguém notar.
+ */
+async function tentarEmPartes(ses, item, d, wc) {
+  try {
+    const url = item.getURL();
+    if (!/^https?:/i.test(url)) return;
+    const tam = item.getTotalBytes();
+    if (tam > 0 && tam < baixador.MINIMO) return;
+    const cab = { "User-Agent": wc && !wc.isDestroyed() ? wc.getUserAgent() : ses.getUserAgent() };
+    try { const ref = wc && !wc.isDestroyed() ? wc.getURL() : ""; if (/^https?:/i.test(ref)) cab.Referer = ref; } catch (_) {}
+    const buscar = (u, o) => ses.fetch(u, { credentials: "include", ...o });
+    const ac = new AbortController();
+    const s = await baixador.sondar(buscar, url, cab, ac.signal);
+    if (!s.ok || s.total < baixador.MINIMO || d.estado !== "baixando") return;
+    if (tam > 0 && tam !== s.total) return;
+    d.emPartes = true;
+    d.cancelar = () => ac.abort();
+    d.total = s.total;
+    item.cancel(); // fecha o comum; o nome e a linha da lista ficam
+    let ultimo = { t: Date.now(), b: 0 }, ultimoAviso = 0;
+    try {
+      await baixador.baixarEmPartes({
+        buscar, url, destino: d.caminho, total: s.total, etag: s.etag, cabecalhos: cab, conexoes: 6, sinal: ac.signal,
+        aoProgresso: (b) => {
+          d.recebido = b;
+          const agora = Date.now();
+          if (agora - ultimo.t >= 700) { d.velocidade = ((b - ultimo.b) * 1000) / (agora - ultimo.t); ultimo = { t: agora, b }; }
+          if (agora - ultimoAviso >= 250) { ultimoAviso = agora; avisarDownloads(); }
+        },
+      });
+      d.estado = "pronto"; d.recebido = s.total;
+    } catch (e) {
+      d.estado = ac.signal.aborted ? "cancelado" : "falhou";
+    }
+    d.velocidade = 0; d.cancelar = null;
+    avisarDownloads();
+  } catch (_) { /* fica o download comum */ }
+}
+const resumoDownloads = () => downloads.map(({ item, cancelar, ...d }) => d);
 function avisarDownloads() {
   enviarPop();
   for (const a of abas) if (a.interna === "downloads" && !a.view.webContents.isDestroyed()) a.view.webContents.send("downloads", resumoDownloads());
@@ -835,7 +879,7 @@ function ligarComandos() {
   ipcMain.handle("downloads-lista", so(() => resumoDownloads()));
   ipcMain.on("download-abrir", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d) shell.openPath(d.caminho); }));
   ipcMain.on("download-pasta", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d) shell.showItemInFolder(d.caminho); }));
-  ipcMain.on("download-cancelar", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d && d.item && d.estado === "baixando") d.item.cancel(); }));
+  ipcMain.on("download-cancelar", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d && d.estado === "baixando") { if (d.emPartes && d.cancelar) d.cancelar(); else if (d.item) d.item.cancel(); } }));
   ipcMain.on("download-limpar", so(() => { for (let i = downloads.length - 1; i >= 0; i--) if (downloads[i].estado !== "baixando") downloads.splice(i, 1); avisarDownloads(); }));
 
   ipcMain.handle("ajustes:procurar-atualizacao", so(() => procurarAtualizacao(true)));

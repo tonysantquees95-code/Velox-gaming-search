@@ -37,6 +37,7 @@ const NOVIDADES = [
   { id: 5, data: "2026-11-15", tipo: "novo", titulo: "Luz do logo com a cor que você quiser", texto: "Em Ajustes › Tema você escolhe a luz que corre em volta das letras do Velox: a padrão, RGB (muda de cor), branca ou uma cor de sua escolha. Vale no celular e no computador." },
   { id: 6, data: "2026-11-15", tipo: "melhoria", titulo: "Tema igual ao do celular", texto: "Nos Ajustes do Windows agora dá para escolher o estilo dos atalhos da página inicial e o quanto escurecer a foto de fundo, como já era no celular." },
   { id: 7, data: "2026-11-15", tipo: "novo", titulo: "Renomear favoritos e ícone do site", texto: "Clique com o botão direito em um favorito para trocar o nome e deixar curtinho. Agora cada favorito também mostra o ícone do site na frente do nome, para achar mais rápido." },
+  { id: 8, data: "2026-11-15", tipo: "novo", titulo: "Downloads em várias partes", texto: "Quando o site aceita, o Velox baixa o arquivo em várias partes ao mesmo tempo, o que ajuda muito em sites que limitam a velocidade de cada conexão. Se o site não aceitar, o download continua normal, sem você precisar fazer nada." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

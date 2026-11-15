@@ -23,6 +23,7 @@
       "crx.js",
       "bloqueio.js",
       "sincronia.js",
+      "baixador.js",
       "rolagem.js",
       "tema.js",
       "atualizador.js",
