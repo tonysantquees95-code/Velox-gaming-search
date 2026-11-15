@@ -56,8 +56,10 @@
 </section>
 
 <section class="cartao"><h2>Atualizações</h2>
-  <p class="nota">O Velox procura versão nova sozinho a cada poucas horas e pergunta antes de instalar. Se quiser conferir agora, use o botão.</p>
-  <div class="linha"><button type="button" id="atu-procurar" class="btn">Procurar atualizações</button><span id="atu-msg" class="nota" role="status"></span></div>
+  <p class="nota">O Velox procura versão nova sozinho a cada poucas horas e avisa. Você escolhe quando baixar e quando instalar.</p>
+  <p class="nota" id="atu-versao"></p>
+  <div class="barra-atu" id="atu-barra" hidden><i id="atu-barra-i"></i></div>
+  <div class="linha"><span><button type="button" id="atu-procurar" class="btn">Verificar atualizações</button> <button type="button" id="atu-baixar" class="p" hidden>Baixar</button> <button type="button" id="atu-instalar" class="p" hidden>Instalar agora</button></span><span id="atu-msg" class="nota" role="status"></span></div>
 </section>
 
 <section class="cartao"><h2>Sobre o Velox</h2>

@@ -78,7 +78,7 @@ object Atualizador {
     }
 
     /** Baixa o APK para a pasta de cache e confere o SHA-256 publicado. */
-    fun baixar(c: Context, v: Versao): File {
+    fun baixar(c: Context, v: Versao, progresso: ((Int) -> Unit)? = null): File {
         val apk = File(c.cacheDir, "velox-atualizacao.apk")
         val h = URL(v.url).openConnection() as HttpURLConnection
         h.connectTimeout = 20_000
@@ -87,6 +87,9 @@ object Atualizador {
         try {
             if (h.responseCode != 200) throw Exception("O download falhou (${h.responseCode}).")
             val md = MessageDigest.getInstance("SHA-256")
+            val total = if (h.contentLengthLong > 0) h.contentLengthLong else v.tamanho
+            var lidos = 0L
+            var ultimo = -1
             h.inputStream.use { entrada ->
                 apk.outputStream().use { saida ->
                     val b = ByteArray(64 * 1024)
@@ -95,6 +98,9 @@ object Atualizador {
                         if (n <= 0) break
                         saida.write(b, 0, n)
                         md.update(b, 0, n)
+                        lidos += n
+                        val pct = if (total > 0) ((lidos * 100) / total).toInt().coerceIn(0, 100) else 0
+                        if (pct != ultimo) { ultimo = pct; progresso?.invoke(pct) }
                     }
                 }
             }

@@ -1547,9 +1547,7 @@ class MainActivity : Activity() {
                 } else if (!Atualizador.podeInstalar(this)) {
                     runOnUiThread { pedirPermissaoDeInstalar(v.numero) }
                 } else {
-                    runOnUiThread { Toast.makeText(this, "Baixando o Velox 1.${v.numero}…", Toast.LENGTH_LONG).show() }
-                    val apk = Atualizador.baixar(this, v)
-                    runOnUiThread { try { Atualizador.instalar(this, apk) } catch (e: Exception) { Toast.makeText(this, "Não consegui instalar: ${e.message ?: "erro"}", Toast.LENGTH_LONG).show() } }
+                    runOnUiThread { oferecerAtualizacao(v) }
                 }
             } catch (e: Exception) {
                 if (manual) aviso = "A atualização falhou: ${e.message ?: "erro"}"
@@ -1557,6 +1555,47 @@ class MainActivity : Activity() {
                 atualizando = false
             }
             if (aviso != null) { val m = aviso; runOnUiThread { Toast.makeText(this, m, Toast.LENGTH_LONG).show() } }
+        }.start()
+    }
+
+    /** Mesmo jeito da Vênus: avisa da versão nova, mostra a barra do download e deixa a pessoa confirmar a instalação na tela do Android. */
+    private fun oferecerAtualizacao(v: Atualizador.Versao) {
+        if (isFinishing) return
+        CaixaVelox(this, tema)
+            .setTitle("Nova versão do Velox: 1.${v.numero}")
+            .setMessage("A atualização mantém suas abas, favoritos, senhas e ajustes.")
+            .setPositiveButton("Atualizar agora") { _, _ -> baixarAtualizacao(v) }
+            .setNegativeButton("Depois", null)
+            .show()
+    }
+
+    private fun baixarAtualizacao(v: Atualizador.Versao) {
+        val texto = TextView(this).apply { text = "Baixando… 0%"; textSize = 15f }
+        val barra = android.widget.ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100; progress = 0
+            progressTintList = android.content.res.ColorStateList.valueOf(tema.destaque)
+            progressBackgroundTintList = android.content.res.ColorStateList.valueOf((tema.destaque and 0x00FFFFFF) or (0x33 shl 24))
+        }
+        val col = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(texto)
+            addView(barra, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(10)).apply { topMargin = dp(10) })
+        }
+        val dialogo = CaixaVelox(this, tema).setTitle("Atualizando o Velox").setView(col).setCancelable(false).show()
+        Thread {
+            try {
+                val apk = Atualizador.baixar(this, v) { pct -> runOnUiThread { texto.text = "Baixando… $pct%"; barra.progress = pct } }
+                runOnUiThread {
+                    texto.text = "Pronto. Confirme a instalação na próxima tela."; barra.progress = 100
+                    try { Atualizador.instalar(this, apk) } catch (e: Exception) { Toast.makeText(this, "Não consegui instalar: ${e.message ?: "erro"}", Toast.LENGTH_LONG).show() }
+                    barra.postDelayed({ if (dialogo.isShowing) dialogo.dismiss() }, 2500)
+                }
+            } catch (e: Exception) {
+                runOnUiThread {
+                    if (dialogo.isShowing) dialogo.dismiss()
+                    Toast.makeText(this, e.message ?: "Não consegui baixar a atualização.", Toast.LENGTH_LONG).show()
+                }
+            }
         }.start()
     }
 

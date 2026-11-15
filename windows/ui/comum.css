@@ -52,3 +52,5 @@ main.com-menu{max-width:1040px}
 .ver-aj .cartao{margin-top:0}
 .ver-aj .cartao[hidden]{display:none}
 @media (max-width:760px){.pagina{flex-direction:column}.menu-aj{position:static;flex:none;width:100%}}
+.barra-atu{height:8px;margin:8px 0;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}
+.barra-atu i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--c2),var(--c1));box-shadow:0 0 8px color-mix(in srgb,var(--c1) 50%,transparent);transition:width .25s ease-out}

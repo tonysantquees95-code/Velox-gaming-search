@@ -125,13 +125,30 @@
     $("sync-msg").textContent = "Entrando…";
     V.chamar("sync:entrar", $("sync-email").value, $("sync-senha").value).then(function (r) { $("sync-msg").textContent = r.ok ? "Pronto: " + r.resumo : r.erro; $("sync-senha").value = ""; recarregar(); });
   };
-  $("atu-procurar").onclick = function () {
-    var b = this; b.disabled = true; $("atu-msg").textContent = "Procurando…";
-    V.chamar("ajustes:procurar-atualizacao").then(function (r) {
-      var m = !r ? "Não consegui procurar agora." : r.estado === "em-dia" ? "O Velox já está na versão mais nova (" + r.versao + ")." : r.estado === "nova" ? "Há uma versão nova (" + r.nova + "). A janela de instalação já apareceu." : r.estado === "ocupado" ? "Já estou procurando…" : r.estado === "teste" ? "Atualização desligada neste modo de teste." : (r.erro || "Não consegui procurar agora.");
-      $("atu-msg").textContent = m; b.disabled = false;
-    }).catch(function () { $("atu-msg").textContent = "Não consegui procurar agora."; b.disabled = false; });
-  };
+  function tamanhoMB(n) { return (n / 1048576).toFixed(1).replace(".", ",") + " MB"; }
+  function desenharAtu(e) {
+    if (!e) return;
+    var baixando = e.fase === "baixando";
+    $("atu-versao").textContent = "Versão instalada: " + e.atual + (e.nova && e.fase !== "em-dia" ? " · nova: " + e.nova : "");
+    $("atu-barra").hidden = !(baixando || e.fase === "pronta");
+    var pct = e.fase === "pronta" ? 100 : e.total > 0 ? Math.min(100, Math.round((e.baixado / e.total) * 100)) : 0;
+    $("atu-barra-i").style.width = (baixando && !e.total ? 30 : pct) + "%";
+    $("atu-baixar").hidden = !(e.fase === "nova" || (e.fase === "erro" && e.nova));
+    $("atu-baixar").textContent = e.portatil ? "Abrir a página de download" : "Baixar " + (e.nova || "");
+    $("atu-instalar").hidden = e.fase !== "pronta";
+    $("atu-procurar").disabled = baixando;
+    $("atu-msg").textContent = baixando ? "Baixando… " + pct + "%" + (e.total ? " (" + tamanhoMB(e.baixado) + " de " + tamanhoMB(e.total) + ")" : "")
+      : e.fase === "pronta" ? "Pronta para instalar. O Velox fecha, atualiza e abre de novo."
+      : e.fase === "nova" ? "Tem uma versão nova: " + e.nova + "."
+      : e.fase === "em-dia" ? "O Velox já está na versão mais nova (" + e.atual + ")."
+      : e.fase === "teste" ? "Atualização desligada neste modo de teste."
+      : e.fase === "erro" ? (e.aviso || "Não consegui agora.") : (e.aviso || "");
+  }
+  V.ouvir("atu:estado", desenharAtu);
+  V.chamar("atu:estado").then(desenharAtu);
+  $("atu-procurar").onclick = function () { $("atu-msg").textContent = "Procurando…"; V.chamar("atu:procurar").then(desenharAtu).catch(function () { $("atu-msg").textContent = "Não consegui procurar agora."; }); };
+  $("atu-baixar").onclick = function () { V.chamar("atu:baixar").then(desenharAtu); };
+  $("atu-instalar").onclick = function () { this.disabled = true; $("atu-msg").textContent = "Instalando…"; V.chamar("atu:instalar").then(desenharAtu); };
   ["tour", "termos", "novidades"].forEach(function (q) { $("sobre-" + q).onclick = function () { V.chamar("ajustes:sobre", q); }; });
   $("sync-agora").onclick = function () { V.chamar("sync:agora").then(function (r) { $("sync-msg").textContent = r.ok ? "Sincronizado: " + r.resumo : r.erro; recarregar(); }); };
   $("sync-sair").onclick = function () { V.chamar("sync:sair").then(desenhar); };

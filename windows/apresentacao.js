@@ -44,6 +44,7 @@ const NOVIDADES = [
   { id: 12, data: "2026-11-15", tipo: "novo", titulo: "Abas verticais e ações de abas", texto: "A setinha ao lado da primeira aba abre um menu para ligar as abas verticais (a lista de abas fica na lateral), organizar as guias por site, pesquisar entre as abas abertas e reabrir as fechadas. Atalho: Ctrl+Shift+A." },
   { id: 13, data: "2026-11-15", tipo: "novo", titulo: "Tela dividida e captura de tela", texto: "No menu dos três pontinhos agora tem Tela dividida (duas páginas lado a lado) e Captura de tela (também com Ctrl+Shift+S): a imagem é copiada e guardada na pasta Imagens\\Velox." },
   { id: 14, data: "2026-11-15", tipo: "melhoria", titulo: "Ajustes em página com menu lateral", texto: "Os ajustes agora têm um menu à esquerda com as seções (Privacidade, Tema, Senhas e outras) e um campo para pesquisar, como nas configurações de um navegador moderno." },
+  { id: 15, data: "2026-11-15", tipo: "melhoria", titulo: "Atualização com barra de download", texto: "Ao achar uma versão nova, o Velox avisa, você escolhe baixar e acompanha a barra de download em Ajustes › Atualizações. Quando terminar, é você quem escolhe a hora de instalar. É o mesmo jeito da Vênus." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

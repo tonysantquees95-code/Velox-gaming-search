@@ -998,7 +998,10 @@ function ligarComandos() {
   ipcMain.on("download-cancelar", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d && d.estado === "baixando") { if (d.emPartes && d.cancelar) d.cancelar(); else if (d.item) d.item.cancel(); } }));
   ipcMain.on("download-limpar", so(() => { for (let i = downloads.length - 1; i >= 0; i--) if (downloads[i].estado !== "baixando") downloads.splice(i, 1); avisarDownloads(); }));
 
-  ipcMain.handle("ajustes:procurar-atualizacao", so(() => procurarAtualizacao(true)));
+  ipcMain.handle("atu:estado", so(() => atuParaTela()));
+  ipcMain.handle("atu:procurar", so(() => atuProcurar(true)));
+  ipcMain.handle("atu:baixar", so(() => atuBaixar()));
+  ipcMain.handle("atu:instalar", so(() => atuInstalar()));
   ipcMain.handle("ajustes:estado", so(() => resumoAjustes()));
   ipcMain.handle("ajustes:sobre", so(async (_e, qual) => {
     if (qual === "tour") await mostrarTour(false);
@@ -1210,59 +1213,106 @@ async function apresentar() {
   if (novas.length) { await mostrarNovidades(novas); ajustes.novidadesVistas = apresentacao.ultimoId(); gravarAgora(); }
 }
 
-// ---------------------------------------------------------------- atualização automática
-let atualizando = false;
+// ---------------------------------------------------------------- atualização (mesmo jeito da Vênus: verificar → barra de download → instalar)
+// fases: parada · em-dia · nova · baixando · pronta · erro · teste
+const atu = { fase: "parada", numero: 0, url: "", sha: "", tamanho: 0, baixado: 0, total: 0, arquivo: "", portatil: false, aviso: "" };
 let versaoAvisada = 0;
+const atuParaTela = () => ({ fase: atu.fase, atual: app.getVersion(), nova: atu.numero ? `1.${atu.numero}` : "", baixado: atu.baixado, total: atu.total, aviso: atu.aviso, portatil: atu.portatil });
+function atuAvisar() {
+  const e = atuParaTela();
+  for (const a of abas) if (a.interna === "ajustes" && !a.view.webContents.isDestroyed()) a.view.webContents.send("atu:estado", e);
+}
 
-/** `manual`: pedido pelo botão de Ajustes: sempre responde com o resultado e não deixa de avisar de uma versão que já foi avisada. */
-async function procurarAtualizacao(manual = false) {
-  if (atualizando) return manual ? { estado: "ocupado" } : undefined;
-  if (!app.isPackaged || process.env.VELOX_TESTE === "1") return manual ? { estado: "teste", versao: app.getVersion() } : undefined;
-  atualizando = true;
-  let resultado = { estado: "erro", erro: "Não consegui consultar as atualizações agora." };
+/** Só consulta: guarda se há versão nova e em que fase está. `manual`: pedido pelo botão (sempre responde). */
+async function atuProcurar(manual = false) {
+  if (atu.fase === "baixando") return atuParaTela();
+  if (!app.isPackaged || process.env.VELOX_TESTE === "1") { atu.fase = "teste"; atu.aviso = ""; return atuParaTela(); }
   try {
     const r = await net.fetch(atualizador.ENDERECO, { headers: { accept: "application/json" } });
-    if (!r.ok) return resultado;
+    if (!r.ok) throw new Error("resposta " + r.status);
     const d = atualizador.decidir(app.getVersion(), await r.json());
-    if (d.acao === "nada") return (resultado = { estado: "em-dia", versao: app.getVersion() });
-    if (d.numero <= versaoAvisada && !manual) return;
-    resultado = { estado: "nova", nova: `1.${d.numero}` };
-    const portatil = !!process.env.PORTABLE_EXECUTABLE_FILE;
-    if (d.acao === "avisar" || portatil) {
-      versaoAvisada = d.numero;
-      const o = await caixaTema(janela, { type: "info", buttons: ["Baixar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `Há uma versão nova do Velox (1.${d.numero}).`, detail: portatil ? "Você usa a versão portátil: baixe a nova e substitua o arquivo." : "Toque em Baixar agora para pegar o instalador." });
-      if (o.response === 0) shell.openExternal(atualizador.DOWNLOAD);
-      return;
+    atu.aviso = "";
+    if (d.acao === "nada") { atu.fase = "em-dia"; atu.numero = 0; atu.arquivo = ""; }
+    else {
+      if (d.numero !== atu.numero) atu.arquivo = "";
+      atu.numero = d.numero; atu.url = d.url || ""; atu.sha = d.sha256 || ""; atu.tamanho = d.tamanho || 0;
+      atu.portatil = d.acao === "avisar" || !!process.env.PORTABLE_EXECUTABLE_FILE;
+      atu.fase = atu.arquivo && fs.existsSync(atu.arquivo) ? "pronta" : "nova";
     }
-    const destino = path.join(app.getPath("temp"), "VeloxSetup-atualizacao.exe");
-    const b = await net.fetch(d.url);
-    if (!b.ok) return;
-    const dados = Buffer.from(await b.arrayBuffer());
-    if (atualizador.sha256DoArquivo(dados) !== d.sha256) { console.error("Atualização recusada: o SHA-256 não bate."); return; }
-    fs.writeFileSync(destino, dados);
-    versaoAvisada = d.numero;
-    const o = await caixaTema(janela, { type: "question", buttons: ["Atualizar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `A versão 1.${d.numero} do Velox está pronta.`, detail: "O Velox fecha, instala a atualização e abre de novo. Suas abas, favoritos e senhas continuam como estão." });
-    if (o.response !== 0) { versaoAvisada = 0; return; }
-    // o próprio instalador fecha o Velox, instala em silêncio e abre o Velox de novo (--force-run): não depende de PowerShell
-    const { spawn } = require("child_process");
-    const filho = spawn(destino, ["--updated", "/S", "--force-run"], { detached: true, stdio: "ignore", windowsHide: true });
-    const erroAoAbrir = await new Promise((resolver) => { filho.once("error", (e) => resolver(e)); filho.once("spawn", () => resolver(null)); });
-    if (erroAoAbrir) {
-      console.error("Atualização: não consegui abrir o instalador:", erroAoAbrir.message);
-      versaoAvisada = 0;
-      const o2 = await caixaTema(janela, { type: "info", buttons: ["Baixar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: "Não consegui instalar sozinho.", detail: "Baixe o instalador e abra por conta própria. Seus favoritos e ajustes ficam guardados." });
-      if (o2.response === 0) shell.openExternal(atualizador.DOWNLOAD);
-      return manual ? resultado : undefined;
-    }
-    filho.unref();
-    gravarAgora();
-    app.quit();
-  } catch (e) {
-    console.error("Atualização:", e && e.message ? e.message : e);
-  } finally {
-    atualizando = false;
+  } catch {
+    if (manual || atu.fase === "parada") { atu.fase = "erro"; atu.aviso = "Não consegui consultar as atualizações agora."; }
   }
-  return manual ? resultado : undefined;
+  atuAvisar();
+  return atuParaTela();
+}
+
+/** Baixa o instalador mostrando o andamento; confere o SHA-256 antes de liberar a instalação. */
+async function atuBaixar() {
+  if (atu.fase === "baixando") return atuParaTela();
+  if (atu.fase !== "nova" && atu.fase !== "erro") return atuParaTela();
+  if (!atu.numero) return atuParaTela();
+  if (atu.portatil || !atu.url) { shell.openExternal(atualizador.DOWNLOAD); atu.aviso = "Abri a página de download: baixe a versão nova e substitua o arquivo."; atuAvisar(); return atuParaTela(); }
+  atu.fase = "baixando"; atu.baixado = 0; atu.total = atu.tamanho; atu.aviso = "";
+  atuAvisar();
+  const destino = path.join(app.getPath("temp"), "VeloxSetup-atualizacao.exe");
+  try {
+    const r = await net.fetch(atu.url);
+    if (!r.ok || !r.body) throw new Error("download " + r.status);
+    atu.total = Number(r.headers.get("content-length")) || atu.tamanho;
+    const hash = crypto.createHash("sha256");
+    const saida = fs.createWriteStream(destino);
+    let ultimo = 0;
+    const leitor = r.body.getReader();
+    for (;;) {
+      const { done, value } = await leitor.read();
+      if (done) break;
+      hash.update(value);
+      if (!saida.write(value)) await new Promise((ok) => saida.once("drain", ok));
+      atu.baixado += value.length;
+      if (Date.now() - ultimo > 200) { ultimo = Date.now(); atuAvisar(); }
+    }
+    await new Promise((ok, falha) => { saida.end((e) => (e ? falha(e) : ok())); });
+    if (hash.digest("hex") !== atu.sha) { fs.rmSync(destino, { force: true }); throw new Error("O arquivo baixado não confere com o publicado. Não instalei, por segurança."); }
+    atu.arquivo = destino; atu.fase = "pronta"; atu.aviso = "";
+  } catch (e) {
+    atu.fase = "erro"; atu.aviso = e && /não confere/.test(e.message) ? e.message : "Não consegui baixar a atualização. Confira a internet e tente de novo.";
+    console.error("Atualização:", e && e.message ? e.message : e);
+  }
+  atuAvisar();
+  return atuParaTela();
+}
+
+/** Instala o que já foi baixado: o instalador fecha o Velox, instala em silêncio e abre de novo (--force-run). */
+async function atuInstalar() {
+  if (atu.fase !== "pronta" || !atu.arquivo || !fs.existsSync(atu.arquivo)) return atuParaTela();
+  const { spawn } = require("child_process");
+  const filho = spawn(atu.arquivo, ["--updated", "/S", "--force-run"], { detached: true, stdio: "ignore", windowsHide: true });
+  const erroAoAbrir = await new Promise((resolver) => { filho.once("error", (e) => resolver(e)); filho.once("spawn", () => resolver(null)); });
+  if (erroAoAbrir) {
+    console.error("Atualização: não consegui abrir o instalador:", erroAoAbrir.message);
+    atu.fase = "erro"; atu.aviso = "Não consegui instalar sozinho. Baixe o instalador pela página e abra por conta própria.";
+    shell.openExternal(atualizador.DOWNLOAD);
+    atuAvisar();
+    return atuParaTela();
+  }
+  filho.unref();
+  gravarAgora();
+  app.quit();
+  return atuParaTela();
+}
+
+/** Automática (pouco depois de abrir e a cada 6 h): avisa uma vez por versão. O download e a instalação são escolha da pessoa. */
+async function procurarAtualizacao() {
+  const r = await atuProcurar(false);
+  if (r.fase !== "nova" || !atu.numero || atu.numero <= versaoAvisada) return;
+  versaoAvisada = atu.numero;
+  const o = await caixaTema(janela, { type: "question", buttons: ["Baixar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `Há uma versão nova do Velox (1.${atu.numero}).`, detail: atu.portatil ? "Você usa a versão portátil: baixe a nova e substitua o arquivo." : "Vou baixar e mostrar o andamento em Ajustes › Atualizações. Depois é só escolher a hora de instalar." });
+  if (o.response !== 0) return;
+  if (!atu.portatil) abrirInterna("ajustes");
+  const b = await atuBaixar();
+  if (b.fase !== "pronta") return;
+  const o2 = await caixaTema(janela, { type: "question", buttons: ["Instalar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `A versão 1.${atu.numero} do Velox está pronta.`, detail: "O Velox fecha, instala a atualização e abre de novo. Suas abas, favoritos e senhas continuam como estão." });
+  if (o2.response === 0) await atuInstalar();
 }
 
 // teste de fumaça no CI: abre o Velox de verdade, espera carregar e sai com código 0 (ou 1 se algo quebrar)
