@@ -40,11 +40,4 @@ function decidir(versaoAtual, resposta) {
 
 const sha256DoArquivo = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 
-/** Roteiro do PowerShell que roda depois que o Velox fecha: instala em silêncio e abre o Velox de novo. Os valores vão por variáveis de ambiente. */
-const ROTEIRO = "$ErrorActionPreference='SilentlyContinue'; " +
-  "try { Wait-Process -Id ([int]$env:V_PID) -Timeout 30 } catch {} ; " +
-  "Start-Process -FilePath $env:V_SETUP -ArgumentList '/S' -Wait; " +
-  "Remove-Item $env:V_SETUP -Force; " +
-  "Start-Process -FilePath $env:V_APP";
-
-module.exports = { SERVIDOR, ENDERECO, DOWNLOAD, numeroDaVersao, urlPermitida, shaValido, decidir, sha256DoArquivo, ROTEIRO };
+module.exports = { SERVIDOR, ENDERECO, DOWNLOAD, numeroDaVersao, urlPermitida, shaValido, decidir, sha256DoArquivo };

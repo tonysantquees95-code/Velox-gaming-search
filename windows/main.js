@@ -1133,11 +1133,18 @@ async function procurarAtualizacao(manual = false) {
     versaoAvisada = d.numero;
     const o = await caixaTema(janela, { type: "question", buttons: ["Atualizar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: `A versão 1.${d.numero} do Velox está pronta.`, detail: "O Velox fecha, instala a atualização e abre de novo. Suas abas, favoritos e senhas continuam como estão." });
     if (o.response !== 0) { versaoAvisada = 0; return; }
+    // o próprio instalador fecha o Velox, instala em silêncio e abre o Velox de novo (--force-run): não depende de PowerShell
     const { spawn } = require("child_process");
-    spawn("powershell", ["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-ExecutionPolicy", "Bypass", "-Command", atualizador.ROTEIRO], {
-      detached: true, stdio: "ignore", windowsHide: true,
-      env: { ...process.env, V_PID: String(process.pid), V_SETUP: destino, V_APP: process.execPath },
-    }).unref();
+    const filho = spawn(destino, ["--updated", "/S", "--force-run"], { detached: true, stdio: "ignore", windowsHide: true });
+    const erroAoAbrir = await new Promise((resolver) => { filho.once("error", (e) => resolver(e)); filho.once("spawn", () => resolver(null)); });
+    if (erroAoAbrir) {
+      console.error("Atualização: não consegui abrir o instalador:", erroAoAbrir.message);
+      versaoAvisada = 0;
+      const o2 = await caixaTema(janela, { type: "info", buttons: ["Baixar agora", "Depois"], defaultId: 0, cancelId: 1, title: "Velox", message: "Não consegui instalar sozinho.", detail: "Baixe o instalador e abra por conta própria. Seus favoritos e ajustes ficam guardados." });
+      if (o2.response === 0) shell.openExternal(atualizador.DOWNLOAD);
+      return manual ? resultado : undefined;
+    }
+    filho.unref();
     gravarAgora();
     app.quit();
   } catch (e) {
