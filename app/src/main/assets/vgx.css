@@ -71,6 +71,12 @@ html[data-formato="futurista"] .interruptor, html[data-formato="futurista"] .int
 .vgx .corre { stroke-width: 5; stroke-dasharray: 13 87; stroke-dashoffset: 0; animation: vx-corre 3.4s linear infinite; }
 .vgx .corre.a { stroke: #fff; stroke-opacity: .95; }
 .vgx .corre.b { stroke: var(--neon2); stroke-width: 4; }
+/* luz (LED) escolhida em Ajustes: RGB (muda de cor), branca ou uma cor só */
+@keyframes vx-matiz { 0%, 100% { stroke: #ff2a2a; } 33% { stroke: #2aff5a; } 66% { stroke: #2a6bff; } }
+html[data-luz="rgb"] .vgx .corre { stroke: #ff2a2a; animation: vx-corre 3.4s linear infinite, vx-matiz 5s linear infinite; }
+html[data-luz="branca"] .vgx .corre { stroke: #fff; }
+html[data-luz="cor"] .vgx .corre { stroke: var(--luz-cor); }
+html[data-anim="0"][data-luz] .vgx .corre { animation: none; }
 .vgx .gira, .vgx .gira-r { transform-origin: 200px 95px; animation: vx-gira 60s linear infinite; }
 .vgx .gira-r { animation-duration: 90s; animation-direction: reverse; }
 html[data-anim="0"] .vgx .pulso, html[data-anim="0"] .vgx .corre, html[data-anim="0"] .vgx .gira, html[data-anim="0"] .vgx .gira-r { animation: none; }

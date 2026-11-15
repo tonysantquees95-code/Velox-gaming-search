@@ -139,6 +139,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
           <p class="rotulo">Fundo animado da página inicial</p><div class="fileira" id="fundos"></div>
           <p class="rotulo">Base</p><div class="fileira" id="bases"></div>
           <p class="rotulo">Formato</p><div class="fileira" id="formatos"></div>
+          <p class="rotulo">Luz do logo (LED)</p><div class="fileira" id="luzes"></div><div class="fileira" id="luz-cores"></div>
           <p class="rotulo">Atalhos da página inicial</p><div class="fileira" id="estilos"></div>
           <div class="vidro linha"><div><b>Animações</b><small>Fundo em movimento, brilhos e abertura</small></div><button class="interruptor" id="anim" aria-label="Animações"></button></div>
           <button class="botao" id="padrao" style="width:100%;margin-top:6px">Voltar ao visual padrão</button>
@@ -399,7 +400,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     Object.keys(mapa).forEach(function (k) { S.setProperty(mapa[k], "#" + q.get(k)); });
     S.setProperty("--neon-rgb", rgb(T.c1)); S.setProperty("--neon2-rgb", rgb(T.c2)); S.setProperty("--brilho", String(T.br / 100));
     var n = parseInt(T.c1, 16); S.setProperty("--sobre", (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#06090f" : "#fff");
-    R.dataset.fundo = T.fu; R.dataset.formato = T.fo; R.dataset.anim = T.an ? "1" : "0";
+    R.dataset.fundo = T.fu; R.dataset.formato = T.fo; R.dataset.anim = T.an ? "1" : "0"; R.dataset.luz = T.lz; S.setProperty("--luz-cor", "#" + T.lc);
     document.querySelectorAll("[data-vgx]").forEach(function (e) { window.desenharVGX(e, { brilho: e.dataset.brilho !== "0", emblema: e.dataset.emblema === "1", texto: e.dataset.texto === "1" }); });
   }
   function chips(alvo, lista, ativo, aoEscolher) {
@@ -419,6 +420,12 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     chips($("fundos"), V.FUNDOS, T.fu, function (v) { T.fu = v; vars(); desenharVisual(); salvar(); });
     chips($("bases"), V.BASES.map(function (b) { return [b[0], b[1]]; }), T.base, function (v) { T.base = v; vars(); desenharVisual(); salvar(); });
     chips($("formatos"), [["futurista", "Futurista"], ["redondo", "Redondo"]], T.fo, function (v) { T.fo = v; vars(); desenharVisual(); salvar(); });
+    chips($("luzes"), V.LUZES, T.lz, function (v) { T.lz = v; vars(); desenharVisual(); salvar(); });
+    var lcs = $("luz-cores"); lcs.innerHTML = "";
+    if (T.lz === "cor") V.CORES.forEach(function (x) {
+      var b = el("button", "cor"); b.style.setProperty("--a", "#" + x[2]); b.style.setProperty("--b", "#" + x[2]); b.dataset.ativa = String(T.lc === x[2]); b.setAttribute("aria-label", x[1]);
+      b.onclick = function () { T.lc = x[2]; vars(); desenharVisual(); salvar(); }; lcs.appendChild(b);
+    });
     chips($("estilos"), V.ESTILOS, T.ti, function (v) { T.ti = v; desenharVisual(); salvar(); });
     $("anim").dataset.lig = String(T.an); $("brilho").value = T.br; $("transp").value = T.tr; $("dim").value = T.dim; $("notema").dataset.lig = String(!!E.op.notema);
     desenharBarra();

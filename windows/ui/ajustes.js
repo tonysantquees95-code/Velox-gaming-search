@@ -87,6 +87,8 @@
     chips("t-fundos", VGX.FUNDOS, t.fu, function (f) { salvarTema({ fu: f[0] }); });
     chips("t-pacotes", VGX.PACOTES, t.pk, function (p) { salvarTema({ pk: p[0] }); }, function (p) { var s = el("span"); s.innerHTML = VGX.pacoteSvg(p[0], GEAR, t.c1, t.c2, p[0]); return s; });
     chips("t-formato", [["futurista", "Futurista"], ["redondo", "Redondo"]], t.fo, function (f) { salvarTema({ fo: f[0] }); });
+    chips("t-luz", VGX.LUZES, t.lz, function (l) { salvarTema({ lz: l[0] }); });
+    chips("t-luzcor", t.lz === "cor" ? VGX.CORES : [], t.lc, function (c) { salvarTema({ lc: c[2] }); }, function (c) { var i = el("i"); i.style.background = "#" + c[2]; i.style.width = "14px"; i.style.height = "14px"; return i; });
     $("t-an").checked = t.an;
     if (document.activeElement !== $("t-br")) $("t-br").value = t.br;
     if (document.activeElement !== $("t-tr")) $("t-tr").value = t.tr;

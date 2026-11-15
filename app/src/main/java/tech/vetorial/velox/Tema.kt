@@ -23,6 +23,9 @@ class Tema private constructor(private val campos: Map<String, String>) {
     val escurecer: Int = (campos["dim"]?.toIntOrNull() ?: 35).coerceIn(0, 80)
     /** Transparência das barras, caixas e ícones (0 = firme, 100 = bem transparente). */
     val transparencia: Int = (campos["tr"]?.toIntOrNull() ?: 30).coerceIn(0, 100)
+    /** Luz (LED) que corre em volta das letras do logo: padrao, rgb, branca ou cor (a de [luzCor]). */
+    val luz: String = campos["lz"]?.takeIf { it in LUZES } ?: "padrao"
+    val luzCor: Int = cor("lc", 0x22D3EE)
     val claro: Boolean = false
     val nome: String get() = "Velox"
 
@@ -42,11 +45,12 @@ class Tema private constructor(private val campos: Map<String, String>) {
 
     companion object {
         private val HEX = Regex("[0-9a-fA-F]{6}")
-        private val CHAVES = listOf("c1", "c2", "bg", "sup", "campo", "su", "tx", "br", "fu", "fo", "an", "base", "ti", "pk", "dim", "tr")
+        private val CHAVES = listOf("c1", "c2", "bg", "sup", "campo", "su", "tx", "br", "fu", "fo", "an", "base", "ti", "pk", "dim", "tr", "lz", "lc")
         private val PADRAO = mapOf("c1" to "22d3ee", "c2" to "a78bfa", "bg" to "070b14", "sup" to "0d1530", "campo" to "141e40", "su" to "8fa0cf", "tx" to "ffffff",
-            "br" to "70", "fu" to "aurora", "fo" to "futurista", "an" to "1", "base" to "noite", "ti" to "marca", "pk" to "linha", "dim" to "35", "tr" to "30")
+            "br" to "70", "fu" to "aurora", "fo" to "futurista", "an" to "1", "base" to "noite", "ti" to "marca", "pk" to "linha", "dim" to "35", "tr" to "30", "lz" to "padrao", "lc" to "22d3ee")
         private val FUNDOS = setOf("aurora", "grade", "circuito", "pontos", "liso")
         private val BASES = setOf("noite", "carvao", "vinho", "floresta")
+        private val LUZES = setOf("padrao", "rgb", "branca", "cor")
         private val ESTILOS = setOf("marca", "neon", "mono")
         private val PACOTES = setOf("linha", "fino", "grossa", "duo", "aurora", "cor", "neon", "reto", "sombra")
 
@@ -70,6 +74,8 @@ class Tema private constructor(private val campos: Map<String, String>) {
                     "pk" -> v in PACOTES
                     "dim" -> v.toIntOrNull() != null
                     "tr" -> v.toIntOrNull() != null
+                    "lz" -> v in LUZES
+                    "lc" -> HEX.matches(v)
                     else -> false
                 }
                 if (bom) m[k] = v

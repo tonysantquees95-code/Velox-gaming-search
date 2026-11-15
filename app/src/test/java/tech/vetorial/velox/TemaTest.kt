@@ -102,4 +102,14 @@ class ImagensTest {
         assertFalse(Imagens.slotValido("../x"))
         assertFalse(Imagens.slotValido(null))
     }
+
+    @Test fun luzDoLogo() {
+        val t = Tema.daString("lz=cor&lc=ff00aa")
+        assertEquals("cor", t.luz)
+        assertEquals(0xFFFF00AA.toInt(), t.luzCor)
+        val ruim = Tema.daString("lz=laser&lc=zzz")
+        assertEquals("padrao", ruim.luz)
+        assertEquals(0xFF22D3EE.toInt(), ruim.luzCor)
+        assertTrue(Tema.daString("lz=rgb").params().contains("lz=rgb"))
+    }
 }

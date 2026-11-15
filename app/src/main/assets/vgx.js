@@ -14,6 +14,9 @@
   S.setProperty("--vi", Math.max(4, Math.round(66 - tr * 0.9)) + "%");
   R.dataset.formato = P.get("fo") === "redondo" ? "redondo" : "futurista";
   R.dataset.anim = P.get("an") === "0" ? "0" : "1";
+  /* luz (LED) que corre em volta das letras: padrao, rgb, branca ou uma cor (lc) */
+  R.dataset.luz = /^(rgb|branca|cor)$/.test(P.get("lz") || "") ? P.get("lz") : "padrao";
+  S.setProperty("--luz-cor", hex(P.get("lc")) ? "#" + P.get("lc") : "#22d3ee");
 
   /* Marca VX: V e X em letras chanfradas (corpo escuro, borda interna acesa e uma luz na segunda cor do tema). */
   var LETRAS = {
@@ -69,6 +72,7 @@ window.VGX = {
     ["noite", "Noite", "070b14", "0d1530", "141e40", "8fa0cf"], ["carvao", "Carvão", "0a0a0d", "15151a", "1f1f27", "9a9aa8"],
     ["vinho", "Vinho", "12060b", "230c15", "33111f", "c79aa8"], ["floresta", "Floresta", "05110d", "0b2119", "113026", "8fc7b0"]
   ],
+  LUZES: [["padrao", "Padrão"], ["rgb", "RGB"], ["branca", "Branca"], ["cor", "Cor escolhida"]],
   ESTILOS: [["marca", "Cores da marca"], ["neon", "Neon do tema"], ["mono", "Branco"]],
   PACOTES: [["linha", "Linha"], ["fino", "Fino"], ["grossa", "Grossa"], ["duo", "Duplo"], ["aurora", "Aurora"], ["cor", "Cor"], ["neon", "Neon"], ["reto", "Reto"], ["sombra", "Sombra"]],
   /** Desenha um ícone (24x24) no estilo do pacote, igual ao da barra do app. `miolo` é o SVG do desenho; `uid` evita colisão de gradientes. */
@@ -93,10 +97,10 @@ window.VGX = {
   mistura: function (hex) { var n = parseInt(hex, 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, h = function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }; return h(r * 0.55 + 10) + h(g * 0.5) + h(b * 0.7 + 20); },
   params: function (t) {
     var b = (this.BASES.filter(function (x) { return x[0] === t.base; })[0]) || this.BASES[0];
-    return new URLSearchParams({ c1: t.c1, c2: t.c2, bg: b[2], sup: b[3], campo: b[4], su: b[5], tx: "ffffff", br: String(t.br), tr: String(t.tr), fu: t.fu, fo: t.fo, an: t.an ? "1" : "0", base: t.base, ti: t.ti, pk: t.pk, dim: String(t.dim) }).toString();
+    return new URLSearchParams({ c1: t.c1, c2: t.c2, bg: b[2], sup: b[3], campo: b[4], su: b[5], tx: "ffffff", br: String(t.br), tr: String(t.tr), fu: t.fu, fo: t.fo, an: t.an ? "1" : "0", base: t.base, ti: t.ti, pk: t.pk, dim: String(t.dim), lz: t.lz || "padrao", lc: t.lc || "22d3ee" }).toString();
   },
   doEndereco: function (P) {
     var g = function (k, d) { var v = P.get(k); return v == null ? d : v; };
-    return { c1: g("c1", "22d3ee"), c2: g("c2", "a78bfa"), base: g("base", "noite"), br: +g("br", "70"), tr: +g("tr", "30"), fu: g("fu", "aurora"), fo: g("fo", "futurista"), an: g("an", "1") !== "0", ti: g("ti", "marca"), pk: g("pk", "linha"), dim: +g("dim", "35") };
+    return { c1: g("c1", "22d3ee"), c2: g("c2", "a78bfa"), base: g("base", "noite"), br: +g("br", "70"), tr: +g("tr", "30"), fu: g("fu", "aurora"), fo: g("fo", "futurista"), an: g("an", "1") !== "0", ti: g("ti", "marca"), pk: g("pk", "linha"), dim: +g("dim", "35"), lz: g("lz", "padrao"), lc: g("lc", "22d3ee") };
   }
 };
