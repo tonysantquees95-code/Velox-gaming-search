@@ -387,7 +387,10 @@ class MainActivity : Activity() {
         // puxar a página para baixo recarrega (só quando a página está no topo e não é a tela inicial)
         puxar = SwipeRefreshLayout(this).apply {
             addView(conteudo, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-            setOnChildScrollUpCallback { _, _ -> val a = atual; a == null || a.url.isEmpty() || a.webView.scrollY > 0 }
+            // páginas que rolam por dentro (apps web, como a Vênus) têm scrollY 0 mesmo no meio da lista: sem a conferência abaixo, rolar para cima recarregava a página
+            setOnChildScrollUpCallback { _, _ -> val a = atual; a == null || a.url.isEmpty() || a.webView.scrollY > 0 || a.rolagemInterna }
+            // exige puxar mais para recarregar, para não disparar sem querer
+            setDistanceToTriggerSync(dp(140))
             setOnRefreshListener {
                 atual?.webView?.reload()
                 postDelayed({ isRefreshing = false }, 8000)
@@ -1164,6 +1167,11 @@ class MainActivity : Activity() {
         } catch (ex: Exception) { "" }
     }
 
+    private inner class PonteRolagem(private val aba: Aba) {
+        @android.webkit.JavascriptInterface
+        fun interna(longeDoTopo: Boolean) { aba.rolagemInterna = longeDoTopo }
+    }
+
     private inner class PonteSenhas(private val aba: Aba) {
         @android.webkit.JavascriptInterface
         fun capturado(origem: String?, usuario: String?, senha: String?) {
@@ -1676,6 +1684,7 @@ class MainActivity : Activity() {
         if (deFora) abasDeFora.add(aba)
         configurar(wv, anonima)
         if (!anonima) wv.addJavascriptInterface(PonteSenhas(aba), "VeloxSenhas")
+        wv.addJavascriptInterface(PonteRolagem(aba), "VeloxRolagem")
         wv.webViewClient = navegador(aba)
         wv.webChromeClient = cromo(aba)
         ligarBloqueioYoutube(aba)
@@ -1882,6 +1891,7 @@ class MainActivity : Activity() {
             if (!url.startsWith("file:///android_asset/")) {
                 aba.url = url
                 registrarHistorico(aba, url)
+                view.evaluateJavascript(JS_ROLAGEM, null)
                 if (!aba.anonima) view.evaluateJavascript(JS_CAPTURA + "()", null)
                 if (ajustes.sitesNoTema) {
                     view.evaluateJavascript(JS_TRANSPARENTE, null)
@@ -2367,6 +2377,11 @@ class MainActivity : Activity() {
         const val VINDEX = "tech.vetorial.vindex"
 
         /** Vê o envio de formulários de login e avisa o app; só observa, nunca preenche sozinho. */
+        /** A cada toque, avisa o app se o que foi tocado está dentro de uma área que rola e já desceu (aí puxar para baixo não recarrega a página). */
+        const val JS_ROLAGEM = "(function(){try{if(window.__veloxRol||!window.VeloxRolagem)return;window.__veloxRol=1;" +
+            "function longe(e){var n=e.target;while(n&&n!==document.documentElement){if(n.nodeType===1){var o=getComputedStyle(n).overflowY;" +
+            "if((o==='auto'||o==='scroll'||o==='overlay')&&n.scrollHeight>n.clientHeight&&n.scrollTop>0)return true;}n=n.parentNode||n.host;}return false;}" +
+            "document.addEventListener('touchstart',function(e){try{VeloxRolagem.interna(longe(e))}catch(x){}},{passive:true,capture:true});}catch(x){}})()"
         const val JS_CAPTURA = "(function(){try{if(window.__veloxSenhas||!window.VeloxSenhas)return;window.__veloxSenhas=1;" +
             "function achar(f){var p=f.querySelector('input[type=password]');if(!p||!p.value)return;" +
             "var u='',c=f.querySelectorAll('input');for(var i=0;i<c.length;i++){var t=(c[i].type||'text').toLowerCase();" +

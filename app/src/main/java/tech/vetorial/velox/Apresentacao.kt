@@ -50,6 +50,7 @@ object Apresentacao {
         Novidade(7, "2026-11-15", "novo", "Renomear favoritos e ícone do site", "Toque no lápis (✎) de um favorito no painel, ou segure o favorito na faixa, para trocar o nome e deixar curtinho. Cada favorito também mostra o ícone do site na frente do nome."),
         Novidade(8, "2026-11-15", "melhoria", "Atualização com barra de download", "Ao achar uma versão nova, o Velox avisa e pergunta se você quer atualizar. Depois mostra a barra do download e, no fim, abre a tela do Android para você confirmar a instalação. É o mesmo jeito da Vênus."),
         Novidade(9, "2026-11-16", "correcao", "Janela de salvar senha sem botão cortado", "No aviso “Salvar senha?”, o botão Salvar aparecia cortado. Agora os botões ficam bem encaixados e dá para ler e tocar em todos."),
+        Novidade(10, "2026-11-16", "correcao", "Rolar para cima não recarrega mais a página", "Em sites que rolam por dentro (como a Vênus na web), rolar a lista para cima recarregava a página sem querer. Agora só recarrega se você puxar a partir do topo, e é preciso puxar um pouco mais."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }
