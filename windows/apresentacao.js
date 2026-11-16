@@ -46,6 +46,7 @@ const NOVIDADES = [
   { id: 14, data: "2026-11-15", tipo: "melhoria", titulo: "Ajustes em página com menu lateral", texto: "Os ajustes agora têm um menu à esquerda com as seções (Privacidade, Tema, Senhas e outras) e um campo para pesquisar, como nas configurações de um navegador moderno." },
   { id: 15, data: "2026-11-15", tipo: "melhoria", titulo: "Atualização com barra de download", texto: "Ao achar uma versão nova, o Velox avisa, você escolhe baixar e acompanha a barra de download em Ajustes › Atualizações. Quando terminar, é você quem escolhe a hora de instalar. É o mesmo jeito da Vênus." },
   { id: 16, data: "2026-11-15", tipo: "correcao", titulo: "Barra de carregamento embaixo do nome da aba", texto: "A barrinha de carregamento das abas agora corre por baixo do nome, sem ficar na mesma linha e sem mexer no visual do nome." },
+  { id: 17, data: "2026-11-16", tipo: "correcao", titulo: "Janela de salvar senha sem botão cortado", texto: "No aviso “Salvar senha?”, o botão Salvar aparecia cortado. Agora os botões ficam bem encaixados e dá para ler e tocar em todos." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

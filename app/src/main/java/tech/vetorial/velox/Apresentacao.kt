@@ -49,6 +49,7 @@ object Apresentacao {
         Novidade(6, "2026-11-15", "novo", "Luz do logo com a cor que você quiser", "No painel, em Visual, você escolhe a luz que corre em volta das letras do Velox: a padrão, RGB (muda de cor), branca ou uma cor de sua escolha. Vale no celular e no computador."),
         Novidade(7, "2026-11-15", "novo", "Renomear favoritos e ícone do site", "Toque no lápis (✎) de um favorito no painel, ou segure o favorito na faixa, para trocar o nome e deixar curtinho. Cada favorito também mostra o ícone do site na frente do nome."),
         Novidade(8, "2026-11-15", "melhoria", "Atualização com barra de download", "Ao achar uma versão nova, o Velox avisa e pergunta se você quer atualizar. Depois mostra a barra do download e, no fim, abre a tela do Android para você confirmar a instalação. É o mesmo jeito da Vênus."),
+        Novidade(9, "2026-11-16", "correcao", "Janela de salvar senha sem botão cortado", "No aviso “Salvar senha?”, o botão Salvar aparecia cortado. Agora os botões ficam bem encaixados e dá para ler e tocar em todos."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }

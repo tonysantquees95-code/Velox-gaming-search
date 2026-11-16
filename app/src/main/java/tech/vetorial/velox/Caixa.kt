@@ -86,8 +86,11 @@ class CaixaVelox(private val a: Activity, private val tema: Tema) {
         }
         painel.addView(ScrollView(a).apply { addView(corpo) }, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
         if (bt.isNotEmpty()) {
-            val linha = LinearLayout(a).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END }
-            for (qual in listOf(DialogInterface.BUTTON_NEUTRAL, DialogInterface.BUTTON_NEGATIVE, DialogInterface.BUTTON_POSITIVE)) {
+            // com três botões a linha não cabe no celular e o texto quebrava ("Salv / ar"): eles ficam um embaixo do outro, o principal em cima
+            val empilhar = bt.size >= 3
+            val linha = LinearLayout(a).apply { orientation = if (empilhar) LinearLayout.VERTICAL else LinearLayout.HORIZONTAL; gravity = Gravity.END }
+            val ordem = listOf(DialogInterface.BUTTON_NEUTRAL, DialogInterface.BUTTON_NEGATIVE, DialogInterface.BUTTON_POSITIVE)
+            for (qual in if (empilhar) ordem.reversed() else ordem) {
                 val b = bt[qual] ?: continue
                 val principal = qual == DialogInterface.BUTTON_POSITIVE
                 val botao = Button(a).apply {
@@ -95,11 +98,11 @@ class CaixaVelox(private val a: Activity, private val tema: Tema) {
                     typeface = Typeface.create("sans-serif-medium", Typeface.BOLD)
                     setTextColor(if (principal) tema.sobreDestaque else tema.destaque)
                     background = moldura(if (principal) tema.destaque else com(tema.campo, 120), tema.destaque, dp(1), dp(10))
-                    setPadding(dp(16), 0, dp(16), 0)
+                    setPadding(dp(16), 0, dp(16), 0); maxLines = 1
                     setOnClickListener { b.ao?.onClick(d, qual); d.dismiss() }
                 }
                 d.botoes[qual] = botao
-                linha.addView(botao, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = dp(8) })
+                linha.addView(botao, LinearLayout.LayoutParams(if (empilhar) ViewGroup.LayoutParams.MATCH_PARENT else ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { if (empilhar) topMargin = dp(8) else leftMargin = dp(8) })
             }
             painel.addView(linha, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { topMargin = dp(14) })
         }
