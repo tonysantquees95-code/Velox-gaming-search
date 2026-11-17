@@ -592,7 +592,7 @@ async function sincronizarAgora() {
     avisarBarra();
     return { ok: true, total: ajustes.favoritos.length, avisos, resumo: ajustes.sync.resumo };
   } catch (e) {
-    if (e.status === 401) { tokenSync = ""; ajustes.sync.token = ""; gravarAjustes(); return { ok: false, erro: "A sessão do Vetorial ID acabou. Entre de novo." }; }
+    if (e.status === 401) { tokenSync = ""; ajustes.sync.token = ""; gravarAjustes(); setTimeout(() => exigirVetorialId().catch(() => undefined), 300); return { ok: false, erro: "A sessão do Vetorial ID acabou. Entre de novo." }; }
     return { ok: false, erro: e.message || "Não consegui sincronizar agora." };
   } finally { sincronizando = false; }
 }
@@ -1091,7 +1091,7 @@ function ligarComandos() {
     if (!s.ok) throw new Error(s.erro);
     return {};
   })));
-  ipcMain.handle("sync:sair", so(() => { tokenSync = ""; ajustes.sync = { email: "", token: "", ultimo: 0 }; gravarAjustes(); return resumoAjustes(); }));
+  ipcMain.handle("sync:sair", so(() => { tokenSync = ""; ajustes.sync = { email: "", token: "", ultimo: 0 }; gravarAjustes(); setTimeout(() => exigirVetorialId().catch(() => undefined), 300); return resumoAjustes(); }));
   ipcMain.handle("sync:agora", so(() => sincronizarAgora()));
 
   ipcMain.handle("historico:lista", so((_e, texto) => {
@@ -1146,7 +1146,7 @@ async function iniciar() {
     // os recursos pesados carregam depois de a janela aparecer
     bloqueio.iniciar([principal, anonima]).then(avisarBarra).catch(() => undefined);
     ligarExtensoes().catch(() => undefined);
-    setTimeout(() => apresentar().catch(() => undefined), 700);
+    setTimeout(() => apresentar().catch(() => undefined).then(() => exigirVetorialId()).catch(() => undefined), 700);
     sincronizarDepois(1500);
     setInterval(() => sincronizarDepois(100), 5 * 60_000);
     setTimeout(() => procurarAtualizacao().catch(() => undefined), 20_000);
@@ -1211,6 +1211,41 @@ async function apresentar() {
   if (vistas < 0) { ajustes.novidadesVistas = apresentacao.ultimoId(); gravarAgora(); return; }
   const novas = apresentacao.novasDesde(vistas);
   if (novas.length) { await mostrarNovidades(novas); ajustes.novidadesVistas = apresentacao.ultimoId(); gravarAgora(); }
+}
+
+/**
+ * O Velox é grátis, mas só abre com Vetorial ID (conta única da Vetorial Tech). Sem login: janelinha que pede e-mail e senha,
+ * com opção de criar a conta na hora. Fechar a janelinha ou escolher "Sair" fecha o Velox.
+ */
+let pedindoId = false;
+async function exigirVetorialId() {
+  if (process.env.VELOX_TESTE === "1" || tokenSync || pedindoId) return;
+  pedindoId = true;
+  try {
+    let aviso = "";
+    let criando = false;
+    const aparelho = { id: ajustes.aparelho, nome: "Velox (Windows)", plataforma: "windows" };
+    while (!tokenSync) {
+      const r = await perguntar({
+        titulo: criando ? "Criar o Vetorial ID" : "Entre com o Vetorial ID",
+        texto: (aviso ? aviso + "\n\n" : "") + "O Velox é 100% grátis, mas precisa do seu Vetorial ID: a conta única da Vetorial Tech." + (criando ? " Crie a sua agora, é rápido." : ""),
+        altura: criando ? 460 : 400, largura: 480,
+        campos: [...(criando ? [{ id: "nome", rotulo: "Seu nome" }] : []), { id: "email", rotulo: "E-mail do Vetorial ID" }, { id: "senha", tipo: "password", rotulo: "Senha" }],
+        botoes: [{ id: "ok", rotulo: criando ? "Criar e entrar" : "Entrar", primario: true }, { id: "alternar", rotulo: criando ? "Já tenho conta" : "Criar conta" }, { id: "sair", rotulo: "Sair do Velox" }],
+      });
+      if (!r || r.botao === "sair" || r.botao === "fechar") { app.quit(); return; }
+      if (r.botao === "alternar") { criando = !criando; aviso = ""; continue; }
+      const v = r.valores || {};
+      if (!String(v.email || "").trim() || !v.senha || (criando && !String(v.nome || "").trim())) { aviso = "Preencha todos os campos."; continue; }
+      try {
+        const c = criando ? await sincronia.criarConta(String(v.nome).trim(), String(v.email).trim(), String(v.senha), aparelho) : await sincronia.entrar(String(v.email).trim(), String(v.senha), aparelho);
+        tokenSync = c.token;
+        ajustes.sync = { email: c.email, token: guardarToken(c.token), ultimo: 0 };
+        gravarAjustes();
+        sincronizarDepois(300);
+      } catch (e) { aviso = e.message || "Não consegui entrar agora."; }
+    }
+  } finally { pedindoId = false; }
 }
 
 // ---------------------------------------------------------------- atualização (mesmo jeito da Vênus: verificar → barra de download → instalar)

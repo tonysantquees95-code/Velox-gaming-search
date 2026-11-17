@@ -1,7 +1,7 @@
 // Primeira abertura (tour → permissões explicadas → termos) e "O que há de novo".
 // REGRA: toda mudança que altere o que o app faz ou como se usa ganha uma linha em NOVIDADES, com id = o maior id + 1.
 // A tela mostra só o que a pessoa ainda não viu, então não depende do número da versão.
-const VERSAO_DOS_TERMOS = 1;
+const VERSAO_DOS_TERMOS = 2;
 
 const TOUR = [
   { icone: "🚀", titulo: "Bem-vindo ao Velox", texto: "O navegador gamer da Vetorial Tech: rápido, com bloqueio de anúncios e feito para quem joga.\n\nPasse pelas telas para conhecer as funções. Você pode rever tudo em Ajustes › Sobre o Velox." },
@@ -9,8 +9,9 @@ const TOUR = [
   { icone: "🗂️", titulo: "Abas, anônima e favoritos", texto: "A setinha ao lado da primeira aba liga as abas verticais e organiza as guias; o menu dos três pontinhos tem tela dividida e captura de tela. Abra várias abas (Ctrl+T), use a aba anônima quando quiser e guarde seus sites favoritos na barra para voltar rápido." },
   { icone: "🔐", titulo: "Cofre de senhas", texto: "O Velox oferece guardar logins e preenche para você. O cofre fica protegido neste computador (senha mestra) e só sincroniza se você ligar." },
   { icone: "🎮", titulo: "Modo gamer", texto: "O modo gamer deixa uma barra de atalhos discreta enquanto você joga no navegador, com medidor de desempenho." },
-  { icone: "☁️", titulo: "Sincronização", texto: "Entrando com o Vetorial ID você leva favoritos, tema e (se quiser) senhas para os seus outros aparelhos." },
+  { icone: "☁️", titulo: "Sincronização", texto: "O Velox é grátis e pede o seu Vetorial ID (você cria na hora, se não tiver). Com ele, favoritos, tema e (se quiser) senhas vão com você para os seus outros aparelhos." },
   { icone: "🔄", titulo: "Sempre atualizado", texto: "O Velox procura versão nova sozinho, pergunta antes de instalar e, depois de atualizar, mostra o que mudou." },
+  { id: 18, data: "2026-11-17", tipo: "novo", titulo: "Vetorial ID obrigatório", texto: "O Velox continua 100% grátis, mas agora pede o seu Vetorial ID ao abrir. Se ainda não tem, crie na hora, na própria janelinha. A conta é uma só para todos os apps da Vetorial Tech." },
 ];
 
 const PERMISSOES = "O Velox pede o mínimo, e só na hora em que você usa a função:\n\n" +
@@ -20,7 +21,7 @@ const PERMISSOES = "O Velox pede o mínimo, e só na hora em que você usa a fun
   "O Windows não exige permissões extras para o Velox. Você pode mudar o que cada site pode usar nos Ajustes.";
 
 const TERMOS = [
-  ["1. O que é o Velox", "O Velox é um navegador da Vetorial Tech. Nesta fase ele está em testes (beta): pode ter erros e mudar sem aviso."],
+  ["1. O que é o Velox", "O Velox é um navegador gratuito da Vetorial Tech. Para usar, é preciso entrar com o seu Vetorial ID (a conta única da Vetorial Tech, grátis e criada na hora). Nesta fase ele está em testes (beta): pode ter erros e mudar sem aviso."],
   ["2. Navegação e sites", "Os sites que você abre são de terceiros, com regras próprias. A Vetorial Tech não controla o conteúdo deles. O bloqueio de anúncios reduz, mas não elimina, rastreadores e riscos."],
   ["3. Privacidade", "O histórico, os favoritos e o cofre ficam no seu computador. Só são enviados à sua conta Vetorial ID se você ligar a sincronização, e apenas o que você escolher sincronizar. A aba anônima não grava histórico."],
   ["4. Senhas", "O cofre guarda logins protegidos neste computador. Se você esquecer a senha mestra, a Vetorial Tech não consegue recuperá-los."],

@@ -79,7 +79,15 @@ object Sync {
     /** Devolve (token, e-mail). */
     fun entrar(email: String, senha: String, aparelho: String): Pair<String, String> {
         val disp = JSONObject().put("id", aparelho).put("nome", "Velox (Android)").put("plataforma", "android")
-        val r = chamar("", "POST", "/id/entrar", JSONObject().put("email", email).put("senha", senha).put("dispositivo", disp))
+        val r = chamar("", "POST", "/id/entrar", JSONObject().put("email", email).put("senha", senha).put("dispositivo", disp).put("app", "velox"))
+        val mail = r.optJSONObject("usuario")?.optString("email").orEmpty().ifBlank { email }
+        return Pair(r.optString("token"), mail)
+    }
+
+    /** Cria o Vetorial ID na hora (grátis) e já entra. Devolve (token, e-mail). */
+    fun criarConta(nome: String, email: String, senha: String, aparelho: String): Pair<String, String> {
+        val disp = JSONObject().put("id", aparelho).put("nome", "Velox (Android)").put("plataforma", "android")
+        val r = chamar("", "POST", "/id/cadastrar", JSONObject().put("nome", nome).put("email", email).put("senha", senha).put("dispositivo", disp).put("app", "velox"))
         val mail = r.optJSONObject("usuario")?.optString("email").orEmpty().ifBlank { email }
         return Pair(r.optString("token"), mail)
     }

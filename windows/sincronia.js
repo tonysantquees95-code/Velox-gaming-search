@@ -36,7 +36,13 @@ async function chamar(token, metodo, caminho, corpo) {
 }
 
 async function entrar(email, senha, aparelho) {
-  const d = await chamar("", "POST", "/id/entrar", { email, senha, dispositivo: aparelho });
+  const d = await chamar("", "POST", "/id/entrar", { email, senha, dispositivo: aparelho, app: "velox" });
+  return { token: d.token, email: (d.usuario && d.usuario.email) || email };
+}
+
+/** Cria o Vetorial ID na hora (grátis) e já entra. */
+async function criarConta(nome, email, senha, aparelho) {
+  const d = await chamar("", "POST", "/id/cadastrar", { nome, email, senha, dispositivo: aparelho, app: "velox" });
   return { token: d.token, email: (d.usuario && d.usuario.email) || email };
 }
 
@@ -142,4 +148,4 @@ async function sincronizarSenhas(token, local, senhaMestra) {
   throw new Error("Outro aparelho está mudando as senhas agora. Tente de novo.");
 }
 
-module.exports = { mesclar, entrar, sincronizar, sincronizarTema, sincronizarSenhas, mesclarSenhas, cifrarSenhas, decifrarSenhas, SERVIDOR };
+module.exports = { mesclar, entrar, criarConta, sincronizar, sincronizarTema, sincronizarSenhas, mesclarSenhas, cifrarSenhas, decifrarSenhas, SERVIDOR };

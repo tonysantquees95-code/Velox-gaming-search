@@ -7,7 +7,7 @@ package tech.vetorial.velox
  */
 object Apresentacao {
     /** Mudou o texto dos termos: suba a versão e a pessoa aceita de novo. */
-    const val VERSAO_DOS_TERMOS = 1
+    const val VERSAO_DOS_TERMOS = 2
 
     data class Passo(val icone: String, val titulo: String, val texto: String)
     data class Novidade(val id: Int, val data: String, val tipo: String, val titulo: String, val texto: String)
@@ -18,7 +18,7 @@ object Apresentacao {
         Passo("🗂️", "Abas, anônima e favoritos", "Abra várias abas, use a aba anônima quando quiser e guarde seus sites favoritos para voltar rápido."),
         Passo("🔐", "Cofre de senhas", "O Velox oferece guardar logins e preenche para você. O cofre fica protegido no aparelho e só sincroniza com a sua conta se você ligar."),
         Passo("🎮", "Game Bar e janelinha", "A barra de jogo dá atalhos rápidos, e a janelinha mantém o vídeo rodando por cima de outros apps."),
-        Passo("☁️", "Sincronização", "Entrando com o Vetorial ID você leva favoritos, tema e (se quiser) senhas para os seus outros aparelhos."),
+        Passo("☁️", "Sincronização", "O Velox é grátis e pede o seu Vetorial ID (você cria na hora, se não tiver). Com ele, favoritos, tema e (se quiser) senhas vão com você para os seus outros aparelhos."),
         Passo("🔄", "Sempre atualizado", "O Velox procura versão nova sozinho ao abrir e, depois de atualizar, mostra o que mudou.")
     )
 
@@ -31,7 +31,7 @@ object Apresentacao {
         "Você pode mudar o que cada site pode usar nas configurações do Velox."
 
     val TERMOS = listOf(
-        "1. O que é o Velox" to "O Velox é um navegador da Vetorial Tech. Nesta fase ele está em testes (beta): pode ter erros e mudar sem aviso.",
+        "1. O que é o Velox" to "O Velox é um navegador gratuito da Vetorial Tech. Para usar, é preciso entrar com o seu Vetorial ID (a conta única da Vetorial Tech, grátis e criada na hora). Nesta fase ele está em testes (beta): pode ter erros e mudar sem aviso.",
         "2. Navegação e sites" to "Os sites que você abre são de terceiros, com regras próprias. A Vetorial Tech não controla o conteúdo deles. O bloqueio de anúncios reduz, mas não elimina, rastreadores e riscos.",
         "3. Privacidade" to "O histórico, os favoritos e o cofre ficam no seu aparelho. Só são enviados à sua conta Vetorial ID se você ligar a sincronização, e apenas o que você escolher sincronizar. A aba anônima não grava histórico.",
         "4. Senhas" to "O cofre guarda logins protegidos neste aparelho. Se você esquecer a senha do cofre, a Vetorial Tech não consegue recuperá-los.",
@@ -53,6 +53,7 @@ object Apresentacao {
         Novidade(10, "2026-11-16", "correcao", "Rolar para cima não recarrega mais a página", "Em sites que rolam por dentro (como a Vênus na web), rolar a lista para cima recarregava a página sem querer. Agora só recarrega se você puxar a partir do topo, e é preciso puxar um pouco mais."),
         Novidade(11, "2026-11-17", "melhoria", "Barra de baixo transparente e engrenagem nos ajustes", "A barra do endereço e dos botões agora fica transparente, como no Windows: forma uma barra só e a foto de fundo que você escolheu aparece por trás. E o botão de ajustes agora é uma engrenagem, no lugar do solzinho."),
         Novidade(12, "2026-11-17", "correcao", "Rolar para o lado não recarrega mais a página", "Ao arrastar para o lado as opções da tela inicial (e outras listas que rolam para o lado), aparecia a bolinha de atualizar como se você quisesse recarregar. Agora arrastar para o lado só rola a lista; recarregar só acontece quando você puxa de cima para baixo."),
+        Novidade(13, "2026-11-17", "novo", "Vetorial ID obrigatório", "O Velox continua 100% grátis, mas agora pede o seu Vetorial ID ao abrir. Se ainda não tem, crie na hora, na própria janelinha. A conta é uma só para todos os apps da Vetorial Tech."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }

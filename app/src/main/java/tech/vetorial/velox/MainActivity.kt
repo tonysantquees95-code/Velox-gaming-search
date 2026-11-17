@@ -819,7 +819,7 @@ class MainActivity : Activity() {
             "fav-abrir" -> { fecharPainel(); u.getQueryParameter("u")?.let { abrirTexto(it) } }
             "padrao" -> { fecharPainel(); pedirNavegadorPrincipal() }
             "sync-entrar" -> entrarNoVetorialId(u.getQueryParameter("e") ?: "", u.getQueryParameter("s") ?: "")
-            "sync-sair" -> { ajustes.syncToken = ""; ajustes.syncEmail = ""; reabrirPainel("conta", "Você saiu do Vetorial ID.") }
+            "sync-sair" -> { ajustes.syncToken = ""; ajustes.syncEmail = ""; fecharPainel(); exigirVetorialId { } }
             "sync-agora" -> sincronizarAgora(true)
             "sync-itens" -> {
                 ajustes.syncFavoritos = u.getQueryParameter("f") == "1"
@@ -1089,7 +1089,7 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 runOnUiThread {
                     sincronizando = false
-                    if (e is Sync.Falha && e.status == 401) ajustes.syncToken = ""
+                    if (e is Sync.Falha && e.status == 401) { ajustes.syncToken = ""; exigirVetorialId { } }
                     if (avisar) reabrirPainel("conta", if (e is Sync.Falha && e.status == 401) "A sessão do Vetorial ID acabou. Entre de novo." else (e.message ?: "Não consegui sincronizar agora."))
                 }
             }
@@ -1460,14 +1460,62 @@ class MainActivity : Activity() {
         val vistas = ajustes.novidadesVistas
         val novas = if (vistas < 0) emptyList() else Apresentacao.novasDesde(vistas)
         if (vistas < 0) ajustes.novidadesVistas = Apresentacao.ultimoId()
-        if (novas.isNotEmpty()) mostrarNovidades(novas) { perguntarNavegadorPrincipal() } else perguntarNavegadorPrincipal()
+        if (novas.isNotEmpty()) mostrarNovidades(novas) { exigirVetorialId { perguntarNavegadorPrincipal() } } else exigirVetorialId { perguntarNavegadorPrincipal() }
     }
 
     private fun concluirApresentacao() {
         ajustes.tourVisto = true
         ajustes.termosAceitos = Apresentacao.VERSAO_DOS_TERMOS
         ajustes.novidadesVistas = Apresentacao.ultimoId()
-        perguntarNavegadorPrincipal()
+        exigirVetorialId { perguntarNavegadorPrincipal() }
+    }
+
+    /**
+     * O Velox é grátis, mas só abre com Vetorial ID (uma conta para todos os apps da Vetorial Tech).
+     * Sem login: caixa que não fecha, para entrar ou criar a conta na hora.
+     */
+    private var caixaDoId: android.app.Dialog? = null
+    private fun exigirVetorialId(depois: () -> Unit) {
+        if (isFinishing || ajustes.syncToken.isNotEmpty()) { depois(); return }
+        if (caixaDoId?.isShowing == true) return
+        var criando = false
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        fun campo(dica: String, tipo: Int) = EditText(this).also { it.hint = dica; it.inputType = tipo; it.isSingleLine = true; col.addView(it) }
+        val nome = campo("Seu nome", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS).also { it.visibility = View.GONE }
+        val email = campo("E-mail do Vetorial ID", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
+        val senha = campo("Senha", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        val aviso = TextView(this).apply { setPadding(0, dp(8), 0, 0); setTextColor(0xFFFF8A8A.toInt()); textSize = 13f }
+        col.addView(aviso)
+        val caixa = CaixaVelox(this, tema).setTitle("Entre com o Vetorial ID")
+            .setMessage("O Velox é 100% grátis, mas precisa do seu Vetorial ID: é a conta única da Vetorial Tech. Se ainda não tem, crie agora, é rápido.")
+            .setView(col).setCancelable(false)
+            .setPositiveButton("Entrar", null)
+            .setNeutralButton("Criar conta", null)
+            .create()
+        caixaDoId = caixa
+        caixa.show()
+        val entrar = caixa.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+        val alternar = caixa.getButton(android.content.DialogInterface.BUTTON_NEUTRAL)
+        alternar?.setOnClickListener {
+            criando = !criando
+            nome.visibility = if (criando) View.VISIBLE else View.GONE
+            entrar?.text = if (criando) "Criar e entrar" else "Entrar"
+            alternar.text = if (criando) "Já tenho conta" else "Criar conta"
+            aviso.text = ""
+        }
+        entrar?.setOnClickListener {
+            if (email.text.isBlank() || senha.text.isBlank() || (criando && nome.text.isBlank())) { aviso.text = "Preencha todos os campos."; return@setOnClickListener }
+            entrar.isEnabled = false; aviso.text = ""
+            Thread {
+                try {
+                    val (token, mail) = if (criando) Sync.criarConta(nome.text.toString().trim(), email.text.toString().trim(), senha.text.toString(), ajustes.aparelho)
+                    else Sync.entrar(email.text.toString().trim(), senha.text.toString(), ajustes.aparelho)
+                    runOnUiThread { ajustes.syncToken = token; ajustes.syncEmail = mail; caixa.dismiss(); sincronizarAgora(false); depois() }
+                } catch (e: Exception) {
+                    runOnUiThread { entrar.isEnabled = true; aviso.text = e.message ?: "Não consegui entrar agora." }
+                }
+            }.start()
+        }
     }
 
     private fun mostrarTour(i: Int, primeira: Boolean, depois: () -> Unit) {
