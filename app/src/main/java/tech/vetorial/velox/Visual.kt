@@ -14,7 +14,10 @@ import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.Shader
+import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import android.animation.ValueAnimator
 import android.graphics.DashPathEffect
 import android.graphics.PathMeasure
@@ -470,4 +473,27 @@ class BotaoGamerForma(private val corte: Float, private val espessura: Float, pr
     override fun setColorFilter(cf: ColorFilter?) {}
     @Suppress("OVERRIDE_DEPRECATION")
     override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+}
+
+/** Puxar para atualizar só vale para um gesto de cima para baixo. Se a pessoa arrasta para o lado (listas e carrosséis), nunca vira atualização. */
+class PuxarSoNaVertical(contexto: Context) : SwipeRefreshLayout(contexto) {
+    private val folga = ViewConfiguration.get(contexto).scaledTouchSlop * 0.5f
+    private var x0 = 0f
+    private var y0 = 0f
+    private var lado = false
+
+    override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.actionMasked) {
+            MotionEvent.ACTION_DOWN -> { x0 = ev.x; y0 = ev.y; lado = false }
+            MotionEvent.ACTION_MOVE -> if (!lado) {
+                val dx = Math.abs(ev.x - x0)
+                val dy = ev.y - y0
+                // para o lado se andou mais na horizontal do que na vertical (ou se está subindo)
+                if (dx > folga && dx > Math.abs(dy) * 0.6f) lado = true
+                if (dy < -folga) lado = true
+            }
+        }
+        if (lado) return false
+        return super.onInterceptTouchEvent(ev)
+    }
 }

@@ -385,7 +385,7 @@ class MainActivity : Activity() {
 
         // como no Brave: a página em cima e, embaixo, a faixa de favoritos, o endereço e os botões
         // puxar a página para baixo recarrega (só quando a página está no topo e não é a tela inicial)
-        puxar = SwipeRefreshLayout(this).apply {
+        puxar = PuxarSoNaVertical(this).apply {
             addView(conteudo, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             // páginas que rolam por dentro (apps web, como a Vênus) têm scrollY 0 mesmo no meio da lista: sem a conferência abaixo, rolar para cima recarregava a página
             setOnChildScrollUpCallback { _, _ -> val a = atual; a == null || a.url.isEmpty() || a.webView.scrollY > 0 || a.rolagemInterna }
