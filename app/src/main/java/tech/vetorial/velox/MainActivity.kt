@@ -1484,11 +1484,24 @@ class MainActivity : Activity() {
         val nome = campo("Seu nome", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS).also { it.visibility = View.GONE }
         val email = campo("E-mail do Vetorial ID", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS)
         val senha = campo("Senha", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD)
+        val numero = android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        val textoLivre = android.text.InputType.TYPE_CLASS_TEXT
+        val rotuloRec = TextView(this).apply { text = "Recuperação da conta: se esquecer a senha, você troca por uma destas duas. Guarde bem."; textSize = 12f; setPadding(0, dp(10), 0, 0); visibility = View.GONE }
+        col.addView(rotuloRec)
+        val pin = campo("Senha de recuperação (6 números)", numero).also { it.filters = arrayOf(android.text.InputFilter.LengthFilter(6)); it.visibility = View.GONE }
+        val pin2 = campo("Repita a senha de recuperação", numero).also { it.filters = arrayOf(android.text.InputFilter.LengthFilter(6)); it.visibility = View.GONE }
+        val perg = campo("Pergunta secreta (escreva a sua)", textoLivre).also { it.visibility = View.GONE }
+        val resp = campo("Resposta da pergunta", textoLivre).also { it.visibility = View.GONE }
+        val resp2 = campo("Repita a resposta", textoLivre).also { it.visibility = View.GONE }
+        val recuperacao = listOf(pin, pin2, perg, resp, resp2)
         val aviso = TextView(this).apply { setPadding(0, dp(8), 0, 0); setTextColor(0xFFFF8A8A.toInt()); textSize = 13f }
         col.addView(aviso)
+        val esqueci = TextView(this).apply { text = "Esqueci minha senha"; textSize = 13f; setPadding(0, dp(12), 0, dp(4)); setOnClickListener { recuperarSenhaVelox(email.text.toString().trim()) { mail -> email.setText(mail); senha.setText(""); aviso.text = "Senha trocada. Entre com a nova senha." } } }
+        col.addView(esqueci)
+        val rolagem = android.widget.ScrollView(this).apply { addView(col) }
         val caixa = CaixaVelox(this, tema).setTitle("Entre com o Vetorial ID")
             .setMessage("O Velox é 100% grátis, mas precisa do seu Vetorial ID: é a conta única da Vetorial Tech. Se ainda não tem, crie agora, é rápido.")
-            .setView(col).setCancelable(false)
+            .setView(rolagem).setCancelable(false)
             .setPositiveButton("Entrar", null)
             .setNeutralButton("Criar conta", null)
             .create()
@@ -1499,22 +1512,88 @@ class MainActivity : Activity() {
         alternar?.setOnClickListener {
             criando = !criando
             nome.visibility = if (criando) View.VISIBLE else View.GONE
+            rotuloRec.visibility = if (criando) View.VISIBLE else View.GONE
+            for (c in recuperacao) c.visibility = if (criando) View.VISIBLE else View.GONE
+            esqueci.visibility = if (criando) View.GONE else View.VISIBLE
             entrar?.text = if (criando) "Criar e entrar" else "Entrar"
             alternar.text = if (criando) "Já tenho conta" else "Criar conta"
             aviso.text = ""
         }
         entrar?.setOnClickListener {
-            if (email.text.isBlank() || senha.text.isBlank() || (criando && nome.text.isBlank())) { aviso.text = "Preencha todos os campos."; return@setOnClickListener }
+            if (email.text.isBlank() || senha.text.isBlank() || (criando && (nome.text.isBlank() || recuperacao.any { it.text.isBlank() }))) { aviso.text = "Preencha todos os campos."; return@setOnClickListener }
             entrar.isEnabled = false; aviso.text = ""
             Thread {
                 try {
-                    val (token, mail) = if (criando) Sync.criarConta(nome.text.toString().trim(), email.text.toString().trim(), senha.text.toString(), ajustes.aparelho)
+                    val (token, mail) = if (criando) Sync.criarConta(nome.text.toString().trim(), email.text.toString().trim(), senha.text.toString(), ajustes.aparelho,
+                        org.json.JSONObject().put("pin", pin.text.toString()).put("pinConfirma", pin2.text.toString()).put("pergunta", perg.text.toString()).put("resposta", resp.text.toString()).put("respostaConfirma", resp2.text.toString()))
                     else Sync.entrar(email.text.toString().trim(), senha.text.toString(), ajustes.aparelho)
                     runOnUiThread { ajustes.syncToken = token; ajustes.syncEmail = mail; caixa.dismiss(); sincronizarAgora(false); depois() }
                 } catch (e: Exception) {
                     runOnUiThread { entrar.isEnabled = true; aviso.text = e.message ?: "Não consegui entrar agora." }
                 }
             }.start()
+        }
+    }
+
+    /** Esqueci a senha, sem e-mail: e-mail → escolhe 6 números ou pergunta secreta → senha nova. */
+    private fun recuperarSenhaVelox(emailInicial: String, aoTrocar: (String) -> Unit) {
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        fun campo(dica: String, tipo: Int) = EditText(this).also { it.hint = dica; it.inputType = tipo; it.isSingleLine = true; col.addView(it) }
+        val email = campo("E-mail do Vetorial ID", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS).also { it.setText(emailInicial) }
+        val pergunta = TextView(this).apply { textSize = 14f; setPadding(0, dp(8), 0, 0); visibility = View.GONE }
+        col.addView(pergunta)
+        val valor = campo("", android.text.InputType.TYPE_CLASS_TEXT).also { it.visibility = View.GONE }
+        val nova = campo("Senha nova (mínimo 8 caracteres)", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD).also { it.visibility = View.GONE }
+        val nova2 = campo("Repita a senha nova", android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD).also { it.visibility = View.GONE }
+        val aviso = TextView(this).apply { setPadding(0, dp(8), 0, 0); setTextColor(0xFFFF8A8A.toInt()); textSize = 13f }
+        col.addView(aviso)
+        var perguntaSecreta = ""
+        var metodo = ""
+        val caixa = CaixaVelox(this, tema).setTitle("Recuperar a senha")
+            .setMessage("Digite o e-mail da sua conta e escolha como provar que é você.")
+            .setView(android.widget.ScrollView(this).apply { addView(col) })
+            .setPositiveButton("Continuar", null).setNeutralButton("Usar a pergunta secreta", null).setNegativeButton("Cancelar") { _, _ -> }
+            .create()
+        caixa.show()
+        val ok = caixa.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+        val outro = caixa.getButton(android.content.DialogInterface.BUTTON_NEUTRAL)
+        outro.visibility = View.GONE
+        fun escolher(m: String) {
+            metodo = m
+            val pin = m == "pin"
+            pergunta.visibility = if (pin) View.GONE else View.VISIBLE; pergunta.text = perguntaSecreta
+            valor.visibility = View.VISIBLE; valor.setText("")
+            valor.hint = if (pin) "Senha de recuperação (6 números)" else "Sua resposta"
+            valor.inputType = if (pin) android.text.InputType.TYPE_CLASS_NUMBER or android.text.InputType.TYPE_NUMBER_VARIATION_PASSWORD else android.text.InputType.TYPE_CLASS_TEXT
+            valor.filters = if (pin) arrayOf(android.text.InputFilter.LengthFilter(6)) else arrayOf()
+            nova.visibility = View.VISIBLE; nova2.visibility = View.VISIBLE
+            ok.text = "Trocar a senha"; outro.visibility = View.VISIBLE
+            outro.text = if (pin) "Usar a pergunta secreta" else "Usar os 6 números"
+            email.isEnabled = false; aviso.text = ""
+        }
+        outro.setOnClickListener { escolher(if (metodo == "pin") "pergunta" else "pin") }
+        ok.setOnClickListener {
+            if (metodo.isEmpty()) {
+                if (email.text.isBlank()) { aviso.text = "Digite o e-mail."; return@setOnClickListener }
+                ok.isEnabled = false; aviso.text = ""
+                Thread {
+                    try {
+                        val (_, p) = Sync.perguntaSecreta(email.text.toString().trim())
+                        runOnUiThread { perguntaSecreta = p; ok.isEnabled = true; escolher("pin") }
+                    } catch (e: Exception) { runOnUiThread { ok.isEnabled = true; aviso.text = e.message ?: "Não consegui conferir agora." } }
+                }.start()
+            } else {
+                if (valor.text.isBlank()) { aviso.text = "Digite a senha de recuperação ou a resposta."; return@setOnClickListener }
+                if (nova.text.length < 8) { aviso.text = "A senha nova precisa ter pelo menos 8 caracteres."; return@setOnClickListener }
+                if (nova.text.toString() != nova2.text.toString()) { aviso.text = "As duas senhas novas não são iguais."; return@setOnClickListener }
+                ok.isEnabled = false; aviso.text = ""
+                Thread {
+                    try {
+                        Sync.recuperarPorSegredo(email.text.toString().trim(), metodo, valor.text.toString(), nova.text.toString())
+                        runOnUiThread { caixa.dismiss(); aoTrocar(email.text.toString().trim()) }
+                    } catch (e: Exception) { runOnUiThread { ok.isEnabled = true; aviso.text = e.message ?: "Não deu certo." } }
+                }.start()
+            }
         }
     }
 

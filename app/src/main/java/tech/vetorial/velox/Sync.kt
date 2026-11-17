@@ -85,11 +85,24 @@ object Sync {
     }
 
     /** Cria o Vetorial ID na hora (grátis) e já entra. Devolve (token, e-mail). */
-    fun criarConta(nome: String, email: String, senha: String, aparelho: String): Pair<String, String> {
+    fun criarConta(nome: String, email: String, senha: String, aparelho: String, recuperacao: JSONObject): Pair<String, String> {
         val disp = JSONObject().put("id", aparelho).put("nome", "Velox (Android)").put("plataforma", "android")
-        val r = chamar("", "POST", "/id/cadastrar", JSONObject().put("nome", nome).put("email", email).put("senha", senha).put("dispositivo", disp).put("app", "velox"))
+        val r = chamar("", "POST", "/id/cadastrar", JSONObject().put("nome", nome).put("email", email).put("senha", senha).put("dispositivo", disp).put("app", "velox").put("recuperacao", recuperacao))
         val mail = r.optJSONObject("usuario")?.optString("email").orEmpty().ifBlank { email }
         return Pair(r.optString("token"), mail)
+    }
+
+    /** Esqueci a senha, sem e-mail: devolve a pergunta secreta (ou null se a conta não existe / não tem recuperação). */
+    fun perguntaSecreta(email: String): Pair<Boolean, String> {
+        val r = chamar("", "POST", "/id/recuperar/pergunta", JSONObject().put("email", email))
+        if (!r.optBoolean("existe")) throw Falha(404, "Não encontramos uma conta com esse e-mail.")
+        if (!r.optBoolean("configurada")) throw Falha(400, "Essa conta foi criada antes da recuperação por senha de 6 números. Entre com a senha e cadastre a recuperação no site do Vetorial ID.")
+        return Pair(true, r.optString("pergunta"))
+    }
+
+    /** metodo: "pin" (6 números) ou "pergunta" (resposta secreta). Troca a senha se acertar. */
+    fun recuperarPorSegredo(email: String, metodo: String, valor: String, novaSenha: String) {
+        chamar("", "POST", "/id/recuperar/segredo", JSONObject().put("email", email).put("metodo", metodo).put("valor", valor).put("novaSenha", novaSenha))
     }
 
     /** Baixa o que está no servidor, mescla e sobe se mudou. Devolve (documento final, mudou o local?). */

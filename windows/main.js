@@ -1218,6 +1218,58 @@ async function apresentar() {
  * com opção de criar a conta na hora. Fechar a janelinha ou escolher "Sair" fecha o Velox.
  */
 let pedindoId = false;
+/** Passo do cadastro: senha de 6 números e pergunta secreta, cada uma digitada duas vezes. Devolve o objeto ou null se cancelou. */
+async function pedirRecuperacaoVelox() {
+  let aviso = "";
+  for (;;) {
+    const r = await perguntar({
+      titulo: "Recuperação da conta",
+      texto: (aviso ? aviso + "\n\n" : "") + "Se esquecer a senha, você troca por uma destas duas. Guarde bem.",
+      altura: 560, largura: 480,
+      campos: [
+        { id: "pin", tipo: "password", rotulo: "Senha de recuperação (6 números)" }, { id: "pin2", tipo: "password", rotulo: "Repita a senha de recuperação" },
+        { id: "perg", rotulo: "Pergunta secreta (escreva a sua)" }, { id: "resp", rotulo: "Resposta da pergunta" }, { id: "resp2", rotulo: "Repita a resposta" },
+      ],
+      botoes: [{ id: "ok", rotulo: "Continuar", primario: true }, { id: "cancelar", rotulo: "Voltar" }],
+    });
+    if (!r || r.botao !== "ok") return null;
+    const v = r.valores || {};
+    if (!/^\d{6}$/.test(String(v.pin || ""))) { aviso = "A senha de recuperação precisa ter exatamente 6 números."; continue; }
+    if (v.pin !== v.pin2) { aviso = "As duas senhas de recuperação não são iguais."; continue; }
+    if (!String(v.perg || "").trim() || !String(v.resp || "").trim()) { aviso = "Escreva a pergunta e a resposta."; continue; }
+    return { pin: v.pin, pinConfirma: v.pin2, pergunta: v.perg, resposta: v.resp, respostaConfirma: v.resp2 };
+  }
+}
+
+/** Esqueci a senha, sem e-mail. Devolve a mensagem para a tela de login ("" se cancelou). */
+async function recuperarSenhaVelox(emailInicial) {
+  let aviso = "", email = emailInicial;
+  for (;;) {
+    const a = await perguntar({ titulo: "Recuperar a senha", texto: (aviso ? aviso + "\n\n" : "") + "Digite o e-mail da sua conta.", altura: 300, largura: 480,
+      campos: [{ id: "email", rotulo: "E-mail do Vetorial ID", valor: email }], botoes: [{ id: "ok", rotulo: "Continuar", primario: true }, { id: "cancelar", rotulo: "Voltar" }] });
+    if (!a || a.botao !== "ok") return "";
+    email = String((a.valores || {}).email || "").trim();
+    let pergunta;
+    try { pergunta = await sincronia.perguntaSecreta(email); } catch (e) { aviso = e.message || "Não consegui conferir agora."; continue; }
+    let metodo = "pin"; aviso = "";
+    for (;;) {
+      const pin = metodo === "pin";
+      const b = await perguntar({ titulo: pin ? "Senha de recuperação" : "Pergunta secreta",
+        texto: (aviso ? aviso + "\n\n" : "") + (pin ? "Digite a senha de 6 números que você criou no cadastro." : pergunta), altura: 460, largura: 480,
+        campos: [{ id: "valor", tipo: pin ? "password" : "text", rotulo: pin ? "Senha de recuperação (6 números)" : "Sua resposta" }, { id: "nova", tipo: "password", rotulo: "Senha nova (mínimo 8 caracteres)" }, { id: "nova2", tipo: "password", rotulo: "Repita a senha nova" }],
+        botoes: [{ id: "ok", rotulo: "Trocar a senha", primario: true }, { id: "outro", rotulo: pin ? "Usar a pergunta secreta" : "Usar os 6 números" }, { id: "cancelar", rotulo: "Voltar" }] });
+      if (!b || b.botao === "cancelar" || b.botao === "fechar") return "";
+      if (b.botao === "outro") { metodo = pin ? "pergunta" : "pin"; aviso = ""; continue; }
+      const v = b.valores || {};
+      if (!String(v.valor || "").trim()) { aviso = "Digite a senha de recuperação ou a resposta."; continue; }
+      if (String(v.nova || "").length < 8) { aviso = "A senha nova precisa ter pelo menos 8 caracteres."; continue; }
+      if (v.nova !== v.nova2) { aviso = "As duas senhas novas não são iguais."; continue; }
+      try { await sincronia.recuperarPorSegredo(email, metodo, String(v.valor), String(v.nova)); return "Senha trocada. Entre com a nova senha."; }
+      catch (e) { aviso = e.message || "Não deu certo."; }
+    }
+  }
+}
+
 async function exigirVetorialId() {
   if (process.env.VELOX_TESTE === "1" || tokenSync || pedindoId) return;
   pedindoId = true;
@@ -1231,14 +1283,20 @@ async function exigirVetorialId() {
         texto: (aviso ? aviso + "\n\n" : "") + "O Velox é 100% grátis, mas precisa do seu Vetorial ID: a conta única da Vetorial Tech." + (criando ? " Crie a sua agora, é rápido." : ""),
         altura: criando ? 460 : 400, largura: 480,
         campos: [...(criando ? [{ id: "nome", rotulo: "Seu nome" }] : []), { id: "email", rotulo: "E-mail do Vetorial ID" }, { id: "senha", tipo: "password", rotulo: "Senha" }],
-        botoes: [{ id: "ok", rotulo: criando ? "Criar e entrar" : "Entrar", primario: true }, { id: "alternar", rotulo: criando ? "Já tenho conta" : "Criar conta" }, { id: "sair", rotulo: "Sair do Velox" }],
+        botoes: [{ id: "ok", rotulo: criando ? "Criar e entrar" : "Entrar", primario: true }, { id: "alternar", rotulo: criando ? "Já tenho conta" : "Criar conta" }, ...(criando ? [] : [{ id: "esqueci", rotulo: "Esqueci a senha" }]), { id: "sair", rotulo: "Sair do Velox" }],
       });
       if (!r || r.botao === "sair" || r.botao === "fechar") { app.quit(); return; }
       if (r.botao === "alternar") { criando = !criando; aviso = ""; continue; }
+      if (r.botao === "esqueci") { aviso = await recuperarSenhaVelox(String((r.valores || {}).email || "").trim()); continue; }
       const v = r.valores || {};
       if (!String(v.email || "").trim() || !v.senha || (criando && !String(v.nome || "").trim())) { aviso = "Preencha todos os campos."; continue; }
+      let recuperacao = null;
+      if (criando) {
+        recuperacao = await pedirRecuperacaoVelox();
+        if (!recuperacao) { aviso = "Para criar a conta é preciso definir a recuperação (senha de 6 números e pergunta secreta)."; continue; }
+      }
       try {
-        const c = criando ? await sincronia.criarConta(String(v.nome).trim(), String(v.email).trim(), String(v.senha), aparelho) : await sincronia.entrar(String(v.email).trim(), String(v.senha), aparelho);
+        const c = criando ? await sincronia.criarConta(String(v.nome).trim(), String(v.email).trim(), String(v.senha), aparelho, recuperacao) : await sincronia.entrar(String(v.email).trim(), String(v.senha), aparelho);
         tokenSync = c.token;
         ajustes.sync = { email: c.email, token: guardarToken(c.token), ultimo: 0 };
         gravarAjustes();

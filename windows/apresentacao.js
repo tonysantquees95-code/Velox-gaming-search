@@ -12,6 +12,7 @@ const TOUR = [
   { icone: "☁️", titulo: "Sincronização", texto: "O Velox é grátis e pede o seu Vetorial ID (você cria na hora, se não tiver). Com ele, favoritos, tema e (se quiser) senhas vão com você para os seus outros aparelhos." },
   { icone: "🔄", titulo: "Sempre atualizado", texto: "O Velox procura versão nova sozinho, pergunta antes de instalar e, depois de atualizar, mostra o que mudou." },
   { id: 18, data: "2026-11-17", tipo: "novo", titulo: "Vetorial ID obrigatório", texto: "O Velox continua 100% grátis, mas agora pede o seu Vetorial ID ao abrir. Se ainda não tem, crie na hora, na própria janelinha. A conta é uma só para todos os apps da Vetorial Tech." },
+  { id: 19, data: "2026-11-17", tipo: "novo", titulo: "Recuperar a senha sem e-mail", texto: "Ao criar o Vetorial ID você define uma senha de recuperação de 6 números e uma pergunta secreta. Se esquecer a senha, toque em Esqueci a senha na tela de entrada, escolha um dos dois jeitos e crie a senha nova." },
 ];
 
 const PERMISSOES = "O Velox pede o mínimo, e só na hora em que você usa a função:\n\n" +

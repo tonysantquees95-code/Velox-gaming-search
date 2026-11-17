@@ -41,9 +41,22 @@ async function entrar(email, senha, aparelho) {
 }
 
 /** Cria o Vetorial ID na hora (grátis) e já entra. */
-async function criarConta(nome, email, senha, aparelho) {
-  const d = await chamar("", "POST", "/id/cadastrar", { nome, email, senha, dispositivo: aparelho, app: "velox" });
+async function criarConta(nome, email, senha, aparelho, recuperacao) {
+  const d = await chamar("", "POST", "/id/cadastrar", { nome, email, senha, dispositivo: aparelho, app: "velox", recuperacao });
   return { token: d.token, email: (d.usuario && d.usuario.email) || email };
+}
+
+/** Esqueci a senha, sem e-mail: devolve a pergunta secreta da conta (erro se não existe ou não tem recuperação). */
+async function perguntaSecreta(email) {
+  const d = await chamar("", "POST", "/id/recuperar/pergunta", { email });
+  if (!d.existe) throw new Error("Não encontramos uma conta com esse e-mail.");
+  if (!d.configurada) throw new Error("Essa conta foi criada antes da recuperação por senha de 6 números. Entre com a senha e cadastre a recuperação no site do Vetorial ID.");
+  return d.pergunta;
+}
+
+/** metodo: "pin" (6 números) ou "pergunta" (resposta secreta). Troca a senha se acertar. */
+async function recuperarPorSegredo(email, metodo, valor, novaSenha) {
+  await chamar("", "POST", "/id/recuperar/segredo", { email, metodo, valor, novaSenha });
 }
 
 /** Baixa o que está no servidor, mescla com o local e devolve { doc, mudouLocal }. Sobe o resultado se for diferente do remoto. */
@@ -148,4 +161,4 @@ async function sincronizarSenhas(token, local, senhaMestra) {
   throw new Error("Outro aparelho está mudando as senhas agora. Tente de novo.");
 }
 
-module.exports = { mesclar, entrar, criarConta, sincronizar, sincronizarTema, sincronizarSenhas, mesclarSenhas, cifrarSenhas, decifrarSenhas, SERVIDOR };
+module.exports = { mesclar, entrar, criarConta, perguntaSecreta, recuperarPorSegredo, sincronizar, sincronizarTema, sincronizarSenhas, mesclarSenhas, cifrarSenhas, decifrarSenhas, SERVIDOR };
