@@ -1555,8 +1555,8 @@ class MainActivity : Activity() {
             .setPositiveButton("Continuar", null).setNeutralButton("Usar a pergunta secreta", null).setNegativeButton("Cancelar") { _, _ -> }
             .create()
         caixa.show()
-        val ok = caixa.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
-        val outro = caixa.getButton(android.content.DialogInterface.BUTTON_NEUTRAL)
+        val ok = caixa.getButton(android.content.DialogInterface.BUTTON_POSITIVE)!!
+        val outro = caixa.getButton(android.content.DialogInterface.BUTTON_NEUTRAL)!!
         outro.visibility = View.GONE
         fun escolher(m: String) {
             metodo = m
