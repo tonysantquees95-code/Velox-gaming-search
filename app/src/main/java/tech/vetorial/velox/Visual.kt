@@ -285,11 +285,22 @@ class IconeTraco(private val tracos: List<Path>, private val pontos: List<FloatA
             "recolher" -> IconeTraco(listOf(p { moveTo(9f, 5f); lineTo(16f, 12f); lineTo(9f, 19f) }), emptyList())
             "sair" -> IconeTraco(listOf(p { moveTo(6f, 6f); lineTo(18f, 18f) }, p { moveTo(18f, 6f); lineTo(6f, 18f) }), emptyList())
             "ajustes" -> IconeTraco(listOf(
-                p { arcTo(RectF(9f, 9f, 15f, 15f), 0f, 359f); close() },
-                p { moveTo(12f, 3f); lineTo(12f, 5.5f) }, p { moveTo(12f, 18.5f); lineTo(12f, 21f) },
-                p { moveTo(3f, 12f); lineTo(5.5f, 12f) }, p { moveTo(18.5f, 12f); lineTo(21f, 12f) },
-                p { moveTo(5.6f, 5.6f); lineTo(7.4f, 7.4f) }, p { moveTo(16.6f, 16.6f); lineTo(18.4f, 18.4f) },
-                p { moveTo(18.4f, 5.6f); lineTo(16.6f, 7.4f) }, p { moveTo(7.4f, 16.6f); lineTo(5.6f, 18.4f) }), emptyList())
+                // engrenagem: 8 dentes e furo no meio, no mesmo traço fino dos outros ícones
+                p {
+                    val dentes = 8
+                    val passo = 2 * Math.PI / dentes
+                    for (i in 0 until dentes) {
+                        val c = i * passo
+                        val pts = listOf(6.3 to c - 0.40, 8.6 to c - 0.22, 8.6 to c + 0.22, 6.3 to c + 0.40)
+                        pts.forEachIndexed { k, (r, ang) ->
+                            val x = (12 + r * Math.cos(ang)).toFloat()
+                            val y = (12 + r * Math.sin(ang)).toFloat()
+                            if (i == 0 && k == 0) moveTo(x, y) else lineTo(x, y)
+                        }
+                    }
+                    close()
+                },
+                p { arcTo(RectF(9.2f, 9.2f, 14.8f, 14.8f), 0f, 359f); close() }), emptyList())
             else -> IconeTraco(listOf(
                 p {
                     moveTo(7f, 8f); lineTo(17f, 8f); quadTo(21f, 8f, 21f, 12f); lineTo(21f, 14f)

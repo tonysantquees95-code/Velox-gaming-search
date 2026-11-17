@@ -441,13 +441,9 @@ class MainActivity : Activity() {
         val comFoto = fotoFundo != null
         coluna.setBackgroundColor(Color.TRANSPARENT)
         conteudo.setBackgroundColor(Color.TRANSPARENT)
-        val tr = tema.transparencia
-        val alfa = (255 - (tr * 1.6f).toInt()).coerceIn(60, 255) shl 24
-        val a = (tema.superficie and 0x00FFFFFF) or alfa
-        val b = (LogoVgx.misturar(tema.superficie, tema.fundo, 0.55f) and 0x00FFFFFF) or alfa
-        barraDeCima.background = GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, intArrayOf(a, b))
-        barraDeBaixo.background = PainelCortado((tema.superficie and 0x00FFFFFF) or ((255 - (tr * 1.5f).toInt()).coerceIn(70, 255) shl 24), (tema.destaque and 0x00FFFFFF) or 0xA0000000.toInt(),
-            dp(1).toFloat() + 0.5f, if (tema.redondo) dp(28).toFloat() else dp(14).toFloat(), tema.redondo)
+        // como no Windows: endereço e botões formam uma barra única, sem fundo próprio, e a foto do fundo aparece por trás
+        barraDeCima.background = null
+        barraDeBaixo.background = null
         puxar.setColorSchemeColors(tema.destaque, tema.secundaria)
         puxar.setProgressBackgroundColorSchemeColor(tema.superficie)
         bEstrelaCima.setTextColor(tema.destaque)

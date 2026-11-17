@@ -51,6 +51,7 @@ object Apresentacao {
         Novidade(8, "2026-11-15", "melhoria", "Atualização com barra de download", "Ao achar uma versão nova, o Velox avisa e pergunta se você quer atualizar. Depois mostra a barra do download e, no fim, abre a tela do Android para você confirmar a instalação. É o mesmo jeito da Vênus."),
         Novidade(9, "2026-11-16", "correcao", "Janela de salvar senha sem botão cortado", "No aviso “Salvar senha?”, o botão Salvar aparecia cortado. Agora os botões ficam bem encaixados e dá para ler e tocar em todos."),
         Novidade(10, "2026-11-16", "correcao", "Rolar para cima não recarrega mais a página", "Em sites que rolam por dentro (como a Vênus na web), rolar a lista para cima recarregava a página sem querer. Agora só recarrega se você puxar a partir do topo, e é preciso puxar um pouco mais."),
+        Novidade(11, "2026-11-17", "melhoria", "Barra de baixo transparente e engrenagem nos ajustes", "A barra do endereço e dos botões agora fica transparente, como no Windows: forma uma barra só e a foto de fundo que você escolheu aparece por trás. E o botão de ajustes agora é uma engrenagem, no lugar do solzinho."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }
