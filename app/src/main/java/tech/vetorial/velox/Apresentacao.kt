@@ -55,6 +55,7 @@ object Apresentacao {
         Novidade(12, "2026-11-17", "correcao", "Rolar para o lado não recarrega mais a página", "Ao arrastar para o lado as opções da tela inicial (e outras listas que rolam para o lado), aparecia a bolinha de atualizar como se você quisesse recarregar. Agora arrastar para o lado só rola a lista; recarregar só acontece quando você puxa de cima para baixo."),
         Novidade(13, "2026-11-17", "novo", "Vetorial ID obrigatório", "O Velox continua 100% grátis, mas agora pede o seu Vetorial ID ao abrir. Se ainda não tem, crie na hora, na própria janelinha. A conta é uma só para todos os apps da Vetorial Tech."),
         Novidade(14, "2026-11-17", "novo", "Recuperar a senha sem e-mail", "Ao criar o Vetorial ID você define uma senha de recuperação de 6 números e uma pergunta secreta. Se esquecer a senha, toque em Esqueci a senha na tela de entrada, escolha um dos dois jeitos e crie a senha nova."),
+        Novidade(15, "2026-11-20", "novo", "Quem abriu o link", "Quando outro app abre uma página no Velox sozinho, o Velox agora avisa qual app mandou o link. Assim você descobre de onde veio e pode tirar a permissão ou desinstalar esse app."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }

@@ -109,6 +109,7 @@ class MainActivity : Activity() {
         val pedido = intent?.dataString
         val salvas = ajustes.abas
         if (pedido != null) {
+            avisarOrigem()
             novaAba(pedido, false, deFora = true)
         } else if (salvas.isNotEmpty()) {
             for (u in salvas) novaAba(u, false, exibir = false)
@@ -121,7 +122,20 @@ class MainActivity : Activity() {
     override fun onNewIntent(nova: Intent?) {
         super.onNewIntent(nova)
         val u = nova?.dataString
-        if (u != null) novaAba(u, false, deFora = true)
+        if (u != null) { avisarOrigem(); novaAba(u, false, deFora = true) }
+    }
+
+    /** Quando outro app manda um link para o Velox (somos o navegador padrão), diz qual app mandou, para a pessoa saber de onde veio. */
+    private fun avisarOrigem() {
+        try {
+            val de = if (Build.VERSION.SDK_INT >= 22) referrer else null
+            val pacote = if (de != null && de.scheme == "android-app") de.host else null
+            val msg = if (pacote == null) "Um link foi aberto por outro app" else if (pacote == packageName) return else {
+                val nome = try { packageManager.getApplicationLabel(packageManager.getApplicationInfo(pacote, 0)).toString() } catch (e: Exception) { pacote }
+                "Link aberto pelo app $nome"
+            }
+            Toast.makeText(this, msg, Toast.LENGTH_LONG).show()
+        } catch (e: Exception) { /* sem aviso */ }
     }
 
     override fun onPause() {
