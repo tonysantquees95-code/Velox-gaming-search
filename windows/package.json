@@ -30,6 +30,7 @@
       "apresentacao.js",
       "jogo.js",
       "desempenho.js",
+      "atalho.js",
       "build/icon.png",
       "ui/**",
       "inicio/**",

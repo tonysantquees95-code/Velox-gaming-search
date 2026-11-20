@@ -118,6 +118,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
 
         <section class="sec" id="s-favoritos">
           <button class="botao primario" id="fav-add" style="width:100%;margin-bottom:12px">★ Favoritar esta página</button>
+          <button class="botao" id="fav-tela" style="width:100%;margin-bottom:12px">＋ Colocar na tela inicial</button>
           <div id="fav-lista"></div>
           <p class="dica">Toque num favorito para abrir. O × remove. Na barra de baixo, a estrela abre uma faixa rápida dos mesmos favoritos.</p>
         </section>
@@ -214,6 +215,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
 
         <section class="sec" id="s-mais">
           <p class="rotulo">Buscador</p><div class="fileira" id="buscadores"></div>
+          <button class="botao primario" id="tela-inicial" style="width:100%;margin-bottom:10px">＋ Colocar na tela inicial</button>
           <div class="dupla" style="margin-top:0">
             <button class="botao" id="compartilhar">Compartilhar página</button>
             <button class="botao perigo" id="limpar">Limpar dados</button>
@@ -289,6 +291,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     });
   }
   $("fav-add").onclick = function () { ir("fav-add", { fica: 1 }); };
+  $("fav-tela").onclick = function () { ir("tela-inicial"); };
 
   /* abas do navegador */
   function desenharAbas() {
@@ -520,6 +523,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
   (function desenharGb() { chips($("gbpos"), GBPOS, E.gbpos, function (id) { E.gbpos = id; desenharGb(); ir("gbpos", { p: id }); }); })();
   chips($("buscadores"), E.buscadores, E.bus, function (id) { E.bus = id; chips($("buscadores"), E.buscadores, E.bus, arguments.callee); ir("buscador", { id: id }); });
   $("compartilhar").onclick = function () { ir("compartilhar"); };
+  $("tela-inicial").onclick = function () { ir("tela-inicial"); };
   var armado = false;
   $("limpar").onclick = function () { if (!armado) { armado = true; this.textContent = "Toque de novo para apagar"; var b = this; setTimeout(function () { armado = false; b.textContent = "Limpar dados"; }, 3500); } else { ir("limpar"); this.textContent = "Dados apagados"; armado = false; } };
   $("atualizar").onclick = function () { ir("atualizar"); };

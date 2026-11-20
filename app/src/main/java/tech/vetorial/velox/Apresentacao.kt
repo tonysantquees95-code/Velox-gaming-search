@@ -15,7 +15,7 @@ object Apresentacao {
     val TOUR = listOf(
         Passo("🚀", "Bem-vindo ao Velox", "O navegador gamer da Vetorial Tech: rápido, com bloqueio de anúncios e feito para quem joga.\n\nDeslize pelas telas para conhecer as funções. Você pode rever tudo em Ajustes › Sobre."),
         Passo("🛡️", "Bloqueio de anúncios", "O Velox barra anúncios e rastreadores sozinho e mostra quantos bloqueou na aba. Dá para desligar em Ajustes."),
-        Passo("🗂️", "Abas, anônima e favoritos", "Abra várias abas, use a aba anônima quando quiser e guarde seus sites favoritos para voltar rápido."),
+        Passo("🗂️", "Abas, anônima e favoritos", "Abra várias abas, use a aba anônima quando quiser e guarde seus sites favoritos para voltar rápido. E, em Ajustes, “Colocar na tela inicial” transforma a página aberta num ícone, como um aplicativo."),
         Passo("🔐", "Cofre de senhas", "O Velox oferece guardar logins e preenche para você. O cofre fica protegido no aparelho e só sincroniza com a sua conta se você ligar."),
         Passo("🎮", "Game Bar e janelinha", "A barra de jogo dá atalhos rápidos, e a janelinha mantém o vídeo rodando por cima de outros apps."),
         Passo("☁️", "Sincronização", "O Velox é grátis e pede o seu Vetorial ID (você cria na hora, se não tiver). Com ele, favoritos, tema e (se quiser) senhas vão com você para os seus outros aparelhos."),
@@ -56,6 +56,7 @@ object Apresentacao {
         Novidade(13, "2026-11-17", "novo", "Vetorial ID obrigatório", "O Velox continua 100% grátis, mas agora pede o seu Vetorial ID ao abrir. Se ainda não tem, crie na hora, na própria janelinha. A conta é uma só para todos os apps da Vetorial Tech."),
         Novidade(14, "2026-11-17", "novo", "Recuperar a senha sem e-mail", "Ao criar o Vetorial ID você define uma senha de recuperação de 6 números e uma pergunta secreta. Se esquecer a senha, toque em Esqueci a senha na tela de entrada, escolha um dos dois jeitos e crie a senha nova."),
         Novidade(15, "2026-11-20", "novo", "Quem abriu o link", "Quando outro app abre uma página no Velox sozinho, o Velox agora avisa qual app mandou o link. Assim você descobre de onde veio e pode tirar a permissão ou desinstalar esse app."),
+        Novidade(16, "2026-11-20", "novo", "Página como aplicativo na tela inicial", "Em Ajustes (ou no painel de favoritos), toque em “Colocar na tela inicial”. Você escolhe o nome e o Velox cria um ícone com a logo do site na tela inicial do celular. Ao tocar, a página abre direto no Velox."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }

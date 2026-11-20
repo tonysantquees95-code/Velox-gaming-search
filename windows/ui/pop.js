@@ -18,6 +18,7 @@
     captura: '<path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2"/><circle cx="12" cy="12" r="2.5"/>',
     vertical: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M9.5 5v14M5.5 9h2M5.5 12h2M5.5 15h2"/>',
     organizar: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><path d="M14 17h6M17 14v6"/>',
+    atalho: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M9 15l6-6M10 9h5v5"/>',
     cores: '<circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="9" r="1"/><circle cx="15" cy="14" r="1"/>'
   };
   function el(tag, cls, texto) { var e = document.createElement(tag); if (cls) e.className = cls; if (texto != null) e.textContent = texto; return e; }
@@ -54,6 +55,7 @@
     var t = el("button", null, D.tela ? "⤡" : "⛶"); t.title = D.tela ? "Sair da tela cheia (F11)" : "Tela cheia (F11)"; t.onclick = acao("tela-cheia"); z.appendChild(t);
     c.appendChild(z);
     c.appendChild(sep());
+    c.appendChild(item("Colocar a página na área de trabalho", { icone: "atalho", clique: acao("atalho") }));
     c.appendChild(item("Imprimir…", { icone: "imp", atalho: "Ctrl+P", clique: acao("imprimir") }));
     c.appendChild(item(D.dividida ? "Fechar tela dividida" : "Tela dividida", { icone: "dividir", clique: acao("dividir") }));
     c.appendChild(item("Captura de tela", { icone: "captura", atalho: "Ctrl+Shift+S", clique: acao("captura") }));
@@ -132,6 +134,7 @@
 
   function desenharFavoritos(c) {
     c.appendChild(item(D.favorita ? "Remover esta aba dos favoritos" : "Adicionar esta aba aos favoritos", { icone: "fav", atalho: "Ctrl+D", clique: acao("favoritar") }));
+    c.appendChild(item("Colocar esta página na área de trabalho", { icone: "atalho", clique: acao("atalho") }));
     c.appendChild(item((D.mostrarFavoritos ? "✓ " : "") + "Mostrar a barra de favoritos", { vazioIcone: true, clique: acao("fav-barra") }));
     c.appendChild(sep());
     c.appendChild(el("div", "titulo", "Favoritos"));

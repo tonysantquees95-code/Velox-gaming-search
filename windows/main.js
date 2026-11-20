@@ -1,5 +1,5 @@
 // Velox Search para Windows: janela com barra de abas própria e uma página (WebContentsView) por aba.
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, dialog, Menu, safeStorage, clipboard, net } = require("electron");
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, dialog, Menu, safeStorage, clipboard, net, nativeImage } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -15,6 +15,7 @@ const atualizador = require("./atualizador");
 const rolagem = require("./rolagem");
 const tema = require("./tema");
 const apresentacao = require("./apresentacao");
+const atalho = require("./atalho");
 
 const ALTURA_BARRA = 104; // endereço e botões ficam embaixo, como no celular
 const ALTURA_TOPO = 36; // abas na barra de título, como no Chrome
@@ -508,6 +509,38 @@ function atalhos(e, input) {
   }
 }
 
+// ------------------------------------------------------------------ atalho da página
+/** Cria um atalho (.lnk) da página aberta na área de trabalho ou no Menu Iniciar, com o ícone do site. */
+async function criarAtalhoDaPagina() {
+  if (!ativa || !atalho.enderecoValido(ativa.url)) { avisar("Abra uma página da internet primeiro."); return; }
+  const url = ativa.url;
+  const r = await perguntar({ titulo: "Atalho da página", texto: "Cria um atalho que abre esta página direto no Velox, com o ícone do site.", altura: 330,
+    campos: [{ id: "nome", tipo: "text", rotulo: "Nome do atalho", valor: atalho.nomeSugerido(ativa.titulo, url) }],
+    botoes: [{ id: "desktop", rotulo: "Área de trabalho", primario: true }, { id: "iniciar", rotulo: "Menu Iniciar" }, { id: "cancelar", rotulo: "Cancelar" }] });
+  if (r.botao !== "desktop" && r.botao !== "iniciar") return;
+  const nome = atalho.nomeDeArquivo(r.valores.nome, atalho.nomeSugerido(ativa.titulo, url));
+  try {
+    const pasta = r.botao === "desktop" ? app.getPath("desktop") : path.join(app.getPath("appData"), "Microsoft", "Windows", "Start Menu", "Programs");
+    const dadosIcone = path.join(app.getPath("userData"), "atalhos");
+    fs.mkdirSync(dadosIcone, { recursive: true });
+    let icone = process.execPath;
+    try {
+      if (ativa.favicon) {
+        const resp = await net.fetch(ativa.favicon);
+        const img = resp.ok ? nativeImage.createFromBuffer(Buffer.from(await resp.arrayBuffer())) : null;
+        if (img && !img.isEmpty()) {
+          const png = img.resize({ width: 64, height: 64, quality: "best" }).toPNG();
+          icone = path.join(dadosIcone, nome + ".ico");
+          fs.writeFileSync(icone, atalho.icoDePng(png, 64));
+        }
+      }
+    } catch (_) { icone = process.execPath; }
+    const arq = path.join(pasta, nome + ".lnk");
+    const ok = shell.writeShortcutLink(arq, fs.existsSync(arq) ? "replace" : "create", { target: process.execPath, args: atalho.argumentosDe(url), description: url, icon: icone, iconIndex: 0, cwd: path.dirname(process.execPath) });
+    if (!ok) throw new Error("O Windows não deixou criar o atalho.");
+    avisar(r.botao === "desktop" ? "Atalho criado na área de trabalho: " + nome : "Atalho criado no Menu Iniciar: " + nome);
+  } catch (e) { avisar("Não consegui criar o atalho: " + (e && e.message ? e.message : "erro")); }
+}
 // ------------------------------------------------------------------ favoritos
 function paraTela(f) { const o = origemDe(f.u); return { n: f.n, u: f.u, i: (ajustes.icones && ajustes.icones[o]) || "" }; }
 /** guarda o ícone do site (só dos que são favoritos) como imagem pequena; fica só neste aparelho */
@@ -962,6 +995,7 @@ function ligarComandos() {
       else if (nome === "ir-aba") { const a = abas.find((x) => x.id === Number(arg)); if (a) mostrar(a); }
       else if (nome === "reabrir") { const i = fechadas.lastIndexOf(String(arg)); if (i >= 0) { fechadas.splice(i, 1); criarAba(String(arg)); } }
       else if (nome === "favoritar") alternarFavorito();
+      else if (nome === "atalho") void criarAtalhoDaPagina();
       else if (nome === "fav-barra") { ajustes.mostrarFavoritos = !ajustes.mostrarFavoritos; gravarAjustes(); avisarBarra(); }
       else if (nome === "personalizar") menuPersonalizar();
       else if (nome === "download-pasta") { const d = downloads.find((x) => x.id === arg); if (d) shell.showItemInFolder(d.caminho); }

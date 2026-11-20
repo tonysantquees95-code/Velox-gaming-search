@@ -109,7 +109,7 @@ class MainActivity : Activity() {
         val pedido = intent?.dataString
         val salvas = ajustes.abas
         if (pedido != null) {
-            avisarOrigem()
+            if (intent?.getBooleanExtra(EXTRA_ATALHO, false) != true) avisarOrigem()
             novaAba(pedido, false, deFora = true)
         } else if (salvas.isNotEmpty()) {
             for (u in salvas) novaAba(u, false, exibir = false)
@@ -122,7 +122,7 @@ class MainActivity : Activity() {
     override fun onNewIntent(nova: Intent?) {
         super.onNewIntent(nova)
         val u = nova?.dataString
-        if (u != null) { avisarOrigem(); novaAba(u, false, deFora = true) }
+        if (u != null) { if (nova?.getBooleanExtra(EXTRA_ATALHO, false) != true) avisarOrigem(); novaAba(u, false, deFora = true) }
     }
 
     /** Quando outro app manda um link para o Velox (somos o navegador padrão), diz qual app mandou, para a pessoa saber de onde veio. */
@@ -806,6 +806,7 @@ class MainActivity : Activity() {
             "tema" -> mudarTema(u.encodedQuery)
             "buscador" -> Buscador.values().firstOrNull { it.id == u.getQueryParameter("id") }?.let { ajustes.buscador = it.id }
             "compartilhar" -> { fecharPainel(); compartilhar() }
+            "tela-inicial" -> { fecharPainel(); pedirAtalhoNaTelaInicial() }
             "limpar" -> limparDados()
             "atualizar" -> procurarAtualizacao(true)
             "sobre-tour" -> { fecharPainel(); mostrarTour(0, false) {} }
@@ -894,6 +895,47 @@ class MainActivity : Activity() {
                 if (a != null && (a.webView.url ?: "").startsWith("file:///android_asset/inicio.html")) a.webView.loadUrl(enderecoInicial()) else a?.webView?.reload()
             }
             "pc" -> { ajustes.siteParaComputador = ligado; for (a in abas) aplicarModoComputador(a.webView); atual?.webView?.reload() }
+        }
+    }
+
+    // ---------------------------------------------------------------- atalho na tela inicial
+
+    /** Pergunta o nome (caixa no visual do app) e pede ao Android para pôr a página na tela inicial, com a logo do site. */
+    private fun pedirAtalhoNaTelaInicial() {
+        val a = atual
+        val url = a?.url ?: ""
+        if (!Atalhos.enderecoValido(url)) { Toast.makeText(this, "Abra uma página da internet primeiro.", Toast.LENGTH_LONG).show(); return }
+        val gerente = getSystemService(android.content.pm.ShortcutManager::class.java)
+        if (gerente == null || !gerente.isRequestPinShortcutSupported) {
+            Toast.makeText(this, "Seu celular não deixa o Velox criar ícones na tela inicial. Tente pelo menu do Android: segure o ícone do Velox e arraste.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val col = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val campo = EditText(this).apply {
+            setText(Atalhos.nomeSugerido(a?.titulo, url))
+            setSelectAllOnFocus(true)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+            maxLines = 1
+        }
+        col.addView(campo)
+        CaixaVelox(this, tema).setTitle("Colocar na tela inicial").setMessage("Escolha o nome do ícone. Ao tocar nele, a página abre direto no Velox.").setView(col)
+            .setPositiveButton("Adicionar") { _, _ -> criarAtalho(url, campo.text.toString(), a?.webView?.favicon) }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun criarAtalho(url: String, nomeDigitado: String, favicon: Bitmap?) {
+        try {
+            val gerente = getSystemService(android.content.pm.ShortcutManager::class.java) ?: return
+            val nome = Atalhos.nomeCurto(nomeDigitado, Atalhos.nomeSugerido(null, url))
+            val icone = Atalhos.iconeAdaptavel(favicon ?: iconeDoFavorito(url), nome, tema.destaque, resources.displayMetrics.density)
+            val abrir = Intent(this, MainActivity::class.java).setAction(Intent.ACTION_VIEW).setData(Uri.parse(url)).putExtra(EXTRA_ATALHO, true)
+            val info = android.content.pm.ShortcutInfo.Builder(this, Atalhos.idDe(url))
+                .setShortLabel(nome).setLongLabel(nome).setIcon(icone).setIntent(abrir).build()
+            if (!gerente.requestPinShortcut(info, null)) Toast.makeText(this, "O Android não aceitou criar o ícone.", Toast.LENGTH_LONG).show()
+            else Toast.makeText(this, "Confirme na tela do Android para o ícone aparecer.", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Não consegui criar o ícone: " + (e.message ?: "erro").take(80), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -2505,6 +2547,7 @@ class MainActivity : Activity() {
     }
 
     companion object {
+        const val EXTRA_ATALHO = "tech.vetorial.velox.ATALHO"
         const val INICIO = "file:///android_asset/inicio.html"
         const val PEDIDO_ARQUIVO = 1
         const val PEDIDO_FUNDO = 2

@@ -6,13 +6,14 @@ const VERSAO_DOS_TERMOS = 2;
 const TOUR = [
   { icone: "🚀", titulo: "Bem-vindo ao Velox", texto: "O navegador gamer da Vetorial Tech: rápido, com bloqueio de anúncios e feito para quem joga.\n\nPasse pelas telas para conhecer as funções. Você pode rever tudo em Ajustes › Sobre o Velox." },
   { icone: "🛡️", titulo: "Bloqueio de anúncios", texto: "O Velox barra anúncios e rastreadores sozinho e mostra quantos bloqueou. Dá para desligar em Ajustes." },
-  { icone: "🗂️", titulo: "Abas, anônima e favoritos", texto: "A setinha ao lado da primeira aba liga as abas verticais e organiza as guias; o menu dos três pontinhos tem tela dividida e captura de tela. Abra várias abas (Ctrl+T), use a aba anônima quando quiser e guarde seus sites favoritos na barra para voltar rápido." },
+  { icone: "🗂️", titulo: "Abas, anônima e favoritos", texto: "A setinha ao lado da primeira aba liga as abas verticais e organiza as guias; o menu dos três pontinhos tem tela dividida e captura de tela. Abra várias abas (Ctrl+T), use a aba anônima quando quiser e guarde seus sites favoritos na barra para voltar rápido. O menu também coloca a página aberta na área de trabalho, como um aplicativo." },
   { icone: "🔐", titulo: "Cofre de senhas", texto: "O Velox oferece guardar logins e preenche para você. O cofre fica protegido neste computador (senha mestra) e só sincroniza se você ligar." },
   { icone: "🎮", titulo: "Modo gamer", texto: "O modo gamer deixa uma barra de atalhos discreta enquanto você joga no navegador, com medidor de desempenho." },
   { icone: "☁️", titulo: "Sincronização", texto: "O Velox é grátis e pede o seu Vetorial ID (você cria na hora, se não tiver). Com ele, favoritos, tema e (se quiser) senhas vão com você para os seus outros aparelhos." },
   { icone: "🔄", titulo: "Sempre atualizado", texto: "O Velox procura versão nova sozinho, pergunta antes de instalar e, depois de atualizar, mostra o que mudou." },
   { id: 18, data: "2026-11-17", tipo: "novo", titulo: "Vetorial ID obrigatório", texto: "O Velox continua 100% grátis, mas agora pede o seu Vetorial ID ao abrir. Se ainda não tem, crie na hora, na própria janelinha. A conta é uma só para todos os apps da Vetorial Tech." },
   { id: 19, data: "2026-11-17", tipo: "novo", titulo: "Recuperar a senha sem e-mail", texto: "Ao criar o Vetorial ID você define uma senha de recuperação de 6 números e uma pergunta secreta. Se esquecer a senha, toque em Esqueci a senha na tela de entrada, escolha um dos dois jeitos e crie a senha nova." },
+  { id: 20, data: "2026-11-20", tipo: "novo", titulo: "Página como aplicativo na área de trabalho", texto: "No menu dos três pontinhos, toque em “Colocar a página na área de trabalho”. Você escolhe o nome e se o atalho fica na área de trabalho ou no Menu Iniciar. Ele abre a página direto no Velox, com o ícone do próprio site." },
 ];
 
 const PERMISSOES = "O Velox pede o mínimo, e só na hora em que você usa a função:\n\n" +
