@@ -150,6 +150,7 @@
   $("atu-baixar").onclick = function () { V.chamar("atu:baixar").then(desenharAtu); };
   $("atu-instalar").onclick = function () { this.disabled = true; $("atu-msg").textContent = "Instalando…"; V.chamar("atu:instalar").then(desenharAtu); };
   ["tour", "termos", "novidades"].forEach(function (q) { $("sobre-" + q).onclick = function () { V.chamar("ajustes:sobre", q); }; });
+  ["feedback", "erro"].forEach(function (q) { $("sobre-" + q).onclick = function () { V.chamar("ajustes:sobre", "feedback"); }; });
   $("sync-agora").onclick = function () { V.chamar("sync:agora").then(function (r) { $("sync-msg").textContent = r.ok ? "Sincronizado: " + r.resumo : r.erro; recarregar(); }); };
   $("sync-sair").onclick = function () { V.chamar("sync:sair").then(desenhar); };
   recarregar();

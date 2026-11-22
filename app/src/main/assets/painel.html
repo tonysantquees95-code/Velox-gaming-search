@@ -229,6 +229,8 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
           <div class="vidro linha"><div><b>Apresentação</b><small>Rever as funções e as permissões</small></div><button class="botao" id="sobre-tour" style="min-height:40px;padding:0 .9rem">Rever</button></div>
           <div class="vidro linha"><div><b>Termos de uso</b><small>Ler os termos que você aceitou</small></div><button class="botao" id="sobre-termos" style="min-height:40px;padding:0 .9rem">Ler</button></div>
           <div class="vidro linha"><div><b>O que há de novo</b><small>Tudo o que já mudou e melhorou</small></div><button class="botao" id="sobre-novidades" style="min-height:40px;padding:0 .9rem">Ver</button></div>
+          <div class="vidro linha"><div><b>Enviar feedback</b><small>O Velox está em fase de testes (beta): conte o que achou</small></div><button class="botao" id="sobre-feedback" style="min-height:40px;padding:0 .9rem">Enviar</button></div>
+          <div class="vidro linha"><div><b>Reportar um erro</b><small>Algo não funcionou? Conte o que aconteceu</small></div><button class="botao" id="sobre-erro" style="min-height:40px;padding:0 .9rem">Reportar</button></div>
         </section>
       </div>
     </div>
@@ -528,6 +530,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
   $("limpar").onclick = function () { if (!armado) { armado = true; this.textContent = "Toque de novo para apagar"; var b = this; setTimeout(function () { armado = false; b.textContent = "Limpar dados"; }, 3500); } else { ir("limpar"); this.textContent = "Dados apagados"; armado = false; } };
   $("atualizar").onclick = function () { ir("atualizar"); };
   ["sobre-tour", "sobre-termos", "sobre-novidades"].forEach(function (id) { $(id).onclick = function () { ir(id); }; });
+  ["sobre-feedback", "sobre-erro"].forEach(function (id) { $(id).onclick = function () { ir("feedback"); }; });
   $("vindex").onclick = function () { ir("vindex"); };
   $("navprinc").onclick = function () { ir("padrao"); };
   if (E.padrao) { $("padrao-t").textContent = "O Velox já é o seu navegador principal"; $("navprinc").textContent = "Ativo"; }

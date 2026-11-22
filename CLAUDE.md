@@ -18,3 +18,6 @@
 - Todo ícone novo segue o padrão dos ícones que já existem: traço fino arredondado (stroke ~1.9, `currentColor`, sem preenchimento), tamanho igual ao dos vizinhos e cores do tema. No Windows os ícones ficam em `IC` (`ui/pop.js`) e no Android no `Visual.kt`/`vgx.js`.
 - As janelinhas do Windows (`ui/dialogo.html`, `ui/pop.html`) têm CSP sem `unsafe-inline`: o estilo vai em arquivo `.css`, nunca em `<style>` ou `style=""` dentro da página.
 
+
+## Feedback e relato de erro
+- Ajustes › Sobre o Velox tem "Enviar feedback" e "Reportar um erro": abrem, numa aba nova do próprio Velox, a página do servidor `/feedback?app=velox&v=<versão>&p=<plataforma>` (Android: ação `feedback` em `MainActivity.kt`; Windows: `ajustes:sobre` com `feedback` em `windows/main.js`). Os relatos chegam no Painel Dev › Feedback e geram aviso de erro.

@@ -50,6 +50,7 @@ const NOVIDADES = [
   { id: 15, data: "2026-11-15", tipo: "melhoria", titulo: "Atualização com barra de download", texto: "Ao achar uma versão nova, o Velox avisa, você escolhe baixar e acompanha a barra de download em Ajustes › Atualizações. Quando terminar, é você quem escolhe a hora de instalar. É o mesmo jeito da Vênus." },
   { id: 16, data: "2026-11-15", tipo: "correcao", titulo: "Barra de carregamento embaixo do nome da aba", texto: "A barrinha de carregamento das abas agora corre por baixo do nome, sem ficar na mesma linha e sem mexer no visual do nome." },
   { id: 17, data: "2026-11-16", tipo: "correcao", titulo: "Janela de salvar senha sem botão cortado", texto: "No aviso “Salvar senha?”, o botão Salvar aparecia cortado. Agora os botões ficam bem encaixados e dá para ler e tocar em todos." },
+  { id: 21, data: "2026-11-21", tipo: "novo", titulo: "Feedback e relato de erros", texto: "Em Ajustes › Sobre o Velox há agora Enviar feedback e Reportar um erro: conte o que achou, avise quando algo não funcionou e responda uma pesquisa rápida de 1 minuto. O Velox está em fase de testes (beta) e cada relato ajuda a melhorar." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

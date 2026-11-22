@@ -57,6 +57,7 @@ object Apresentacao {
         Novidade(14, "2026-11-17", "novo", "Recuperar a senha sem e-mail", "Ao criar o Vetorial ID você define uma senha de recuperação de 6 números e uma pergunta secreta. Se esquecer a senha, toque em Esqueci a senha na tela de entrada, escolha um dos dois jeitos e crie a senha nova."),
         Novidade(15, "2026-11-20", "novo", "Quem abriu o link", "Quando outro app abre uma página no Velox sozinho, o Velox agora avisa qual app mandou o link. Assim você descobre de onde veio e pode tirar a permissão ou desinstalar esse app."),
         Novidade(16, "2026-11-20", "novo", "Página como aplicativo na tela inicial", "Em Ajustes (ou no painel de favoritos), toque em “Colocar na tela inicial”. Você escolhe o nome e o Velox cria um ícone com a logo do site na tela inicial do celular. Ao tocar, a página abre direto no Velox."),
+        Novidade(17, "2026-11-21", "novo", "Feedback e relato de erros", "Em Ajustes › Sobre o Velox há agora Enviar feedback e Reportar um erro: conte o que achou, avise quando algo não funcionou e responda uma pesquisa rápida de 1 minuto. O Velox está em fase de testes (beta) e cada relato ajuda a melhorar."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }

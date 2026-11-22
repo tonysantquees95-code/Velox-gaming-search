@@ -1041,6 +1041,7 @@ function ligarComandos() {
     if (qual === "tour") await mostrarTour(false);
     else if (qual === "termos") await mostrarTermos(false);
     else if (qual === "novidades") await mostrarNovidades(apresentacao.novasDesde(0));
+    else if (qual === "feedback") criarAba("https://venus-servidor.tonysantquees95.workers.dev/feedback?app=velox&v=" + encodeURIComponent("1." + atualizador.numeroDaVersao(app.getVersion())) + "&p=windows");
     return true;
   }));
   ipcMain.handle("ajustes:bloqueio", so((_e, v) => { ajustes.bloqueio = !!v; bloqueio.definir(v); gravarAjustes(); avisarBarra(); return resumoAjustes(); }));

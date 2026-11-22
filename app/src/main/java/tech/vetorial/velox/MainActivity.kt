@@ -812,6 +812,11 @@ class MainActivity : Activity() {
             "sobre-tour" -> { fecharPainel(); mostrarTour(0, false) {} }
             "sobre-termos" -> { fecharPainel(); mostrarTermos(false) {} }
             "sobre-novidades" -> { fecharPainel(); mostrarNovidades(Apresentacao.novasDesde(0)) }
+            "feedback" -> {
+                fecharPainel()
+                val v = try { packageManager.getPackageInfo(packageName, 0).versionName.orEmpty() } catch (e: Exception) { "" }
+                novaAba(Atualizador.SERVIDOR + "/feedback?app=velox&v=" + Uri.encode(v) + "&p=android", false)
+            }
             "aviso" -> Toast.makeText(this, (u.getQueryParameter("m") ?: "").take(120), Toast.LENGTH_SHORT).show()
             "vindex" -> abrirDownloads()
             "dl-pronto" -> enviarDownloads()
