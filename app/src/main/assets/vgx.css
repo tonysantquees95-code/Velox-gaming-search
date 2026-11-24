@@ -81,3 +81,20 @@ html[data-anim="0"][data-luz] .vgx .corre { animation: none; }
 .vgx .gira-r { animation-duration: 90s; animation-direction: reverse; }
 html[data-anim="0"] .vgx .pulso, html[data-anim="0"] .vgx .corre, html[data-anim="0"] .vgx .gira, html[data-anim="0"] .vgx .gira-r { animation: none; }
 html[data-anim="0"] .vgx .pulso { display: none; }
+
+/* ---------- Edição Pro: o mesmo Velox, sem firula (sem brilho, LED, trilhas, cantos cortados nem fundo animado) ---------- */
+html[data-edicao="pro"] .fundo { background: var(--bg); }
+html[data-edicao="pro"] .fundo > i { display: none; }
+html[data-edicao="pro"] .vidro, html[data-edicao="pro"] .botao, html[data-edicao="pro"] .chip { clip-path: none; border-radius: 12px; box-shadow: none; backdrop-filter: none; }
+html[data-edicao="pro"] .botao.primario { background: var(--neon); color: var(--sobre); box-shadow: none; }
+html[data-edicao="pro"] .chip[data-ativa="true"] { background: color-mix(in srgb, var(--neon) 22%, transparent); box-shadow: none; color: var(--tx); }
+html[data-edicao="pro"] .interruptor, html[data-edicao="pro"] .interruptor::after { border-radius: 999px; }
+html[data-edicao="pro"] .interruptor[data-lig="true"] { background: var(--neon); box-shadow: none; }
+html[data-edicao="pro"] .marca-luz::before { display: none; }
+html[data-edicao="pro"] .nome-marca { text-shadow: none; letter-spacing: .2em; padding-left: .2em; }
+html[data-edicao="pro"] .nome-marca small { letter-spacing: .4em; padding-left: .4em; }
+html[data-edicao="pro"] .vgx-pro { filter: none; }
+html[data-edicao="pro"] * { text-shadow: none !important; }
+html[data-edicao="pro"] .so-gaming { display: none; }
+html[data-edicao="pro"] .vgx-pro { width: min(42vw, 170px); margin: 0 auto; }
+html[data-edicao="pro"] .trilho .vgx-pro, html[data-edicao="pro"] .previa .vgx-pro { width: 100%; }

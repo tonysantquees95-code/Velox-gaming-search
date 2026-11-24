@@ -4,7 +4,7 @@
 const VERSAO_DOS_TERMOS = 2;
 
 const TOUR = [
-  { icone: "🚀", titulo: "Bem-vindo ao Velox", texto: "O navegador gamer da Vetorial Tech: rápido, com bloqueio de anúncios e feito para quem joga.\n\nPasse pelas telas para conhecer as funções. Você pode rever tudo em Ajustes › Sobre o Velox." },
+  { icone: "🚀", titulo: "Bem-vindo ao Velox", texto: "O navegador da Vetorial Tech: rápido, com bloqueio de anúncios, em duas edições (Gaming e Pro).\n\nPasse pelas telas para conhecer as funções. Você pode rever tudo em Ajustes › Sobre o Velox." },
   { icone: "🛡️", titulo: "Bloqueio de anúncios", texto: "O Velox barra anúncios e rastreadores sozinho e mostra quantos bloqueou. Dá para desligar em Ajustes." },
   { icone: "🗂️", titulo: "Abas, anônima e favoritos", texto: "A setinha ao lado da primeira aba liga as abas verticais e organiza as guias; o menu dos três pontinhos tem tela dividida e captura de tela. Abra várias abas (Ctrl+T), use a aba anônima quando quiser e guarde seus sites favoritos na barra para voltar rápido. O menu também coloca a página aberta na área de trabalho, como um aplicativo." },
   { icone: "🔐", titulo: "Cofre de senhas", texto: "O Velox oferece guardar logins e preenche para você. O cofre fica protegido neste computador (senha mestra) e só sincroniza se você ligar." },
@@ -51,6 +51,7 @@ const NOVIDADES = [
   { id: 16, data: "2026-11-15", tipo: "correcao", titulo: "Barra de carregamento embaixo do nome da aba", texto: "A barrinha de carregamento das abas agora corre por baixo do nome, sem ficar na mesma linha e sem mexer no visual do nome." },
   { id: 17, data: "2026-11-16", tipo: "correcao", titulo: "Janela de salvar senha sem botão cortado", texto: "No aviso “Salvar senha?”, o botão Salvar aparecia cortado. Agora os botões ficam bem encaixados e dá para ler e tocar em todos." },
   { id: 21, data: "2026-11-21", tipo: "novo", titulo: "Feedback e relato de erros", texto: "Em Ajustes › Sobre o Velox há agora Enviar feedback e Reportar um erro: conte o que achou, avise quando algo não funcionou e responda uma pesquisa rápida de 1 minuto. O Velox está em fase de testes (beta) e cada relato ajuda a melhorar." },
+  { id: 22, data: "2026-11-24", tipo: "novo", titulo: "Velox Gaming e Velox Pro", texto: "O Velox agora tem duas edições no mesmo app. Gaming é o visual de jogo, com neon, luz no logo e fundo animado. Pro é limpo e direto, sem brilho nem animações, ideal para o trabalho. Quem instala escolhe na primeira abertura, e todos podem trocar quando quiser em Ajustes › Tema › Edição do Velox. A troca aplica as cores e o estilo da edição, e você ainda pode ajustar o que quiser depois." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };

@@ -21,3 +21,8 @@
 
 ## Feedback e relato de erro
 - Ajustes › Sobre o Velox tem "Enviar feedback" e "Reportar um erro": abrem, numa aba nova do próprio Velox, a página do servidor `/feedback?app=velox&v=<versão>&p=<plataforma>` (Android: ação `feedback` em `MainActivity.kt`; Windows: `ajustes:sobre` com `feedback` em `windows/main.js`). Os relatos chegam no Painel Dev › Feedback e geram aviso de erro.
+
+## Edições: Velox Gaming e Velox Pro (um app só)
+- O tema ganhou a chave `ed` (`gaming` ou `pro`, padrão `gaming`) e a base `grafite`. Escolher uma edição aplica um pacote de cores e estilo: `EDICOES` em `windows/tema.js` (`aplicarEdicao`) e `Tema.kt`, e `VGX.PRESETS` em `assets/vgx.js` (painel do Android e Ajustes do Windows). Mudou o pacote? Ajuste os três.
+- O visual Pro vem de `html[data-edicao="pro"]` em `vgx.css` e `windows/ui/comum.css` (sem brilho, LED, trilhas, cantos cortados nem fundo animado); o logo Pro é desenhado em `desenharVGX` (`vgx.js`) e em `LogoVgx.pro` (`Visual.kt`). O que só existe no Gaming leva a classe `so-gaming` (some no Pro).
+- Quem instala agora escolhe a edição na primeira abertura (`mostrarEscolhaDeEdicao` / `escolherEdicao`); quem já usava continua no Gaming. Dá para trocar em Painel › Visual (Android) e Ajustes › Tema (Windows). A edição vai junto na sincronização do tema.

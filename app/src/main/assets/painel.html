@@ -136,14 +136,16 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
 
         <section class="sec" id="s-visual">
           <div class="vidro previa"><div data-vgx data-camadas="0"></div><p>Prévia ao vivo. O que você muda aqui vale na hora.</p></div>
+          <p class="rotulo">Edição do Velox</p><div class="fileira" id="edicoes"></div>
+          <p class="dica" style="margin:-4px 0 14px">Gaming tem neon, LED e fundo animado. Pro é limpo, sem brilho nem animações. Ao trocar, as cores e o estilo da edição são aplicados (depois é só ajustar o que quiser).</p>
           <p class="rotulo">Cor de destaque</p><div class="fileira" id="cores"></div>
           <div id="matiz-caixa" style="display:none;margin:-6px 0 16px"><p class="rotulo">Cor livre (arraste)</p><input type="range" id="matiz" min="0" max="359" aria-label="Escolher cor"></div>
           <p class="rotulo">Transparência (barras, caixas e ícones)</p><input type="range" id="transp" min="0" max="100" aria-label="Transparência"><p class="dica" style="margin:-4px 0 14px">Da esquerda (mais firme) para a direita (mais transparente). Vale na hora.</p>
-          <p class="rotulo">Brilho neon</p><input type="range" id="brilho" min="0" max="100" aria-label="Brilho neon"><div style="height:14px"></div>
+          <div class="so-gaming"><p class="rotulo">Brilho neon</p><input type="range" id="brilho" min="0" max="100" aria-label="Brilho neon"><div style="height:14px"></div></div>
           <p class="rotulo">Fundo animado da página inicial</p><div class="fileira" id="fundos"></div>
           <p class="rotulo">Base</p><div class="fileira" id="bases"></div>
           <p class="rotulo">Formato</p><div class="fileira" id="formatos"></div>
-          <p class="rotulo">Luz do logo (LED)</p><div class="fileira" id="luzes"></div><div class="fileira" id="luz-cores"></div>
+          <div class="so-gaming"><p class="rotulo">Luz do logo (LED)</p><div class="fileira" id="luzes"></div><div class="fileira" id="luz-cores"></div></div>
           <p class="rotulo">Atalhos da página inicial</p><div class="fileira" id="estilos"></div>
           <div class="vidro linha"><div><b>Animações</b><small>Fundo em movimento, brilhos e abertura</small></div><button class="interruptor" id="anim" aria-label="Animações"></button></div>
           <button class="botao" id="padrao" style="width:100%;margin-top:6px">Voltar ao visual padrão</button>
@@ -223,7 +225,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
           <div class="vidro linha" style="margin-top:18px"><div><b>Navegador principal</b><small id="padrao-t">Abrir os links de outros apps no Velox</small></div><button class="botao primario" id="navprinc" style="min-height:40px;padding:0 .9rem">Definir</button></div>
           <p class="rotulo" style="margin-top:18px">Vetorial Tech</p>
           <div class="vidro linha"><div><b>Downloads</b><small id="vindex-t">Andamento, velocidade e arquivos baixados</small></div><button class="botao" id="vindex" style="min-height:40px;padding:0 .9rem">Abrir</button></div>
-          <div class="vidro linha"><div><b>Velox Gaming Search</b><small id="versao">Navegador gamer da Vetorial Tech</small></div><button class="botao primario" id="atualizar" style="min-height:40px;padding:0 .9rem">Atualizar</button></div>
+          <div class="vidro linha"><div><b id="nome-app">Velox Gaming Search</b><small id="versao">Navegador da Vetorial Tech</small></div><button class="botao primario" id="atualizar" style="min-height:40px;padding:0 .9rem">Atualizar</button></div>
           <p class="dica">O Velox procura versão nova sozinho ao abrir.</p>
           <p class="rotulo" style="margin-top:18px">Sobre o Velox</p>
           <div class="vidro linha"><div><b>Apresentação</b><small>Rever as funções e as permissões</small></div><button class="botao" id="sobre-tour" style="min-height:40px;padding:0 .9rem">Rever</button></div>
@@ -411,7 +413,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     Object.keys(mapa).forEach(function (k) { S.setProperty(mapa[k], "#" + q.get(k)); });
     S.setProperty("--neon-rgb", rgb(T.c1)); S.setProperty("--neon2-rgb", rgb(T.c2)); S.setProperty("--brilho", String(T.br / 100));
     var n = parseInt(T.c1, 16); S.setProperty("--sobre", (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) > 150 ? "#06090f" : "#fff");
-    R.dataset.fundo = T.fu; R.dataset.formato = T.fo; R.dataset.anim = T.an ? "1" : "0"; R.dataset.luz = T.lz; S.setProperty("--luz-cor", "#" + T.lc);
+    R.dataset.fundo = T.fu; R.dataset.formato = T.fo; R.dataset.anim = T.an ? "1" : "0"; R.dataset.luz = T.lz; S.setProperty("--luz-cor", "#" + T.lc); R.dataset.edicao = T.ed === "pro" ? "pro" : "gaming"; $("nome-app").textContent = T.ed === "pro" ? "Velox Pro" : "Velox Gaming Search";
     document.querySelectorAll("[data-vgx]").forEach(function (e) { window.desenharVGX(e, { brilho: e.dataset.brilho !== "0", emblema: e.dataset.emblema === "1", texto: e.dataset.texto === "1" }); });
   }
   function chips(alvo, lista, ativo, aoEscolher) {
@@ -428,6 +430,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     var livre = el("button", "cor cor-livre", "+"); livre.dataset.ativa = String(!emUso); livre.setAttribute("aria-label", "Cor personalizada");
     livre.onclick = function () { var c = $("matiz-caixa"); c.style.display = c.style.display === "none" ? "block" : "none"; };
     c.appendChild(livre);
+    chips($("edicoes"), V.EDICOES, T.ed, function (v) { Object.assign(T, V.PRESETS[v]); vars(); desenharVisual(); salvar(); });
     chips($("fundos"), V.FUNDOS, T.fu, function (v) { T.fu = v; vars(); desenharVisual(); salvar(); });
     chips($("bases"), V.BASES.map(function (b) { return [b[0], b[1]]; }), T.base, function (v) { T.base = v; vars(); desenharVisual(); salvar(); });
     chips($("formatos"), [["futurista", "Futurista"], ["redondo", "Redondo"]], T.fo, function (v) { T.fo = v; vars(); desenharVisual(); salvar(); });
@@ -447,7 +450,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
   $("brilho").oninput = function () { T.br = +this.value; document.documentElement.style.setProperty("--brilho", String(T.br / 100)); salvar(); };
   $("dim").oninput = function () { T.dim = +this.value; salvar(); };
   $("anim").onclick = function () { T.an = !T.an; document.documentElement.dataset.anim = T.an ? "1" : "0"; this.dataset.lig = String(T.an); salvar(); };
-  $("padrao").onclick = function () { T = { c1: "22d3ee", c2: "a78bfa", base: "noite", br: 70, tr: 30, fu: "aurora", fo: "futurista", an: true, ti: "marca", pk: "linha", dim: 35 }; vars(); desenharVisual(); salvar(); };
+  $("padrao").onclick = function () { T = Object.assign({ dim: 35 }, V.PRESETS.gaming); vars(); desenharVisual(); salvar(); };
 
   /* fundo (foto) */
   function desenharFundo() {

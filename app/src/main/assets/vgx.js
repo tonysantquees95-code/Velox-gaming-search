@@ -14,6 +14,8 @@
   S.setProperty("--vi", Math.max(4, Math.round(66 - tr * 0.9)) + "%");
   R.dataset.formato = P.get("fo") === "redondo" ? "redondo" : "futurista";
   R.dataset.anim = P.get("an") === "0" ? "0" : "1";
+  /* edição: gaming (neon e LED) ou pro (visual limpo, sem brilho) */
+  R.dataset.edicao = P.get("ed") === "pro" ? "pro" : "gaming";
   /* luz (LED) que corre em volta das letras: padrao, rgb, branca ou uma cor (lc) */
   R.dataset.luz = /^(rgb|branca|cor)$/.test(P.get("lz") || "") ? P.get("lz") : "padrao";
   S.setProperty("--luz-cor", hex(P.get("lc")) ? "#" + P.get("lc") : "#22d3ee");
@@ -39,6 +41,16 @@
         '<g fill="none" style="stroke:var(--neon)" stroke-opacity=".16" stroke-width="1"><path d="M-110 -40 V230 M-80 -40 V230 M-50 -40 V230 M-110 -20 H-20 M-110 10 H-20 M-110 40 H-20 M-110 170 H-20 M-110 200 H-20 M450 -40 V230 M480 -40 V230 M510 -40 V230 M410 -20 H520 M410 10 H520 M410 170 H520 M410 200 H520"/></g>' +
         '<g fill="none" stroke-linecap="round" stroke-width="3.2" style="stroke:var(--neon)" class="pulsos">' + pulsos + '</g>' +
         '<g style="fill:var(--neon)" fill-opacity=".5"><circle cx="-36" cy="44" r="3.4"/><circle cx="20" cy="90" r="3.4"/><circle cx="446" cy="14" r="3.4"/><circle cx="470" cy="60" r="3.4"/></g>';
+    }
+    var pro = R.dataset.edicao === "pro";
+    if (pro) {
+      /* Edição Pro: as mesmas letras V e X, lisas e na cor de destaque, sem brilho, trilhas nem luz. */
+      var vbp = texto ? "-14 -14 428 330" : "-14 -14 428 218";
+      alvo.innerHTML = '<svg class="vgx vgx-pro" viewBox="' + vbp + '" role="img" aria-label="Velox Pro">' +
+        '<g style="fill:var(--neon)">' + poly("") + '</g>' +
+        (texto ? '<text x="200" y="262" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-weight="700" font-size="50" letter-spacing="6" style="fill:var(--tx)">VELOX</text><text x="200" y="300" text-anchor="middle" font-family="Segoe UI,system-ui,sans-serif" font-weight="600" font-size="26" letter-spacing="14" style="fill:var(--su)">PRO</text>' : '') +
+        '</svg>';
+      return;
     }
     var vb = emblema ? "-140 -100 680 " + (texto ? 400 : 380) : "-14 -14 428 218";
     alvo.innerHTML = '<svg class="vgx" viewBox="' + vb + '" role="img" aria-label="VX">' +
@@ -70,7 +82,7 @@ window.VGX = {
   ],
   BASES: [
     ["noite", "Noite", "070b14", "0d1530", "141e40", "8fa0cf"], ["carvao", "Carvão", "0a0a0d", "15151a", "1f1f27", "9a9aa8"],
-    ["vinho", "Vinho", "12060b", "230c15", "33111f", "c79aa8"], ["floresta", "Floresta", "05110d", "0b2119", "113026", "8fc7b0"]
+    ["vinho", "Vinho", "12060b", "230c15", "33111f", "c79aa8"], ["floresta", "Floresta", "05110d", "0b2119", "113026", "8fc7b0"], ["grafite", "Grafite", "0f1115", "171a21", "20242d", "9aa3b2"]
   ],
   LUZES: [["padrao", "Padrão"], ["rgb", "RGB"], ["branca", "Branca"], ["cor", "Cor escolhida"]],
   ESTILOS: [["marca", "Cores da marca"], ["neon", "Neon do tema"], ["mono", "Branco"]],
@@ -93,14 +105,20 @@ window.VGX = {
     else corpo = cam(W, 1.9);
     return '<svg viewBox="0 0 24 24" aria-hidden="true">' + def + corpo + '</svg>';
   },
+  EDICOES: [["gaming", "Velox Gaming"], ["pro", "Velox Pro"]],
+  /** Visual de cada edição (escolher uma edição aplica tudo isto). Igual a EDICOES em windows/tema.js e Tema.kt. */
+  PRESETS: {
+    gaming: { c1: "22d3ee", c2: "a78bfa", base: "noite", br: 70, tr: 30, fu: "aurora", fo: "futurista", an: true, ti: "marca", pk: "linha", lz: "padrao", lc: "22d3ee", ed: "gaming" },
+    pro: { c1: "5b9dff", c2: "4a7fd6", base: "grafite", br: 0, tr: 20, fu: "liso", fo: "redondo", an: false, ti: "mono", pk: "fino", lz: "branca", lc: "5b9dff", ed: "pro" }
+  },
   FUNDOS: [["aurora", "Aurora"], ["grade", "Grade"], ["circuito", "Circuito"], ["pontos", "Pontos"], ["liso", "Liso"]],
   mistura: function (hex) { var n = parseInt(hex, 16), r = n >> 16, g = (n >> 8) & 255, b = n & 255, h = function (v) { v = Math.max(0, Math.min(255, Math.round(v))); return (v < 16 ? "0" : "") + v.toString(16); }; return h(r * 0.55 + 10) + h(g * 0.5) + h(b * 0.7 + 20); },
   params: function (t) {
     var b = (this.BASES.filter(function (x) { return x[0] === t.base; })[0]) || this.BASES[0];
-    return new URLSearchParams({ c1: t.c1, c2: t.c2, bg: b[2], sup: b[3], campo: b[4], su: b[5], tx: "ffffff", br: String(t.br), tr: String(t.tr), fu: t.fu, fo: t.fo, an: t.an ? "1" : "0", base: t.base, ti: t.ti, pk: t.pk, dim: String(t.dim), lz: t.lz || "padrao", lc: t.lc || "22d3ee" }).toString();
+    return new URLSearchParams({ c1: t.c1, c2: t.c2, bg: b[2], sup: b[3], campo: b[4], su: b[5], tx: "ffffff", br: String(t.br), tr: String(t.tr), fu: t.fu, fo: t.fo, an: t.an ? "1" : "0", base: t.base, ti: t.ti, pk: t.pk, dim: String(t.dim), lz: t.lz || "padrao", lc: t.lc || "22d3ee", ed: t.ed === "pro" ? "pro" : "gaming" }).toString();
   },
   doEndereco: function (P) {
     var g = function (k, d) { var v = P.get(k); return v == null ? d : v; };
-    return { c1: g("c1", "22d3ee"), c2: g("c2", "a78bfa"), base: g("base", "noite"), br: +g("br", "70"), tr: +g("tr", "30"), fu: g("fu", "aurora"), fo: g("fo", "futurista"), an: g("an", "1") !== "0", ti: g("ti", "marca"), pk: g("pk", "linha"), dim: +g("dim", "35"), lz: g("lz", "padrao"), lc: g("lc", "22d3ee") };
+    return { c1: g("c1", "22d3ee"), c2: g("c2", "a78bfa"), base: g("base", "noite"), br: +g("br", "70"), tr: +g("tr", "30"), fu: g("fu", "aurora"), fo: g("fo", "futurista"), an: g("an", "1") !== "0", ti: g("ti", "marca"), pk: g("pk", "linha"), dim: +g("dim", "35"), lz: g("lz", "padrao"), lc: g("lc", "22d3ee"), ed: g("ed", "gaming") === "pro" ? "pro" : "gaming" };
   }
 };

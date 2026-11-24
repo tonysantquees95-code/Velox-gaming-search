@@ -33,6 +33,10 @@ class LogoVgx(contexto: Context) : View(contexto) {
     private val pincel = Paint(Paint.ANTI_ALIAS_FLAG)
     private val letras = Path().apply { addPath(x1); addPath(x2); addPath(v) }
 
+    /** Edição Pro: as mesmas letras, lisas e na cor de destaque, sem moldura, luz nem neons correndo. */
+    var pro: Boolean = false
+        set(v) { field = v; invalidate() }
+
     fun cores(destaque: Int, secundaria: Int) {
         c1 = destaque
         c2 = secundaria
@@ -48,7 +52,7 @@ class LogoVgx(contexto: Context) : View(contexto) {
         super.onAttachedToWindow()
         anim = ValueAnimator.ofFloat(0f, 1f).apply {
             duration = 3400; repeatCount = ValueAnimator.INFINITE; interpolator = LinearInterpolator()
-            addUpdateListener { fase = it.animatedValue as Float; invalidate() }
+            addUpdateListener { fase = it.animatedValue as Float; if (!pro) invalidate() }
             start()
         }
     }
@@ -83,6 +87,12 @@ class LogoVgx(contexto: Context) : View(contexto) {
         canvas.translate((width - 428f * s) / 2f, (height - 218f * s) / 2f)
         canvas.scale(s, s)
         canvas.translate(14f, 14f)
+        if (pro) {
+            pincel.style = Paint.Style.FILL; pincel.shader = null; pincel.color = c1
+            todas(canvas) { canvas.drawPath(it, pincel) }
+            canvas.restore()
+            return
+        }
         // luz da segunda cor, deslocada para baixo e para a esquerda
         canvas.save(); canvas.translate(-8f, 8f)
         pincel.style = Paint.Style.FILL_AND_STROKE; pincel.color = c2; pincel.strokeWidth = 4f; pincel.strokeJoin = Paint.Join.MITER; pincel.shader = null

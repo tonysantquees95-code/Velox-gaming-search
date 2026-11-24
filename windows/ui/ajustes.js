@@ -82,6 +82,7 @@
   function desenharTema(texto) {
     temaAtual = VGX.doEndereco(new URLSearchParams(texto));
     var t = temaAtual;
+    chips("t-edicao", VGX.EDICOES, t.ed, function (e) { salvarTema(VGX.PRESETS[e[0]]); });
     chips("t-cores", VGX.CORES, (VGX.CORES.filter(function (c) { return c[2] === t.c1 && c[3] === t.c2; })[0] || [])[0], function (c) { salvarTema({ c1: c[2], c2: c[3] }); }, function (c) { var i = el("i"); i.style.background = "linear-gradient(135deg,#" + c[2] + ",#" + c[3] + ")"; return i; });
     chips("t-bases", VGX.BASES, t.base, function (b) { salvarTema({ base: b[0] }); });
     chips("t-fundos", VGX.FUNDOS, t.fu, function (f) { salvarTema({ fu: f[0] }); });

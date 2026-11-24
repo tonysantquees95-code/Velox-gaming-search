@@ -54,3 +54,12 @@ main.com-menu{max-width:1040px}
 @media (max-width:760px){.pagina{flex-direction:column}.menu-aj{position:static;flex:none;width:100%}}
 .barra-atu{height:8px;margin:8px 0;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden}
 .barra-atu i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--c2),var(--c1));box-shadow:0 0 8px color-mix(in srgb,var(--c1) 50%,transparent);transition:width .25s ease-out}
+
+/* Edição Pro: fundo liso, sem brilho */
+html[data-edicao="pro"] .so-gaming{display:none}
+html[data-edicao="pro"],html[data-edicao="pro"] body{background:var(--bg)}
+html[data-edicao="pro"] button.p{background:var(--c1);color:#fff}
+html[data-edicao="pro"] input[type=checkbox]:checked,html[data-edicao="pro"] .chips button[data-ativa="true"]{box-shadow:none}
+html[data-edicao="pro"] input[type=checkbox]:checked{background:var(--c1)}
+html[data-edicao="pro"] input[type=range]::-webkit-slider-thumb{box-shadow:none}
+html[data-edicao="pro"] .barra-atu i{background:var(--c1);box-shadow:none}

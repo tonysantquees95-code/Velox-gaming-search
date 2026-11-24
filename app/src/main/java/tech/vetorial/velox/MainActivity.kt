@@ -469,6 +469,7 @@ class MainActivity : Activity() {
         campo.setTextColor(tema.texto)
         campo.setHintTextColor(tema.suave)
         pintarCampo()
+        logo.pro = tema.pro
         logo.cores(tema.destaque, tema.secundaria)
         barra.cores(tema.destaque, tema.secundaria)
         flutuante.setColorFilter(tema.sobreDestaque)
@@ -1515,13 +1516,27 @@ class MainActivity : Activity() {
     private fun iniciarApresentacao() {
         if (isFinishing) return
         if (Apresentacao.precisaApresentar(ajustes.termosAceitos, ajustes.tourVisto)) {
-            mostrarTour(0, true) { mostrarPermissoes { mostrarTermos(true) { concluirApresentacao() } } }
+            val seguir = { mostrarTour(0, true) { mostrarPermissoes { mostrarTermos(true) { concluirApresentacao() } } } }
+            // quem instala agora escolhe a edição; quem já usava continua como estava (e conhece a Pro pelas novidades)
+            if (!ajustes.tourVisto) mostrarEscolhaDeEdicao(seguir) else seguir()
             return
         }
         val vistas = ajustes.novidadesVistas
         val novas = if (vistas < 0) emptyList() else Apresentacao.novasDesde(vistas)
         if (vistas < 0) ajustes.novidadesVistas = Apresentacao.ultimoId()
         if (novas.isNotEmpty()) mostrarNovidades(novas) { exigirVetorialId { perguntarNavegadorPrincipal() } } else exigirVetorialId { perguntarNavegadorPrincipal() }
+    }
+
+    /** Primeira instalação: Gaming (neon, LED) ou Pro (limpo). Dá para trocar depois em Painel › Visual. */
+    private fun mostrarEscolhaDeEdicao(depois: () -> Unit) {
+        if (isFinishing) return
+        fun escolher(ed: String) { mudarTema(Tema.aplicarEdicao(ajustes.temaTexto, ed)); depois() }
+        CaixaVelox(this, tema).setCancelable(false)
+            .setTitle("Como você quer o seu Velox?")
+            .setView(caixaDeTexto("O mesmo navegador, rápido e com bloqueio de anúncios, em duas edições:\n\n🎮 Gaming: neon, luz no logo e visual de jogo.\n\n💼 Pro: limpo e direto, sem brilho nem animações, ideal para o trabalho.\n\nVocê pode trocar quando quiser, em Painel › Visual."))
+            .setPositiveButton("Velox Gaming") { _, _ -> escolher("gaming") }
+            .setNegativeButton("Velox Pro") { _, _ -> escolher("pro") }
+            .show()
     }
 
     private fun concluirApresentacao() {

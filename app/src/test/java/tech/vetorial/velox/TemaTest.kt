@@ -112,4 +112,27 @@ class ImagensTest {
         assertEquals(0xFF22D3EE.toInt(), ruim.luzCor)
         assertTrue(Tema.daString("lz=rgb").params().contains("lz=rgb"))
     }
+
+    @Test fun edicaoPadraoEGamingEValorEstranhoVoltaAEla() {
+        assertEquals("gaming", Tema.daString("").edicao)
+        assertEquals("gaming", Tema.daString("ed=outra").edicao)
+        assertTrue(Tema.daString("ed=pro").pro)
+    }
+
+    @Test fun trocarParaProAplicaOVisualLimpoETrocarDeVoltaRestauraOGaming() {
+        val pro = Tema.daString(Tema.aplicarEdicao("c1=ff2a3d&fu=grade", "pro"))
+        assertTrue(pro.pro)
+        assertTrue(pro.redondo)
+        assertFalse(pro.animacoes)
+        assertEquals("liso", pro.params().split('&').first { it.startsWith("fu=") }.substringAfter('='))
+        assertEquals(0xFF5B9DFF.toInt(), pro.destaque)
+        val volta = Tema.daString(Tema.aplicarEdicao(pro.params(), "gaming"))
+        assertFalse(volta.pro)
+        assertEquals(Tema.PADRAO_TEMA.params(), volta.params())
+    }
+
+    @Test fun osDoisTemasCompletosTemOMesmoNumeroDeCampos() {
+        assertEquals(19, Tema.PADRAO_TEMA.params().split('&').size)
+        assertEquals(19, Tema.aplicarEdicao("", "pro").split('&').size)
+    }
 }

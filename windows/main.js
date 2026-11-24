@@ -1231,10 +1231,20 @@ async function mostrarNovidades(itens) {
   if (!itens.length) { await caixa({ title: "Velox", message: "O que há de novo", detail: "Nada de novo por aqui ainda.", buttons: ["Fechar"] }); return; }
   await caixa({ title: "Velox", message: `O que há de novo · versão 1.${atualizador.numeroDaVersao(app.getVersion())}`, detail: apresentacao.textoDasNovidades(itens), buttons: ["Entendi"], defaultId: 0 });
 }
+/** Primeira instalação: Gaming (neon, LED) ou Pro (limpo). Dá para trocar depois em Ajustes › Tema. */
+async function escolherEdicao() {
+  const r = await caixa({ title: "Velox", message: "Como você quer o seu Velox?", detail: "O mesmo navegador, rápido e com bloqueio de anúncios, em duas edições:\n\n🎮 Gaming: neon, luz no logo e visual de jogo.\n\n💼 Pro: limpo e direto, sem brilho nem animações, ideal para o trabalho.\n\nVocê pode trocar quando quiser, em Ajustes › Tema.", buttons: ["Velox Gaming", "Velox Pro"], defaultId: 0, altura: 380 });
+  ajustes.temaTexto = tema.aplicarEdicao(ajustes.temaTexto || TEMA, r === 1 ? "pro" : "gaming");
+  ajustes.temaT = Date.now();
+  gravarAgora();
+  recarregarInicios(); avisarBarra(); aplicarTemaNasTelas();
+}
 /** Primeira abertura: tour, permissões e termos. Nas seguintes: só as novidades que a pessoa ainda não viu. */
 async function apresentar() {
   if (process.env.VELOX_TESTE === "1") return; // o teste de fumaça não pode ficar esperando uma janelinha
   if (apresentacao.precisaApresentar(ajustes)) {
+    // quem instala agora escolhe a edição; quem já usava continua como estava (e conhece a Pro pelas novidades)
+    if (!ajustes.tourVisto) await escolherEdicao();
     await mostrarTour(true);
     await mostrarPermissoes();
     if (!(await mostrarTermos(true))) { app.quit(); return; }

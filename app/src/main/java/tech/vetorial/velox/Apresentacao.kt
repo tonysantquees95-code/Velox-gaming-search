@@ -13,7 +13,7 @@ object Apresentacao {
     data class Novidade(val id: Int, val data: String, val tipo: String, val titulo: String, val texto: String)
 
     val TOUR = listOf(
-        Passo("🚀", "Bem-vindo ao Velox", "O navegador gamer da Vetorial Tech: rápido, com bloqueio de anúncios e feito para quem joga.\n\nDeslize pelas telas para conhecer as funções. Você pode rever tudo em Ajustes › Sobre."),
+        Passo("🚀", "Bem-vindo ao Velox", "O navegador da Vetorial Tech: rápido, com bloqueio de anúncios, em duas edições (Gaming e Pro).\n\nDeslize pelas telas para conhecer as funções. Você pode rever tudo em Ajustes › Sobre."),
         Passo("🛡️", "Bloqueio de anúncios", "O Velox barra anúncios e rastreadores sozinho e mostra quantos bloqueou na aba. Dá para desligar em Ajustes."),
         Passo("🗂️", "Abas, anônima e favoritos", "Abra várias abas, use a aba anônima quando quiser e guarde seus sites favoritos para voltar rápido. E, em Ajustes, “Colocar na tela inicial” transforma a página aberta num ícone, como um aplicativo."),
         Passo("🔐", "Cofre de senhas", "O Velox oferece guardar logins e preenche para você. O cofre fica protegido no aparelho e só sincroniza com a sua conta se você ligar."),
@@ -58,6 +58,7 @@ object Apresentacao {
         Novidade(15, "2026-11-20", "novo", "Quem abriu o link", "Quando outro app abre uma página no Velox sozinho, o Velox agora avisa qual app mandou o link. Assim você descobre de onde veio e pode tirar a permissão ou desinstalar esse app."),
         Novidade(16, "2026-11-20", "novo", "Página como aplicativo na tela inicial", "Em Ajustes (ou no painel de favoritos), toque em “Colocar na tela inicial”. Você escolhe o nome e o Velox cria um ícone com a logo do site na tela inicial do celular. Ao tocar, a página abre direto no Velox."),
         Novidade(17, "2026-11-21", "novo", "Feedback e relato de erros", "Em Ajustes › Sobre o Velox há agora Enviar feedback e Reportar um erro: conte o que achou, avise quando algo não funcionou e responda uma pesquisa rápida de 1 minuto. O Velox está em fase de testes (beta) e cada relato ajuda a melhorar."),
+        Novidade(18, "2026-11-24", "novo", "Velox Gaming e Velox Pro", "O Velox agora tem duas edições no mesmo app. Gaming é o visual de jogo, com neon, luz no logo e fundo animado. Pro é limpo e direto, sem brilho nem animações, ideal para o trabalho. Quem instala escolhe na primeira abertura, e todos podem trocar quando quiser em Painel › Visual › Edição do Velox. A troca aplica as cores e o estilo da edição, e você ainda pode ajustar o que quiser depois."),
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }

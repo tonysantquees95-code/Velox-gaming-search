@@ -94,7 +94,7 @@ html.com-abertura .abertura { display: grid; }
 <div class="abertura"><div data-vgx data-emblema="1" data-texto="1"></div></div>
 <div class="topo entrada">
   <div class="marca-luz" data-vgx data-emblema="1"></div>
-  <div class="nome-marca">VELOX<small>GAMING SEARCH</small></div>
+  <div class="nome-marca">VELOX<small id="edicao-nome">GAMING SEARCH</small></div>
 </div>
 <form id="f" class="entrada">
   <div class="busca">
@@ -152,6 +152,7 @@ html.com-abertura .abertura { display: grid; }
 <script>
 (function () {
   var P = window.TEMA_PARAMS, R = document.documentElement, M = window.MARCAS || {};
+  if (P.get("ed") === "pro") document.getElementById("edicao-nome").textContent = "PRO";
   if (P.get("ab") === "1" && P.get("an") !== "0") R.classList.add("com-abertura");
   // com papel de parede definido a página inicial sempre mostra o papel de parede, independente da transparência dos sites
   if (P.get("ft") === "1") R.classList.add("com-foto");

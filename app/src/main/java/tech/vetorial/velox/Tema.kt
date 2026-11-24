@@ -26,6 +26,9 @@ class Tema private constructor(private val campos: Map<String, String>) {
     /** Luz (LED) que corre em volta das letras do logo: padrao, rgb, branca ou cor (a de [luzCor]). */
     val luz: String = campos["lz"]?.takeIf { it in LUZES } ?: "padrao"
     val luzCor: Int = cor("lc", 0x22D3EE)
+    /** Edição do Velox: "gaming" (neon, LED, cantos cortados) ou "pro" (visual limpo, sem brilho nem animações). */
+    val edicao: String = if (campos["ed"] == "pro") "pro" else "gaming"
+    val pro: Boolean get() = edicao == "pro"
     val claro: Boolean = false
     val nome: String get() = "Velox"
 
@@ -41,15 +44,32 @@ class Tema private constructor(private val campos: Map<String, String>) {
     }
 
     /** O texto que as páginas do Velox recebem no endereço (só chaves e valores conhecidos). */
+    /** Todos os campos (já corrigidos). */
+    fun campos(): Map<String, String> = CHAVES.associateWith { campos[it] ?: PADRAO[it]!! }
+
     fun params(): String = CHAVES.joinToString("&") { it + "=" + (campos[it] ?: PADRAO[it]) }
 
     companion object {
         private val HEX = Regex("[0-9a-fA-F]{6}")
-        private val CHAVES = listOf("c1", "c2", "bg", "sup", "campo", "su", "tx", "br", "fu", "fo", "an", "base", "ti", "pk", "dim", "tr", "lz", "lc")
+        private val CHAVES = listOf("c1", "c2", "bg", "sup", "campo", "su", "tx", "br", "fu", "fo", "an", "base", "ti", "pk", "dim", "tr", "lz", "lc", "ed")
         private val PADRAO = mapOf("c1" to "22d3ee", "c2" to "a78bfa", "bg" to "070b14", "sup" to "0d1530", "campo" to "141e40", "su" to "8fa0cf", "tx" to "ffffff",
-            "br" to "70", "fu" to "aurora", "fo" to "futurista", "an" to "1", "base" to "noite", "ti" to "marca", "pk" to "linha", "dim" to "35", "tr" to "30", "lz" to "padrao", "lc" to "22d3ee")
+            "br" to "70", "fu" to "aurora", "fo" to "futurista", "an" to "1", "base" to "noite", "ti" to "marca", "pk" to "linha", "dim" to "35", "tr" to "30", "lz" to "padrao", "lc" to "22d3ee", "ed" to "gaming")
+
+        /** Cores e estilo de cada edição (escolher uma edição aplica tudo isto; depois a pessoa ajusta o que quiser). */
+        val EDICOES: Map<String, Map<String, String>> = mapOf(
+            "gaming" to PADRAO + ("ed" to "gaming"),
+            "pro" to mapOf("c1" to "5b9dff", "c2" to "4a7fd6", "bg" to "0f1115", "sup" to "171a21", "campo" to "20242d", "su" to "9aa3b2", "tx" to "ffffff",
+                "br" to "0", "fu" to "liso", "fo" to "redondo", "an" to "0", "base" to "grafite", "ti" to "mono", "pk" to "fino", "tr" to "20", "lz" to "branca", "lc" to "5b9dff", "ed" to "pro")
+        )
+
+        /** Troca de edição: aplica o visual dela por cima do tema atual (o escurecer da foto fica como está). */
+        fun aplicarEdicao(texto: String?, ed: String): String {
+            val novo = daString(texto).campos().toMutableMap()
+            novo.putAll(EDICOES[ed] ?: EDICOES.getValue("gaming"))
+            return CHAVES.joinToString("&") { it + "=" + (novo[it] ?: PADRAO[it]) }
+        }
         private val FUNDOS = setOf("aurora", "grade", "circuito", "pontos", "liso")
-        private val BASES = setOf("noite", "carvao", "vinho", "floresta")
+        private val BASES = setOf("noite", "carvao", "vinho", "floresta", "grafite")
         private val LUZES = setOf("padrao", "rgb", "branca", "cor")
         private val ESTILOS = setOf("marca", "neon", "mono")
         private val PACOTES = setOf("linha", "fino", "grossa", "duo", "aurora", "cor", "neon", "reto", "sombra")
@@ -76,6 +96,7 @@ class Tema private constructor(private val campos: Map<String, String>) {
                     "tr" -> v.toIntOrNull() != null
                     "lz" -> v in LUZES
                     "lc" -> HEX.matches(v)
+                    "ed" -> v == "gaming" || v == "pro"
                     else -> false
                 }
                 if (bom) m[k] = v
