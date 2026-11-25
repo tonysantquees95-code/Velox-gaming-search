@@ -75,6 +75,7 @@ body { display: flex; flex-direction: column; padding: 0; }
       var ac = el("div", "acoes-d");
       if (i.s === 2) {
         var a1 = el("button", "botao primario", "Abrir arquivo"); a1.onclick = function () { ir("dl-abrir", { id: i.id }); }; ac.appendChild(a1);
+        if (i.pdf && D.vx) { var a5 = el("button", "botao", "Abrir no Vindex"); a5.onclick = function () { ir("dl-vindex", { id: i.id }); }; ac.appendChild(a5); }
         var a2 = el("button", "botao", "Abrir pasta"); a2.onclick = function () { ir("dl-pasta", { id: i.id }); }; ac.appendChild(a2);
       }
       if (i.s === 3) { var a4 = el("button", "botao primario", "Tentar de novo"); a4.onclick = function () { ir("dl-retentar", { id: i.id }); }; ac.appendChild(a4); }

@@ -13,6 +13,7 @@ function desenhar(l){
     if(d.estado==="baixando"){var b=document.createElement("div");b.className="barra";var f=document.createElement("i");f.style.width=(d.total?pct:30)+"%";b.appendChild(f);c.appendChild(b)}
     var a=document.createElement("div");a.className="acoes";
     function bt(t,fn){var x=document.createElement("button");x.textContent=t;x.onclick=fn;a.appendChild(x)}
+    if(d.estado==="pronto"&&d.pdf&&d.comVindex)bt("Abrir no Vindex",function(){V.enviar("download-vindex",d.id)});
     if(d.estado==="pronto"){bt("Executar",function(){V.enviar("download-abrir",d.id)});bt("Mostrar na pasta",function(){V.enviar("download-pasta",d.id)})}
     if(d.estado==="baixando")bt("Cancelar",function(){V.enviar("download-cancelar",d.id)});
     c.appendChild(a);el.appendChild(c);

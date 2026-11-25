@@ -95,3 +95,6 @@ body.vertical #abas { display:none; }
 #aviso[hidden] { display:none; }
 #aviso button { height:28px; padding:0 10px; border-radius:8px; border:1px solid color-mix(in srgb, var(--c1) 40%, transparent); background:rgba(255,255,255,.06); color:var(--tx); font:inherit; font-size:12px; cursor:pointer; }
 #aviso button:hover { border-color:var(--c1); }
+
+.aba.dormindo, .aba-v.dormindo { opacity:.55; }
+.aba.dormindo span, .aba-v.dormindo span { font-style:italic; }

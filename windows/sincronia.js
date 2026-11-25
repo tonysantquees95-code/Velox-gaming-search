@@ -161,4 +161,21 @@ async function sincronizarSenhas(token, local, senhaMestra) {
   throw new Error("Outro aparelho está mudando as senhas agora. Tente de novo.");
 }
 
-module.exports = { mesclar, entrar, criarConta, perguntaSecreta, recuperarPorSegredo, sincronizar, sincronizarTema, sincronizarSenhas, mesclarSenhas, cifrarSenhas, decifrarSenhas, SERVIDOR };
+/** Lista de abas enviadas entre aparelhos (chave velox-abas). Se outro aparelho gravou antes (409), junta e tenta de novo. */
+async function lerAbas(token) {
+  const lista = await chamar(token, "GET", "/id/sync");
+  const d = (lista.docs || []).find((x) => x.chave === "velox-abas");
+  return d ? d.valor : { itens: [] };
+}
+async function mudarAbas(token, mudar, tentativas = 3) {
+  for (let i = 0; i < tentativas; i++) {
+    const lista = await chamar(token, "GET", "/id/sync");
+    const atual = (lista.docs || []).find((x) => x.chave === "velox-abas");
+    const novo = mudar(atual ? atual.valor : { itens: [] });
+    try { await chamar(token, "PUT", "/id/sync/velox-abas", { valor: novo, versao: atual ? atual.versao : 0 }); return novo; }
+    catch (e) { if (e.status !== 409) throw e; }
+  }
+  throw new Error("Outro aparelho está mexendo nisso agora. Tente de novo.");
+}
+
+module.exports = { lerAbas, mudarAbas, mesclar, entrar, criarConta, perguntaSecreta, recuperarPorSegredo, sincronizar, sincronizarTema, sincronizarSenhas, mesclarSenhas, cifrarSenhas, decifrarSenhas, SERVIDOR };

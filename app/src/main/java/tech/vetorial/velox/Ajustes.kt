@@ -43,6 +43,11 @@ class Ajustes(contexto: Context) {
         get() = p.getString("gb_pos", "dir")?.takeIf { it in listOf("dir", "esq", "cima", "baixo") } ?: "dir"
         set(v) { p.edit().putString("gb_pos", v).apply() }
 
+    /** Abas paradas em segundo plano são esvaziadas para poupar memória e voltam ao abrir. */
+    var dormirAbas: Boolean
+        get() = p.getBoolean("dormir_abas", true)
+        set(v) { p.edit().putBoolean("dormir_abas", v).apply() }
+
     var segundoPlano: Boolean
         get() = p.getBoolean("segundo_plano", true)
         set(v) { p.edit().putBoolean("segundo_plano", v).apply() }

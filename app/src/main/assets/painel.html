@@ -112,6 +112,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
       <div class="cabeca"><h2 id="titulo">Abas</h2><button class="fechar" id="fechar" aria-label="Fechar painel">×</button></div>
       <div class="corpo">
         <section class="sec" id="s-abas">
+          <div id="recebidas"></div>
           <div class="grade-abas" id="grade"></div>
           <div class="dupla"><button class="botao primario" id="nova">+ Nova aba</button><button class="botao" id="anonima">Aba anônima</button></div>
         </section>
@@ -208,6 +209,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
         <section class="sec" id="s-sites">
           <p class="rotulo">Nesta página</p>
           <div class="dupla" style="margin-top:0"><button class="botao" id="st-buscar">Buscar na página</button><button class="botao" id="st-preencher">Preencher login</button></div>
+          <div class="dupla"><button class="botao" id="st-traduzir">Traduzir página</button><button class="botao" id="st-enviar">Enviar para o outro aparelho</button></div>
           <p class="rotulo" style="margin-top:18px">Permissões dos sites</p>
           <div id="st-perm"></div>
           <p class="rotulo" style="margin-top:18px">Histórico</p>
@@ -299,6 +301,18 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
 
   /* abas do navegador */
   function desenharAbas() {
+    var rc = $("recebidas"); rc.innerHTML = "";
+    $("st-traduzir").textContent = E.trad ? "Ver original" : "Traduzir página";
+    if (E.rec && E.rec.length) {
+      rc.appendChild(el("p", "rotulo", "Enviadas para você"));
+      E.rec.forEach(function (r) {
+        var c = el("div", "vidro cartao"); c.dataset.atual = "false";
+        c.appendChild(el("b", "", r.t)); c.appendChild(el("small", "", "de " + (r.de || "outro aparelho") + " · toque para abrir"));
+        c.onclick = function () { ir("rec-abrir", { id: r.id }); };
+        rc.appendChild(c);
+      });
+      rc.appendChild(el("p", "rotulo", "Abas abertas"));
+    }
     var g = $("grade"); g.innerHTML = "";
     if (!E.abas.length) { g.appendChild(el("p", "vazio", "Nenhuma aba aberta.")); return; }
     E.abas.forEach(function (a, i) {
@@ -310,6 +324,7 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
       c.appendChild(x); g.appendChild(c);
     });
   }
+  $("st-traduzir").onclick = function () { ir("traduzir"); }; $("st-enviar").onclick = function () { ir("enviar-aba"); };
   $("nova").onclick = function () { ir("nova"); }; $("anonima").onclick = function () { ir("anonima"); };
 
   /* conta Vetorial ID */
@@ -390,7 +405,8 @@ html.esq[data-formato="futurista"] .gaveta { clip-path: polygon(0 0, calc(100% -
     ["bg", "Tocar em segundo plano", "O som do YouTube continua com a tela apagada ou em outro app"],
     ["pip", "Janelinha de vídeo", "Ao sair do Velox num vídeo do YouTube, abre um vídeo pequeno por cima"],
     ["tela", "Manter a tela ligada", "Não apaga a tela enquanto o Velox está aberto"],
-    ["pc", "Site para computador", "Pede a versão de PC das páginas"]
+    ["pc", "Site para computador", "Pede a versão de PC das páginas"],
+    ["dorme", "Abas dormindo", "A aba parada por 15 minutos é esvaziada para poupar memória e volta sozinha quando você abre"]
   ];
   function chave(ps, k, onCl) {
     var l = el("div", "vidro linha"), t = el("div"); t.appendChild(el("b", "", k[1])); t.appendChild(el("small", "", k[2]));

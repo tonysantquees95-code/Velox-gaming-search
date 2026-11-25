@@ -11,6 +11,13 @@
   <label class="linha"><span>Mostrar a barra de favoritos</span><input type="checkbox" id="barrafav"></label>
 </section>
 
+<section class="cartao"><h2>Desempenho</h2>
+  <label class="linha"><span>Abas dormindo <span class="s nota" id="dormir-n"></span></span><input type="checkbox" id="dormir"></label>
+  <p class="nota">A aba que ficou parada em segundo plano é esvaziada para liberar memória e volta sozinha, no mesmo endereço, quando você abre. Nunca dorme a aba que toca som, está carregando, é anônima ou está na tela.</p>
+  <p class="rot">Dormir depois de</p>
+  <select id="dormir-min" aria-label="Dormir depois de quantos minutos"><option value="5">5 minutos</option><option value="15">15 minutos</option><option value="30">30 minutos</option><option value="60">1 hora</option><option value="120">2 horas</option></select>
+</section>
+
 <section class="cartao"><h2>Tema</h2>
   <p class="nota">As mesmas escolhas do celular. Se a sincronização do tema estiver ligada, o que você escolher aqui aparece no celular e vice-versa (a foto de fundo não vai junto: é grande demais).</p>
   <p class="rot">Edição do Velox</p><div class="chips" id="t-edicao"></div>

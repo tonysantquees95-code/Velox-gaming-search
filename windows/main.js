@@ -1,5 +1,5 @@
 // Velox Search para Windows: janela com barra de abas própria e uma página (WebContentsView) por aba.
-const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, dialog, Menu, safeStorage, clipboard, net, nativeImage } = require("electron");
+const { app, BrowserWindow, WebContentsView, ipcMain, session, shell, dialog, Menu, safeStorage, clipboard, net, nativeImage, Notification } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -10,6 +10,10 @@ const { Medidor, SCRIPT_FPS } = require("./desempenho");
 const { limitesBarra, proxima: proximaPosicao, valida: posicaoValida } = require("./jogo");
 const { idDaLoja, baixarDaLoja } = require("./crx");
 const sincronia = require("./sincronia");
+const dormir = require("./dormir");
+const abasEnviadas = require("./abasenviadas");
+const traduzir = require("./traduzir");
+const vindex = require("./vindex");
 const baixador = require("./baixador");
 const atualizador = require("./atualizador");
 const rolagem = require("./rolagem");
@@ -169,7 +173,8 @@ function estadoDasAbas() {
   const at = ativa;
   return {
     ativa: at ? at.id : null,
-    abas: abas.map((a) => ({ id: a.id, titulo: a.titulo || (a.interna === "inicio" ? "Início" : a.interna === "downloads" ? "Downloads" : a.interna === "ajustes" ? "Ajustes" : a.interna === "historico" ? "Histórico" : "Nova aba"), url: a.url || "", carregando: !!a.carregando, progresso: Math.round(a.progresso || 0), anonima: !!a.anonima })),
+    abas: abas.map((a) => ({ id: a.id, titulo: a.titulo || (a.interna === "inicio" ? "Início" : a.interna === "downloads" ? "Downloads" : a.interna === "ajustes" ? "Ajustes" : a.interna === "historico" ? "Histórico" : "Nova aba"), url: a.url || "", carregando: !!a.carregando, progresso: Math.round(a.progresso || 0), anonima: !!a.anonima, dormindo: !!a.dormindo })),
+    dormindo: dormir.resumo(abas),
     voltar: !!(at && at.view.webContents.navigationHistory.canGoBack()),
     avancar: !!(at && at.view.webContents.navigationHistory.canGoForward()),
     favorita: !!(at && at.url && ajustes.favoritos.some((f) => f.u === at.url)),
@@ -221,7 +226,7 @@ function criarAba(destino, opcoes = {}) {
       nodeIntegration: false,
     },
   });
-  const aba = { id: proximoId++, view, interna, titulo: "", url: "", carregando: false, anonima: !!opcoes.anonima };
+  const aba = { id: proximoId++, view, interna, titulo: "", url: "", carregando: false, anonima: !!opcoes.anonima, ultimoUso: Date.now() };
   const wc = view.webContents;
   view.setBackgroundColor(interna === "inicio" ? "#00000000" : interna ? "#" + tema.doTexto(temaAtual()).bg + "ff" : "#ffffffff");
   // aba nova só aparece quando a página já tem o que mostrar: antes disso fica o fundo do próprio Velox (sem piscar branco)
@@ -238,7 +243,7 @@ function criarAba(destino, opcoes = {}) {
     else if (!aba.interna) { try { view.setBackgroundColor("#ffffffff"); } catch { /* sem suporte */ } } // páginas de fora sem fundo próprio ficam brancas, como em qualquer navegador
   });
   wc.on("page-favicon-updated", (_e, lista) => { if (!aba.anonima && lista && lista[0]) { aba.favicon = lista[0]; guardarIcone(aba); } });
-  wc.on("page-title-updated", (_e, t) => { aba.titulo = t; historicoTitulo(aba); avisarBarra(); });
+  wc.on("page-title-updated", (_e, t) => { if (aba.dormindo) return; aba.titulo = t; historicoTitulo(aba); avisarBarra(); });
   // barrinha de carregamento embaixo da aba: sobe por etapas e vai andando devagar enquanto espera o site
   const parar = () => { if (aba.relogioProg) { clearInterval(aba.relogioProg); aba.relogioProg = null; } };
   wc.on("did-start-loading", () => {
@@ -249,8 +254,8 @@ function criarAba(destino, opcoes = {}) {
   wc.on("did-stop-loading", () => { parar(); aba.carregando = false; aba.progresso = 0; avisarBarra(); });
   wc.on("did-navigate", () => { if (aba.carregando) aba.progresso = Math.max(aba.progresso || 0, 45); });
   wc.on("dom-ready", () => { if (aba.carregando) { aba.progresso = Math.max(aba.progresso || 0, 75); avisarBarra(); } });
-  wc.on("did-navigate", (_e, url) => { aba.url = aba.interna ? "" : url; historicoVisita(aba, url); avisarBarra(); });
-  wc.on("did-navigate-in-page", (_e, url) => { if (!aba.interna) aba.url = url; avisarBarra(); });
+  wc.on("did-navigate", (_e, url) => { if (aba.dormindo) return; aba.url = aba.interna ? "" : url; historicoVisita(aba, url); avisarBarra(); });
+  wc.on("did-navigate-in-page", (_e, url) => { if (aba.dormindo) return; if (!aba.interna) aba.url = url; avisarBarra(); });
   wc.on("will-navigate", (e, url) => {
     if (url.startsWith("velox://")) { e.preventDefault(); acaoVelox(aba, new URL(url)); }
   });
@@ -364,7 +369,10 @@ function mostrar(aba) {
   if (busca.aberta) fecharBusca();
   if (divisao && aba === divisao.aba) { if (ativa && ativa !== aba) divisao.aba = ativa; } // trocou de lado: a que estava à esquerda vai para a direita
   else if (ativa && ativa !== aba) janela.contentView.removeChildView(ativa.view);
+  if (ativa && ativa !== aba) ativa.ultimoUso = Date.now(); // começa a contar o tempo parada da que saiu da tela
   ativa = aba;
+  aba.ultimoUso = Date.now();
+  if (aba.dormindo) acordar(aba);
   janela.contentView.addChildView(aba.view);
   if (divisao) janela.contentView.addChildView(divisao.aba.view);
   if (janela.isFullScreen()) aba.view.setBounds({ x: 0, y: 0, width: janela.getContentSize()[0], height: janela.getContentSize()[1] });
@@ -372,6 +380,96 @@ function mostrar(aba) {
   aba.view.webContents.focus();
   if (jogo.ligado) ajustarModoGamer();
   avisarBarra();
+}
+
+// ------------------------------------------------------------------ abas dormindo
+const memoriaDaAba = (aba) => {
+  try {
+    const m = app.getAppMetrics().find((x) => x.pid === aba.view.webContents.getOSProcessId());
+    return m && m.memory ? m.memory.workingSetSize / 1024 : 0; // KB -> MB
+  } catch { return 0; }
+};
+function adormecer(aba) {
+  const wc = aba.view.webContents;
+  if (wc.isDestroyed() || aba.dormindo) return;
+  const antes = memoriaDaAba(aba);
+  aba.urlDormida = aba.url; aba.tituloDormido = aba.titulo; aba.dormindo = true; aba.mbLiberados = 0;
+  wc.loadURL("about:blank");
+  // o ganho é medido de verdade: quanto o processo diminuiu alguns segundos depois de esvaziar a aba
+  setTimeout(() => { if (aba.dormindo && !wc.isDestroyed()) { aba.mbLiberados = Math.max(0, antes - memoriaDaAba(aba)); avisarBarra(); } }, 5000);
+  avisarBarra();
+}
+function acordar(aba) {
+  const wc = aba.view.webContents;
+  aba.dormindo = false; aba.mbLiberados = 0;
+  if (!wc.isDestroyed() && aba.urlDormida) wc.loadURL(aba.urlDormida);
+  aba.url = aba.urlDormida || aba.url; aba.titulo = aba.tituloDormido || aba.titulo;
+}
+function varrerAbas() {
+  if (ajustes.dormirAbas === false || !janela || janela.isDestroyed()) return;
+  const naTela = [ativa && ativa.id, divisao && divisao.aba.id].filter(Boolean);
+  const ids = dormir.escolherParaDormir(abas.map((a) => ({ id: a.id, interna: a.interna, anonima: a.anonima, carregando: a.carregando, dormindo: a.dormindo, url: a.url, ultimoUso: a.ultimoUso, audivel: !a.view.webContents.isDestroyed() && a.view.webContents.isCurrentlyAudible() })), Date.now(), { minutos: ajustes.dormirMinutos, naTela });
+  for (const id of ids) { const a = abas.find((x) => x.id === id); if (a) adormecer(a); }
+}
+
+// ------------------------------------------------------------------ enviar aba para o outro aparelho
+let recebidas = []; // abas que chegaram de outro aparelho e ainda não foram abertas
+let avisadasRecebidas = new Set();
+const nomeDoAparelho = "Windows";
+async function enviarAbaAtual() {
+  if (!ativa || ativa.interna || !abasEnviadas.urlValida(ativa.url)) { avisar("Abra um site para poder enviá-lo."); return; }
+  if (!tokenSync) { avisar("Entre com o Vetorial ID (Ajustes › Sincronização) para enviar abas."); return; }
+  try {
+    await sincronia.mudarAbas(tokenSync, (doc) => abasEnviadas.enviar(doc, { url: ativa.url, titulo: ativa.titulo, de: ajustes.aparelho, deNome: nomeDoAparelho }));
+    avisar("Aba enviada. Ela aparece no outro aparelho em alguns instantes.");
+  } catch (e) { avisar("Não consegui enviar a aba agora. Confira a internet."); }
+}
+async function verificarAbasRecebidas() {
+  if (!tokenSync || !ajustes.aparelho) return;
+  try {
+    const doc = await sincronia.lerAbas(tokenSync);
+    recebidas = abasEnviadas.pendentes(doc, ajustes.aparelho);
+    const novas = recebidas.filter((r) => !avisadasRecebidas.has(r.id));
+    novas.forEach((r) => avisadasRecebidas.add(r.id));
+    if (novas.length && janela && !janela.isDestroyed()) {
+      const n = new Notification({ title: "Aba enviada de " + (novas[0].deNome || "outro aparelho"), body: novas[0].titulo || novas[0].url, silent: true });
+      n.on("click", () => { abrirRecebida(novas[0].id); if (janela.isMinimized()) janela.restore(); janela.focus(); });
+      n.show();
+    }
+    enviarPop();
+  } catch { /* sem rede: tenta de novo daqui a pouco */ }
+}
+function abrirRecebida(id) {
+  const r = recebidas.find((x) => x.id === id);
+  if (!r) return;
+  recebidas = recebidas.filter((x) => x.id !== id);
+  criarAba(r.url);
+  if (tokenSync) sincronia.mudarAbas(tokenSync, (doc) => abasEnviadas.marcarVisto(doc, id, ajustes.aparelho)).catch(() => undefined);
+}
+
+// ------------------------------------------------------------------ traduzir a página
+function traduzirAtual() {
+  if (!ativa || ativa.interna) return;
+  const url = ativa.url;
+  if (traduzir.ehTraduzida(url)) {
+    const original = ativa.originalAntes || traduzir.urlOriginal(url);
+    if (original) ativa.view.webContents.loadURL(original);
+    return;
+  }
+  const destino = traduzir.urlTraduzida(url);
+  if (!destino) { avisar("Só dá para traduzir páginas de sites."); return; }
+  ativa.originalAntes = url;
+  ativa.view.webContents.loadURL(destino);
+}
+
+// ------------------------------------------------------------------ abrir PDF no Vindex
+let vindexExe; // undefined = ainda não procurou
+const vindexInstalado = () => { if (vindexExe === undefined) vindexExe = vindex.achar((c) => { try { return fs.existsSync(c); } catch { return false; } }); return vindexExe; };
+function abrirNoVindex(caminho) {
+  const exe = vindexInstalado();
+  if (!exe) { avisar("O Vindex não está instalado neste computador."); return; }
+  try { require("child_process").spawn(exe, [caminho], { detached: true, stdio: "ignore" }).unref(); }
+  catch { avisar("Não consegui abrir o Vindex agora."); }
 }
 
 function fecharAba(id) {
@@ -440,6 +538,10 @@ function dadosPop() {
     favoritos: ajustes.favoritos.map(paraTela),
     mostrarFavoritos: !!ajustes.mostrarFavoritos,
     favorita: !!(ativa && ativa.url && ajustes.favoritos.some((f) => f.u === ativa.url)),
+    recebidas: recebidas.slice(0, 6).map((r) => ({ id: r.id, n: r.titulo || r.url, de: r.deNome })),
+    podeSite: !!(ativa && !ativa.interna && abasEnviadas.urlValida(ativa.url)),
+    traduzida: !!(ativa && traduzir.ehTraduzida(ativa.url)),
+    comVindex: !!vindexInstalado(),
   };
 }
 function enviarPop() { if (pop && pop.aberta && !pop.view.webContents.isDestroyed()) pop.view.webContents.send("pop:estado", dadosPop()); }
@@ -770,7 +872,7 @@ async function tentarEmPartes(ses, item, d, wc) {
     avisarDownloads();
   } catch (_) { /* fica o download comum */ }
 }
-const resumoDownloads = () => downloads.map(({ item, cancelar, ...d }) => d);
+const resumoDownloads = () => downloads.map(({ item, cancelar, ...d }) => ({ ...d, pdf: vindex.ehPdf(d.nome), comVindex: !!vindexInstalado() }));
 function avisarDownloads() {
   enviarPop();
   for (const a of abas) if (a.interna === "downloads" && !a.view.webContents.isDestroyed()) a.view.webContents.send("downloads", resumoDownloads());
@@ -903,9 +1005,10 @@ const pastaDasExtensoes = () => path.join(app.getPath("userData"), "extensoes");
 
 // ------------------------------------------------------------------ comandos vindos das telas
 const resumoAjustes = () => ({
-  bloqueio: ajustes.bloqueio, bloqueados: bloqueio ? bloqueio.bloqueados : 0, modoBloqueio: bloqueio ? bloqueio.modo : "desligado",
+  bloqueio: ajustes.bloqueio, bloqueados: bloqueio ? bloqueio.bloqueados : 0, modoBloqueio: bloqueio ? (bloqueio.modo === "ghostery" && bloqueio.cobertura === "completa" ? "completo" : bloqueio.modo) : "desligado",
   rolagem: rolagem.normalizar(ajustes.rolagem), tema: temaAtual(), sincItens: { favoritos: true, tema: true, senhas: false, ...(ajustes.sincItens || {}) }, continuar: ajustes.continuar, mostrarFavoritos: ajustes.mostrarFavoritos, buscador: ajustes.buscador,
   temFundo: !!ajustes.fundo,
+  dormirAbas: ajustes.dormirAbas !== false, dormirMinutos: dormir.minutosValidos(ajustes.dormirMinutos), dormirFrase: dormir.frase(dormir.resumo(abas)),
   cofre: { existe: cofre.existe(), aberto: cofre.aberto(), itens: cofre.aberto() ? cofre.lista() : [] },
   extensoes: ajustes.extensoes.map(({ id, nome, ligada, erro }) => ({ id, nome, ligada, erro: erro || "" })),
   sites: Object.entries(ajustes.permissoes).map(([origem, p]) => ({ origem, permissoes: p })),
@@ -996,6 +1099,10 @@ function ligarComandos() {
       else if (nome === "reabrir") { const i = fechadas.lastIndexOf(String(arg)); if (i >= 0) { fechadas.splice(i, 1); criarAba(String(arg)); } }
       else if (nome === "favoritar") alternarFavorito();
       else if (nome === "atalho") void criarAtalhoDaPagina();
+      else if (nome === "enviar-aba") void enviarAbaAtual();
+      else if (nome === "abrir-recebida") abrirRecebida(String(arg));
+      else if (nome === "traduzir") traduzirAtual();
+      else if (nome === "download-vindex") { const d = downloads.find((x) => x.id === arg); if (d) abrirNoVindex(d.caminho); }
       else if (nome === "fav-barra") { ajustes.mostrarFavoritos = !ajustes.mostrarFavoritos; gravarAjustes(); avisarBarra(); }
       else if (nome === "personalizar") menuPersonalizar();
       else if (nome === "download-pasta") { const d = downloads.find((x) => x.id === arg); if (d) shell.showItemInFolder(d.caminho); }
@@ -1028,6 +1135,7 @@ function ligarComandos() {
   // telas internas (downloads, ajustes, histórico)
   ipcMain.handle("downloads-lista", so(() => resumoDownloads()));
   ipcMain.on("download-abrir", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d) shell.openPath(d.caminho); }));
+  ipcMain.on("download-vindex", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d) abrirNoVindex(d.caminho); }));
   ipcMain.on("download-pasta", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d) shell.showItemInFolder(d.caminho); }));
   ipcMain.on("download-cancelar", so((_e, id) => { const d = downloads.find((x) => x.id === id); if (d && d.estado === "baixando") { if (d.emPartes && d.cancelar) d.cancelar(); else if (d.item) d.item.cancel(); } }));
   ipcMain.on("download-limpar", so(() => { for (let i = downloads.length - 1; i >= 0; i--) if (downloads[i].estado !== "baixando") downloads.splice(i, 1); avisarDownloads(); }));
@@ -1059,6 +1167,7 @@ function ligarComandos() {
     ajustes.sincItens = { favoritos: !!o.favoritos, tema: !!o.tema, senhas: !!o.senhas };
     gravarAjustes(); sincronizarDepois(500); return resumoAjustes();
   }));
+  ipcMain.handle("ajustes:dormir", so((_e, v) => { const o = v || {}; ajustes.dormirAbas = !!o.ligado; ajustes.dormirMinutos = dormir.minutosValidos(o.minutos); gravarAjustes(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:continuar", so((_e, v) => { ajustes.continuar = !!v; gravarAjustes(); return resumoAjustes(); }));
   ipcMain.handle("ajustes:favoritos-barra", so((_e, v) => { ajustes.mostrarFavoritos = !!v; gravarAjustes(); reposicionar(); avisarBarra(); return resumoAjustes(); }));
 
@@ -1180,6 +1289,9 @@ async function iniciar() {
     else criarAba(null, { interna: "inicio" });
     // os recursos pesados carregam depois de a janela aparecer
     bloqueio.iniciar([principal, anonima]).then(avisarBarra).catch(() => undefined);
+    setInterval(varrerAbas, 60_000);
+    setTimeout(() => void verificarAbasRecebidas(), 8000);
+    setInterval(() => void verificarAbasRecebidas(), 90_000);
     ligarExtensoes().catch(() => undefined);
     setTimeout(() => apresentar().catch(() => undefined).then(() => exigirVetorialId()).catch(() => undefined), 700);
     sincronizarDepois(1500);

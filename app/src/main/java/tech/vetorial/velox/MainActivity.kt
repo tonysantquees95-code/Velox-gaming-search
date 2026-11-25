@@ -140,6 +140,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         super.onPause()
+        raizApp.removeCallbacks(tickAbas)
         val normais = abas.filter { !it.anonima }
         ajustes.abas = normais.map { if (it.url.isEmpty()) INICIO else it.url }
         val a = atual
@@ -277,6 +278,8 @@ class MainActivity : Activity() {
         raizApp.removeCallbacks(monitorPlayer)
         SegundoPlano.desligar(this)
         atual?.webView?.onResume()
+        raizApp.removeCallbacks(tickAbas)
+        raizApp.postDelayed(tickAbas, 4000)
         atual?.webView?.evaluateJavascript("window.__veloxFundo=false", null)
         if (ajustes.janelinha && Build.VERSION.SDK_INT >= 26 && !janelinhaPermitida()) raizApp.postDelayed({ pedirJanelinha() }, 1500)
         aplicarImersivo()
@@ -705,7 +708,10 @@ class MainActivity : Activity() {
         val versao = try { packageManager.getPackageInfo(packageName, 0).versionName } catch (e: Exception) { "" }
         val o = JSONObject()
             .put("abas", lista)
-            .put("gbpos", ajustes.posGameBar).put("op", JSONObject().put("ad", ajustes.bloquearAnuncios).put("bg", ajustes.segundoPlano).put("pip", ajustes.janelinha).put("escuro", ajustes.sitesEscuros).put("imersivo", ajustes.imersivo)
+            .put("rec", recebidasParaPainel())
+            .put("trad", Traduzir.ehTraduzida(atual?.url ?: ""))
+            .put("dormN", abas.count { it.dormindo })
+            .put("gbpos", ajustes.posGameBar).put("op", JSONObject().put("ad", ajustes.bloquearAnuncios).put("bg", ajustes.segundoPlano).put("pip", ajustes.janelinha).put("escuro", ajustes.sitesEscuros).put("imersivo", ajustes.imersivo).put("dorme", ajustes.dormirAbas)
                 .put("tela", ajustes.telaLigada).put("pc", ajustes.siteParaComputador).put("notema", ajustes.sitesNoTema))
             .put("bus", ajustes.buscador).put("buscadores", bus)
             .put("bl", JSONObject().put("p", atual?.bloqueados?.get() ?: 0).put("t", bloqueadosTotal.get()))
@@ -791,6 +797,10 @@ class MainActivity : Activity() {
         when (u.host) {
             "fechar" -> fecharPainel()
             "nova" -> { fecharPainel(); novaAba(null, false) }
+            "enviar-aba" -> { fecharPainel(); enviarAbaAtual() }
+            "rec-abrir" -> { val id = u.getQueryParameter("id") ?: ""; fecharPainel(); abrirRecebida(id) }
+            "traduzir" -> { fecharPainel(); traduzirAtual() }
+            "dl-vindex" -> u.getQueryParameter("id")?.toLongOrNull()?.let { abrirPdfNoVindex(it) }
             "anonima" -> { fecharPainel(); novaAba(null, true) }
             "aba" -> {
                 val i = u.getQueryParameter("i")?.toIntOrNull()
@@ -887,6 +897,7 @@ class MainActivity : Activity() {
     private fun opcao(chave: String?, ligado: Boolean) {
         when (chave) {
             "ad" -> { ajustes.bloquearAnuncios = ligado; for (a in abas) ligarBloqueioYoutube(a); atual?.webView?.reload() }
+            "dorme" -> ajustes.dormirAbas = ligado
             "bg" -> { ajustes.segundoPlano = ligado; for (a in abas) ligarBloqueioYoutube(a); atual?.webView?.reload() }
             "pip" -> { ajustes.janelinha = ligado; if (ligado && !janelinhaPermitida()) { fecharPainel(); pedirJanelinha() } }
             "escuro" -> { ajustes.sitesEscuros = ligado; for (a in abas) aplicarEscuro(a.webView); atual?.webView?.reload() }
@@ -1915,7 +1926,20 @@ class MainActivity : Activity() {
     private val jsYoutube: String by lazy { try { assets.open("youtube.js").bufferedReader().use { it.readText() } } catch (e: Exception) { "" } }
 
     /** Coloca (ou tira) o script que corta os anúncios do YouTube antes da página rodar. */
+    private val scriptsLimpeza = HashMap<Aba, androidx.webkit.ScriptHandler>()
+
+    /** Esconde anúncios e avisos de cookies que escaparam da lista de domínios (estilo colocado antes de a página aparecer). */
+    private fun ligarLimpeza(aba: Aba) {
+        scriptsLimpeza.remove(aba)?.remove()
+        if (!ajustes.bloquearAnuncios) return
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+        try {
+            scriptsLimpeza[aba] = androidx.webkit.WebViewCompat.addDocumentStartJavaScript(aba.webView, LimpezaDePagina.js(), setOf("*"))
+        } catch (e: Exception) { /* sem suporte nesta versão do WebView */ }
+    }
+
     private fun ligarBloqueioYoutube(aba: Aba) {
+        ligarLimpeza(aba)
         scriptsYoutube.remove(aba)?.remove()
         if ((!ajustes.bloquearAnuncios && !ajustes.segundoPlano) || jsYoutube.isEmpty()) return
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
@@ -1924,9 +1948,132 @@ class MainActivity : Activity() {
         } catch (e: Exception) { /* sem suporte nesta versão do WebView */ }
     }
 
+    // ---------------------------------------------------------------- abas dormindo, abas enviadas e traduzir
+
+    /** A cada minuto, com o Velox aberto: põe para dormir as abas paradas e vê se chegou aba de outro aparelho. */
+    private val tickAbas = object : Runnable {
+        override fun run() {
+            varrerAbas()
+            verificarAbasRecebidas()
+            raizApp.postDelayed(this, 60_000)
+        }
+    }
+
+    private fun varrerAbas() {
+        if (!ajustes.dormirAbas) return
+        val audio = getSystemService(AUDIO_SERVICE) as android.media.AudioManager
+        if (audio.isMusicActive) return // tem som tocando: não mexe em aba nenhuma
+        val naTela = setOfNotNull(atual?.let { abas.indexOf(it) })
+        val candidatas = abas.mapIndexed { i, a ->
+            Dormir.Candidata(i, a.anonima, a.webView.progress in 1..99, a.dormindo, a.url, a.ultimoUso)
+        }
+        for (i in Dormir.escolher(candidatas, System.currentTimeMillis(), naTela)) abas.getOrNull(i)?.let { adormecer(it) }
+    }
+
+    private fun adormecer(aba: Aba) {
+        if (aba.dormindo || aba === atual) return
+        aba.urlDormida = aba.url
+        aba.tituloDormido = aba.titulo
+        aba.dormindo = true
+        aba.webView.loadUrl("about:blank")
+        desenharFaixaAbas()
+    }
+
+    private fun acordar(aba: Aba) {
+        aba.dormindo = false
+        aba.limparHistorico = true
+        if (aba.urlDormida.isNotEmpty()) { aba.url = aba.urlDormida; aba.webView.loadUrl(aba.urlDormida) }
+        if (aba.tituloDormido.isNotBlank()) aba.titulo = aba.tituloDormido
+    }
+
+    private var recebidas: List<AbasEnviadas.Item> = emptyList()
+    private val recebidasAvisadas = HashSet<String>()
+
+    private fun recebidasParaPainel(): JSONArray {
+        val a = JSONArray()
+        for (r in recebidas.take(6)) a.put(JSONObject().put("id", r.id).put("t", r.titulo.ifBlank { r.url }).put("de", r.deNome))
+        return a
+    }
+
+    private fun enviarAbaAtual() {
+        val aba = atual ?: return
+        val url = AbasEnviadas.urlValida(aba.url)
+        if (url == null) { Toast.makeText(this, "Abra um site para poder enviá-lo.", Toast.LENGTH_SHORT).show(); return }
+        val token = ajustes.syncToken
+        if (token.isBlank()) { Toast.makeText(this, "Entre com o Vetorial ID para enviar abas.", Toast.LENGTH_LONG).show(); return }
+        val titulo = aba.titulo
+        val eu = ajustes.aparelho
+        Thread {
+            try {
+                Sync.mudarAbas(token) { AbasEnviadas.enviar(it, url, titulo, eu, "Android") }
+                runOnUiThread { Toast.makeText(this, "Aba enviada. Ela aparece no outro aparelho em alguns instantes.", Toast.LENGTH_LONG).show() }
+            } catch (e: Exception) {
+                runOnUiThread { Toast.makeText(this, "Não consegui enviar a aba agora. Confira a internet.", Toast.LENGTH_LONG).show() }
+            }
+        }.start()
+    }
+
+    private fun verificarAbasRecebidas() {
+        val token = ajustes.syncToken
+        if (token.isBlank()) return
+        val eu = ajustes.aparelho
+        Thread {
+            try {
+                val pendentes = AbasEnviadas.pendentes(Sync.lerAbas(token), eu)
+                runOnUiThread {
+                    recebidas = pendentes
+                    val novas = pendentes.filter { recebidasAvisadas.add(it.id) }
+                    if (novas.isNotEmpty()) {
+                        val de = novas[0].deNome.ifBlank { "outro aparelho" }
+                        Toast.makeText(this, "Aba enviada de $de. Abra o painel › Abas para ver.", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) { /* sem rede: tenta de novo daqui a pouco */ }
+        }.start()
+    }
+
+    private fun abrirRecebida(id: String) {
+        val r = recebidas.find { it.id == id } ?: return
+        recebidas = recebidas.filter { it.id != id }
+        novaAba(r.url, false)
+        val token = ajustes.syncToken
+        val eu = ajustes.aparelho
+        if (token.isNotBlank()) Thread { try { Sync.mudarAbas(token) { AbasEnviadas.marcarVisto(it, id, eu) } } catch (e: Exception) { /* fica para a próxima */ } }.start()
+    }
+
+    private fun traduzirAtual() {
+        val aba = atual ?: return
+        val url = aba.url
+        if (Traduzir.ehTraduzida(url)) {
+            val original = aba.originalAntes ?: Traduzir.urlOriginal(url)
+            if (original != null) aba.webView.loadUrl(original)
+            return
+        }
+        val destino = Traduzir.urlTraduzida(url)
+        if (destino == null) { Toast.makeText(this, "Só dá para traduzir páginas de sites.", Toast.LENGTH_SHORT).show(); return }
+        aba.originalAntes = url
+        aba.webView.loadUrl(destino)
+    }
+
+    /** Abre o PDF baixado direto no Vindex (o leitor da suíte). */
+    private fun abrirPdfNoVindex(id: Long) {
+        try {
+            val dm = getSystemService(DOWNLOAD_SERVICE) as DownloadManager
+            val uri = dm.getUriForDownloadedFile(id)
+            if (uri == null) { Toast.makeText(this, "O arquivo não está mais lá.", Toast.LENGTH_LONG).show(); return }
+            startActivity(Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/pdf").setPackage(VINDEX).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(this, "Atualize o Vindex para abrir PDFs por aqui.", Toast.LENGTH_LONG).show()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Não consegui abrir no Vindex.", Toast.LENGTH_LONG).show()
+        }
+    }
+
     private fun mostrar(aba: Aba) {
-        atual?.let { conteudo.removeView(it.webView) }
+        atual?.let { it.ultimoUso = System.currentTimeMillis(); conteudo.removeView(it.webView) }
         atual = aba
+        aba.ultimoUso = System.currentTimeMillis()
+        if (aba.dormindo) acordar(aba)
         conteudo.addView(aba.webView, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         campo.setText(Enderecos.paraMostrar(aba.url))
         barra.progresso = 0
@@ -1959,6 +2106,7 @@ class MainActivity : Activity() {
                 isClickable = true
                 setOnClickListener { if (a !== atual) mostrar(a) }
                 setOnLongClickListener { fecharAba(a); true }
+                if (a.dormindo) alpha = 0.55f
             }
             val t = TextView(this).apply {
                 text = (if (a.anonima) "● " else "") + nome
@@ -2079,6 +2227,7 @@ class MainActivity : Activity() {
         }
 
         override fun onPageStarted(view: WebView, url: String, icone: Bitmap?) {
+            if (aba.dormindo) return
             aba.bloqueados.set(0)
             fundoDoWebView(view, url)
             if (!url.startsWith("file:///android_asset/")) aba.url = url else aba.url = ""
@@ -2086,6 +2235,8 @@ class MainActivity : Activity() {
         }
 
         override fun onPageFinished(view: WebView, url: String) {
+            if (aba.dormindo) return
+            if (aba.limparHistorico && url != "about:blank") { aba.limparHistorico = false; view.clearHistory() }
             if (aba === atual && ::puxar.isInitialized) puxar.isRefreshing = false
             if (!url.startsWith("file:///android_asset/")) {
                 aba.url = url
@@ -2149,6 +2300,7 @@ class MainActivity : Activity() {
         }
 
         override fun onReceivedTitle(view: WebView, titulo: String?) {
+            if (aba.dormindo) return
             aba.titulo = if (titulo.isNullOrBlank() || titulo == "Velox") "Nova aba" else titulo
             desenharFaixaAbas()
         }
@@ -2428,13 +2580,14 @@ class MainActivity : Activity() {
                         ?: (c.getString(iLoc) ?: "").substringAfterLast('/').takeIf { it.isNotBlank() }
                         ?: (c.getString(iU) ?: "").substringBefore('?').substringAfterLast('/').takeIf { it.isNotBlank() } ?: "download"
                     itens.put(JSONObject().put("id", id).put("t", titulo).put("s", estado).put("b", bytes)
-                        .put("tot", c.getLong(iTot).coerceAtLeast(0)).put("v", vel.toLong()).put("q", q))
+                        .put("tot", c.getLong(iTot).coerceAtLeast(0)).put("v", vel.toLong()).put("q", q)
+                        .put("pdf", titulo.endsWith(".pdf", ignoreCase = true)))
                 }
             }
         } catch (e: Exception) {
             // sem acesso: mostra lista vazia
         }
-        val b64 = Base64.encodeToString(JSONObject().put("itens", itens).toString().toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+        val b64 = Base64.encodeToString(JSONObject().put("itens", itens).put("vx", vindexInstalado()).toString().toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
         wv.evaluateJavascript("window.vxAtualizar && window.vxAtualizar('$b64')", null)
     }
 

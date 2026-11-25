@@ -8,6 +8,8 @@ const DOMINIOS = [
   "amazon-adsystem.com", "scorecardresearch.com", "quantserve.com", "moatads.com", "adform.net", "smartadserver.com", "advertising.com", "yieldmo.com",
   "hotjar.com", "mixpanel.com", "segment.io", "facebook.net", "connect.facebook.net", "ads.twitter.com", "analytics.tiktok.com", "ads.linkedin.com",
   "popads.net", "propellerads.com", "exoclick.com", "juicyads.com", "adcolony.com", "applovin.com", "unity3d.com/ads", "mgid.com", "revcontent.com",
+  "trafficjunky.net", "teads.tv", "media.net", "bidswitch.net", "adroll.com", "sharethrough.com", "sovrn.com", "33across.com", "serving-sys.com", "2mdn.net",
+  "demdex.net", "krxd.net", "bluekai.com", "everesttech.net", "mathtag.com", "tapad.com", "rlcdn.com", "clarity.ms", "bat.bing.com", "mouseflow.com", "fullstory.com", "crazyegg.com",
 ];
 
 /** true se o endereço (ou um domínio acima dele) está na lista. */
@@ -25,6 +27,7 @@ class Bloqueio {
     this.sessoes = new Set();
     this.motor = null;
     this.modo = "desligado"; // "ghostery" | "lista" | "desligado"
+    this.cobertura = ""; // "completa" (com avisos de cookies) | "anuncios"
     this.aoMudar = null;
   }
 
@@ -36,11 +39,15 @@ class Bloqueio {
       const { ElectronBlocker } = require("@ghostery/adblocker-electron");
       fs.mkdirSync(this.pasta, { recursive: true });
       const cache = path.join(this.pasta, "motor.bin");
-      this.motor = await ElectronBlocker.fromPrebuiltAdsAndTracking(fetch, {
-        path: cache,
-        read: fs.promises.readFile,
-        write: fs.promises.writeFile,
-      });
+      const caching = { path: cache, read: fs.promises.readFile, write: fs.promises.writeFile };
+      try {
+        // lista completa: anúncios, rastreadores e também avisos de cookies e pedidos de notificação
+        this.motor = await ElectronBlocker.fromPrebuiltFull(fetch, caching);
+        this.cobertura = "completa";
+      } catch (e) {
+        this.motor = await ElectronBlocker.fromPrebuiltAdsAndTracking(fetch, caching);
+        this.cobertura = "anuncios";
+      }
       this.motor.on("request-blocked", () => this.contar());
       this.modo = "ghostery";
       if (this.ligado) for (const s of this.sessoes) this.motor.enableBlockingInSession(s);

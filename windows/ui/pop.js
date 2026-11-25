@@ -19,6 +19,9 @@
     vertical: '<rect x="3.5" y="5" width="17" height="14" rx="2"/><path d="M9.5 5v14M5.5 9h2M5.5 12h2M5.5 15h2"/>',
     organizar: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><path d="M14 17h6M17 14v6"/>',
     atalho: '<rect x="4" y="4" width="16" height="16" rx="3.5"/><path d="M9 15l6-6M10 9h5v5"/>',
+    enviar: '<path d="M4 12l16-8-6 16-3-7z"/><path d="M11 13l9-9"/>',
+    traduzir: '<path d="M4 6h9M8.5 4v2M6 6c.8 3.5 3 6 6 7.5M11 6c-.8 3.5-3.5 6-7 7.5"/><path d="M13 20l4-10 4 10M14.4 17h5.2"/>',
+    vindex: '<path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5V8h4M9.5 13h5M9.5 16h5"/>',
     cores: '<circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="9" r="1"/><circle cx="15" cy="14" r="1"/>'
   };
   function el(tag, cls, texto) { var e = document.createElement(tag); if (cls) e.className = cls; if (texto != null) e.textContent = texto; return e; }
@@ -41,6 +44,11 @@
   function tamanho(b) { if (!b) return ""; var u = ["B", "KB", "MB", "GB"], i = 0; while (b >= 1024 && i < 3) { b /= 1024; i++; } return b.toFixed(i > 1 ? 1 : 0).replace(".", ",") + " " + u[i]; }
 
   function desenharMenu(c) {
+    if (D.recebidas && D.recebidas.length) {
+      c.appendChild(el("div", "titulo", "Abas enviadas para você"));
+      D.recebidas.forEach(function (r) { var b = item(r.n, { icone: "enviar", clique: acao("abrir-recebida", r.id) }); b.title = "Enviada de " + (r.de || "outro aparelho"); c.appendChild(b); });
+      c.appendChild(sep());
+    }
     c.appendChild(item("Nova aba", { icone: "aba", atalho: "Ctrl+T", clique: acao("nova-aba") }));
     c.appendChild(item("Nova aba anônima", { icone: "anon", atalho: "Ctrl+Shift+N", clique: acao("anonima") }));
     c.appendChild(sep());
@@ -58,6 +66,10 @@
     c.appendChild(item("Colocar a página na área de trabalho", { icone: "atalho", clique: acao("atalho") }));
     c.appendChild(item("Imprimir…", { icone: "imp", atalho: "Ctrl+P", clique: acao("imprimir") }));
     c.appendChild(item(D.dividida ? "Fechar tela dividida" : "Tela dividida", { icone: "dividir", clique: acao("dividir") }));
+    if (D.podeSite) {
+      c.appendChild(item("Enviar esta aba para o outro aparelho", { icone: "enviar", clique: acao("enviar-aba") }));
+      c.appendChild(item(D.traduzida ? "Ver a página original" : "Traduzir para o português", { icone: "traduzir", clique: acao("traduzir") }));
+    }
     c.appendChild(item("Captura de tela", { icone: "captura", atalho: "Ctrl+Shift+S", clique: acao("captura") }));
     c.appendChild(item("Localizar na página…", { icone: "achar", atalho: "Ctrl+F", clique: acao("localizar") }));
     c.appendChild(item("Modo gamer", { icone: "gamer", atalho: "Ctrl+Shift+G", clique: acao("gamer") }));
@@ -111,7 +123,9 @@
       if (d.estado === "pronto") {
         // dois botões com os ícones do app: abrir o arquivo agora, ou só mostrar onde ele ficou
         var acoes = el("div", "dl-acoes");
-        [["abrir", "Abrir", "download-abrir"], ["pasta", "Abrir pasta", "download-pasta"]].forEach(function (a) {
+        var botoes = [["abrir", "Abrir", "download-abrir"], ["pasta", "Abrir pasta", "download-pasta"]];
+        if (d.pdf && d.comVindex) botoes.unshift(["vindex", "Abrir no Vindex", "download-vindex"]);
+        botoes.forEach(function (a) {
           var bt = el("button", "dl-bt"); bt.type = "button"; bt.title = a[1];
           bt.appendChild(icone(a[0])); bt.appendChild(el("span", null, a[1]));
           bt.onclick = acao(a[2], d.id); acoes.appendChild(bt);

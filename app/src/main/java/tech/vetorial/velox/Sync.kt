@@ -144,6 +144,22 @@ object Sync {
         return Pair(null, 0)
     }
 
+    /** Abas enviadas entre aparelhos (chave velox-abas). */
+    fun lerAbas(token: String): AbasEnviadas.Doc = AbasEnviadas.deJson(docRemoto(token, "velox-abas").first)
+
+    /** Aplica a mudança e grava; se outro aparelho gravou antes (409), lê de novo e repete. */
+    fun mudarAbas(token: String, mudar: (AbasEnviadas.Doc) -> AbasEnviadas.Doc) {
+        for (i in 0 until 3) {
+            val (atual, versao) = docRemoto(token, "velox-abas")
+            val novo = mudar(AbasEnviadas.deJson(atual))
+            try {
+                chamar(token, "PUT", "/id/sync/velox-abas", JSONObject().put("valor", AbasEnviadas.paraJson(novo)).put("versao", versao))
+                return
+            } catch (e: Falha) { if (e.status != 409) throw e }
+        }
+        throw Falha(409, "Outro aparelho está mexendo nisso agora. Tente de novo.")
+    }
+
     /** Vence a mudança mais recente. t = quando a pessoa mexeu no tema pela última vez (milissegundos). */
     fun sincronizarTema(token: String, t: Long, tema: String): TemaRes {
         for (tentativa in 0..1) {

@@ -7,7 +7,7 @@ package tech.vetorial.velox
  */
 object Apresentacao {
     /** Mudou o texto dos termos: suba a versão e a pessoa aceita de novo. */
-    const val VERSAO_DOS_TERMOS = 2
+    const val VERSAO_DOS_TERMOS = 3
 
     data class Passo(val icone: String, val titulo: String, val texto: String)
     data class Novidade(val id: Int, val data: String, val tipo: String, val titulo: String, val texto: String)
@@ -17,6 +17,8 @@ object Apresentacao {
         Passo("🛡️", "Bloqueio de anúncios", "O Velox barra anúncios e rastreadores sozinho e mostra quantos bloqueou na aba. Dá para desligar em Ajustes."),
         Passo("🗂️", "Abas, anônima e favoritos", "Abra várias abas, use a aba anônima quando quiser e guarde seus sites favoritos para voltar rápido. E, em Ajustes, “Colocar na tela inicial” transforma a página aberta num ícone, como um aplicativo."),
         Passo("🔐", "Cofre de senhas", "O Velox oferece guardar logins e preenche para você. O cofre fica protegido no aparelho e só sincroniza com a sua conta se você ligar."),
+        Passo("🌐", "Enviar aba, traduzir e abas dormindo", "Envie a página que você está vendo para o outro aparelho, traduza para o português com um toque e deixe o Velox pôr para dormir as abas paradas, para poupar memória."),
+        Passo("📄", "PDF direto no Vindex", "Baixou um PDF? Na lista de downloads, toque em “Abrir no Vindex” para ler, anotar e preencher."),
         Passo("🎮", "Game Bar e janelinha", "A barra de jogo dá atalhos rápidos, e a janelinha mantém o vídeo rodando por cima de outros apps."),
         Passo("☁️", "Sincronização", "O Velox é grátis e pede o seu Vetorial ID (você cria na hora, se não tiver). Com ele, favoritos, tema e (se quiser) senhas vão com você para os seus outros aparelhos."),
         Passo("🔄", "Sempre atualizado", "O Velox procura versão nova sozinho ao abrir e, depois de atualizar, mostra o que mudou.")
@@ -33,7 +35,7 @@ object Apresentacao {
     val TERMOS = listOf(
         "1. O que é o Velox" to "O Velox é um navegador gratuito da Vetorial Tech. Para usar, é preciso entrar com o seu Vetorial ID (a conta única da Vetorial Tech, grátis e criada na hora). Nesta fase ele está em testes (beta): pode ter erros e mudar sem aviso.",
         "2. Navegação e sites" to "Os sites que você abre são de terceiros, com regras próprias. A Vetorial Tech não controla o conteúdo deles. O bloqueio de anúncios reduz, mas não elimina, rastreadores e riscos.",
-        "3. Privacidade" to "O histórico, os favoritos e o cofre ficam no seu aparelho. Só são enviados à sua conta Vetorial ID se você ligar a sincronização, e apenas o que você escolher sincronizar. A aba anônima não grava histórico.",
+        "3. Privacidade" to "O histórico, os favoritos e o cofre ficam no seu aparelho. Só são enviados à sua conta Vetorial ID se você ligar a sincronização, e apenas o que você escolher sincronizar. A aba anônima não grava histórico. Se você enviar uma aba para o outro aparelho, o endereço e o título dela ficam guardados na sua conta por até 7 dias. Se tocar em “Traduzir página”, o endereço da página é enviado ao Google Tradutor.",
         "4. Senhas" to "O cofre guarda logins protegidos neste aparelho. Se você esquecer a senha do cofre, a Vetorial Tech não consegue recuperá-los.",
         "5. Permissões dos sites" to "Câmera, microfone e localização só são liberados para um site quando você permite. Você pode revogar quando quiser.",
         "6. Garantias" to "O Velox é oferecido como está, sem garantia de funcionamento contínuo. A Vetorial Tech não se responsabiliza por perdas decorrentes do uso nem por conteúdo de sites.",
@@ -59,6 +61,11 @@ object Apresentacao {
         Novidade(16, "2026-11-20", "novo", "Página como aplicativo na tela inicial", "Em Ajustes (ou no painel de favoritos), toque em “Colocar na tela inicial”. Você escolhe o nome e o Velox cria um ícone com a logo do site na tela inicial do celular. Ao tocar, a página abre direto no Velox."),
         Novidade(17, "2026-11-21", "novo", "Feedback e relato de erros", "Em Ajustes › Sobre o Velox há agora Enviar feedback e Reportar um erro: conte o que achou, avise quando algo não funcionou e responda uma pesquisa rápida de 1 minuto. O Velox está em fase de testes (beta) e cada relato ajuda a melhorar."),
         Novidade(18, "2026-11-24", "novo", "Velox Gaming e Velox Pro", "O Velox agora tem duas edições no mesmo app. Gaming é o visual de jogo, com neon, luz no logo e fundo animado. Pro é limpo e direto, sem brilho nem animações, ideal para o trabalho. Quem instala escolhe na primeira abertura, e todos podem trocar quando quiser em Painel › Visual › Edição do Velox. A troca aplica as cores e o estilo da edição, e você ainda pode ajustar o que quiser depois."),
+        Novidade(19, "2026-11-25", "melhoria", "Bloqueio de anúncios mais forte", "A lista de anunciantes e rastreadores ficou bem maior, e o Velox agora também esconde banners de anúncio e avisos de cookies que escapavam. Continua em Ajustes › Bloquear anúncios, e dá para desligar."),
+        Novidade(20, "2026-11-25", "novo", "Abas dormindo", "A aba que ficou parada em segundo plano por 15 minutos é esvaziada para poupar memória e volta sozinha, no mesmo endereço, quando você abre. Nunca dorme a aba que está na tela, a anônima, a que carrega ou quando há som tocando. Dá para desligar no painel."),
+        Novidade(21, "2026-11-25", "novo", "Enviar aba para o outro aparelho", "No painel, em Abas ou em Nesta página, toque em “Enviar para o outro aparelho”. A página aparece no Velox do computador (ou do celular) em instantes, em “Enviadas para você”. Precisa estar com o Vetorial ID entrado nos dois."),
+        Novidade(22, "2026-11-25", "novo", "Abrir PDF no Vindex", "Na lista de downloads, todo PDF baixado ganha o botão “Abrir no Vindex” (se o Vindex estiver instalado) para ler, anotar e preencher formulários."),
+        Novidade(23, "2026-11-25", "novo", "Traduzir página", "No painel, em Nesta página, toque em “Traduzir página” para ver o site em português. Toque de novo, agora em “Ver original”, para voltar. O endereço da página é enviado ao Google Tradutor só quando você pede.")
     )
 
     fun rotulo(tipo: String): String = when (tipo) { "novo" -> "Novo"; "melhoria" -> "Melhorou"; "correcao" -> "Corrigido"; else -> tipo }

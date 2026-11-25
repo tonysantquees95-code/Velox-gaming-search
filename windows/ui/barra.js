@@ -62,7 +62,7 @@
     e.abas.forEach(function (a) {
       var d = document.createElement("div");
       if (!e.verticais) d.dataset.corte = "aba";
-      d.className = (e.verticais ? "aba-v" : "aba corte") + (a.id === e.ativa ? " ativa" : "") + (a.id === e.ladoDireito ? " lado" : "") + (a.carregando ? " carregando" : "") + (a.anonima ? " anonima" : "");
+      d.className = (e.verticais ? "aba-v" : "aba corte") + (a.id === e.ativa ? " ativa" : "") + (a.id === e.ladoDireito ? " lado" : "") + (a.carregando ? " carregando" : "") + (a.anonima ? " anonima" : "") + (a.dormindo ? " dormindo" : "");
       var t = document.createElement("span"); t.textContent = a.titulo; t.title = a.url || a.titulo;
       var x = document.createElement("b"); x.textContent = "×"; x.title = "Fechar aba";
       x.onclick = function (ev) { ev.stopPropagation(); V.enviar("fechar-aba", a.id); };

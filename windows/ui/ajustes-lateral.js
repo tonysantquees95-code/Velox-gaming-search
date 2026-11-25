@@ -5,6 +5,7 @@
   var secoes = [].slice.call(main.querySelectorAll(":scope > section.cartao"));
   var ICONES = {
     "Privacidade e bloqueio": '<path d="M12 3l7 3v5c0 5-3.2 8.2-7 10-3.8-1.8-7-5-7-10V6z"/>',
+    "Desempenho": '<path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/>',
     "Tema": '<circle cx="12" cy="12" r="8"/><circle cx="9" cy="10" r="1"/><circle cx="14" cy="9" r="1"/><circle cx="15" cy="14" r="1"/>',
     "Barra de rolagem": '<rect x="8" y="3" width="8" height="18" rx="4"/><path d="M12 7v4"/>',
     "Senhas": '<circle cx="7.5" cy="15.5" r="3.5"/><path d="M10 13L20 3M17 6L20 9M14 9L16.5 11.5"/>',

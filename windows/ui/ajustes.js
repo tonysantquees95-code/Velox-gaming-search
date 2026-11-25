@@ -16,8 +16,10 @@
   function desenhar(e) {
     $("versao").textContent = "Versão " + e.versao;
     $("bloqueio").checked = e.bloqueio; $("continuar").checked = e.continuar; $("barrafav").checked = e.mostrarFavoritos;
+    $("dormir").checked = e.dormirAbas; $("dormir-min").value = String(e.dormirMinutos); $("dormir-min").disabled = !e.dormirAbas;
+    $("dormir-n").textContent = e.dormirFrase ? "· " + e.dormirFrase : "";
     $("bloq-n").textContent = e.bloqueados ? "· " + e.bloqueados + " bloqueados nesta sessão" : "";
-    $("bloq-modo").textContent = e.modoBloqueio === "ghostery" ? "Motor completo com listas atualizadas (EasyList e uBlock)." : e.modoBloqueio === "lista" ? "Motor básico por lista de domínios (o completo não carregou — precisa de internet na primeira vez)." : "Carregando as listas…";
+    $("bloq-modo").textContent = e.modoBloqueio === "completo" ? "Motor completo: barra anúncios, rastreadores e também avisos de cookies (listas EasyList e uBlock, atualizadas sozinhas)." : e.modoBloqueio === "ghostery" ? "Motor completo com listas atualizadas (EasyList e uBlock)." : e.modoBloqueio === "lista" ? "Motor básico por lista de domínios (o completo não carregou — precisa de internet na primeira vez)." : "Carregando as listas…";
 
     if (document.activeElement !== $("rol-larg")) $("rol-larg").value = e.rolagem.largura;
     $("rol-modo").value = e.rolagem.modo; $("rol-cor").value = e.rolagem.cor; $("rol-n").textContent = "· " + e.rolagem.largura + " px";
@@ -109,6 +111,8 @@
   ["favoritos", "tema", "senhas"].forEach(function (k) { $("si-" + k).onchange = salvarItens; });
   function recarregar() { return V.chamar("ajustes:estado").then(desenhar); }
 
+  function mudarDormir() { V.chamar("ajustes:dormir", { ligado: $("dormir").checked, minutos: Number($("dormir-min").value) }).then(desenhar); }
+  $("dormir").onchange = mudarDormir; $("dormir-min").onchange = mudarDormir;
   $("bloqueio").onchange = function () { V.chamar("ajustes:bloqueio", this.checked).then(desenhar); };
   function salvarRolagem() { V.chamar("ajustes:rolagem", { modo: $("rol-modo").value, largura: +$("rol-larg").value, cor: $("rol-cor").value }).then(desenhar); }
   $("rol-modo").onchange = salvarRolagem; $("rol-cor").onchange = salvarRolagem; $("rol-larg").onchange = salvarRolagem;
