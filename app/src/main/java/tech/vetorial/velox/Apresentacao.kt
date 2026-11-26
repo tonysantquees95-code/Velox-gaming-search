@@ -65,7 +65,7 @@ object Apresentacao {
         Novidade(20, "2026-11-25", "novo", "Abas dormindo", "A aba que ficou parada em segundo plano por 15 minutos é esvaziada para poupar memória e volta sozinha, no mesmo endereço, quando você abre. Nunca dorme a aba que está na tela, a anônima, a que carrega ou quando há som tocando. Dá para desligar no painel."),
         Novidade(21, "2026-11-25", "novo", "Enviar aba para o outro aparelho", "No painel, em Abas ou em Nesta página, toque em “Enviar para o outro aparelho”. A página aparece no Velox do computador (ou do celular) em instantes, em “Enviadas para você”. Precisa estar com o Vetorial ID entrado nos dois."),
         Novidade(22, "2026-11-25", "novo", "Abrir PDF no Vindex", "Na lista de downloads, todo PDF baixado ganha o botão “Abrir no Vindex” (se o Vindex estiver instalado) para ler, anotar e preencher formulários."),
-        Novidade(23, "2026-11-25", "novo", "Traduzir página", "No painel, em Nesta página, toque em “Traduzir página” para ver o site em português. Toque de novo, agora em “Ver original”, para voltar. O endereço da página é enviado ao Google Tradutor só quando você pede.")
+        Novidade(23, "2026-11-25", "novo", "Traduzir página", "No painel, em Nesta página, toque em “Traduzir página” para ver o site em português. Toque de novo, agora em “Ver original”, para voltar. O endereço da página é enviado ao Google Tradutor só quando você pede."),
         Novidade(24, "2026-11-26", "correcao", "Ícones de volta", "Depois da última atualização, os ícones do painel podiam não aparecer. Já voltaram ao normal."),
     )
 
