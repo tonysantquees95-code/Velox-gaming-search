@@ -59,6 +59,7 @@ const NOVIDADES = [
   { id: 25, data: "2026-11-25", tipo: "novo", titulo: "Enviar aba para o outro aparelho", texto: "No menu dos três pontinhos, clique em “Enviar esta aba para o outro aparelho”. A página chega no Velox do celular (e a do celular chega aqui) em instantes, com um aviso, e fica em “Abas enviadas para você” no menu. Precisa estar com o Vetorial ID entrado nos dois." },
   { id: 26, data: "2026-11-25", tipo: "novo", titulo: "Abrir PDF no Vindex", texto: "Na lista de downloads, todo PDF baixado ganha o botão “Abrir no Vindex” (se o Vindex estiver instalado) para ler, anotar e preencher formulários." },
   { id: 27, data: "2026-11-25", tipo: "novo", titulo: "Traduzir página", texto: "No menu dos três pontinhos, clique em “Traduzir para o português” para ver o site traduzido. Clique em “Ver a página original” para voltar. O endereço da página é enviado ao Google Tradutor só quando você pede." },
+  { id: 28, data: "2026-11-26", tipo: "correcao", titulo: "Abas e botões de volta", texto: "Depois da última atualização, as abas lá em cima e os botões de baixo (voltar, avançar, início, recarregar e ajustes) podiam não aparecer. Já voltaram ao normal." },
 ];
 
 const ROTULO = { novo: "Novo", melhoria: "Melhorou", correcao: "Corrigido" };
