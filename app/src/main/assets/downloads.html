@@ -70,8 +70,8 @@ body { display: flex; flex-direction: column; padding: 0; }
         info.textContent = txt;
         var br = el("div", "barra-d" + (pct < 0 ? " indef" : "")), bi = el("i"); bi.style.width = (pct < 0 ? 35 : pct) + "%"; br.appendChild(bi);
         c.appendChild(info); c.appendChild(br);
-      } else if (i.s === 2) { info.innerHTML = '<span class="estado-ok">Concluído</span> · ' + fmt(i.tot > 0 ? i.tot : i.b); c.appendChild(info); }
-      else { info.innerHTML = '<span class="estado-erro">Falhou</span>' + (i.q ? " · " + i.q : ""); c.appendChild(info); }
+      } else if (i.s === 2) { var ok = el("span", "estado-ok", "Concluído"); info.appendChild(ok); info.appendChild(document.createTextNode(" · " + fmt(i.tot > 0 ? i.tot : i.b))); c.appendChild(info); }
+      else { info.appendChild(el("span", "estado-erro", "Falhou")); info.appendChild(document.createTextNode(i.q ? " · " + i.q : "")); c.appendChild(info); }
       var ac = el("div", "acoes-d");
       if (i.s === 2) {
         var a1 = el("button", "botao primario", "Abrir arquivo"); a1.onclick = function () { ir("dl-abrir", { id: i.id }); }; ac.appendChild(a1);

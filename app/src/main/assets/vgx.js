@@ -89,6 +89,8 @@ window.VGX = {
   PACOTES: [["linha", "Linha"], ["fino", "Fino"], ["grossa", "Grossa"], ["duo", "Duplo"], ["aurora", "Aurora"], ["cor", "Cor"], ["neon", "Neon"], ["reto", "Reto"], ["sombra", "Sombra"]],
   /** Desenha um ícone (24x24) no estilo do pacote, igual ao da barra do app. `miolo` é o SVG do desenho; `uid` evita colisão de gradientes. */
   pacoteSvg: function (id, miolo, c1, c2, uid) {
+    if (!hex(c1)) c1 = "ff2d95";
+    if (!hex(c2)) c2 = "7c4dff"; // cor que não for 6 dígitos hexa nunca entra no SVG
     var A = "#" + c1, B = "#" + c2, W = "#ffffff";
     var def = '<defs><linearGradient id="d' + uid + '" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22"><stop offset="0" stop-color="' + A + '"/><stop offset="1" stop-color="' + B + '"/></linearGradient>' +
       '<linearGradient id="a' + uid + '" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22"><stop offset="0" stop-color="' + B + '"/><stop offset="1" stop-color="' + A + '"/></linearGradient></defs>';

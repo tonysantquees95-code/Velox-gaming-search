@@ -1,0 +1,50 @@
+[
+  {
+    "regra": "cleartext",
+    "arquivo": "AndroidManifest.xml",
+    "trecho": "usesCleartextTraffic",
+    "motivo": "O Velox é um navegador: a pessoa pode abrir sites que ainda só têm http. Ideia futura: aviso 'site não seguro' e modo só-HTTPS."
+  },
+  {
+    "regra": "html",
+    "arquivo": "inicio.html",
+    "trecho": "ic.innerHTML = c",
+    "motivo": "c vem de conteudoDoIcone: só um ícone da tabela fixa M (nunca texto digitado nem título de site)"
+  },
+  {
+    "regra": "html",
+    "arquivo": "inicio.html",
+    "trecho": "M[id].p",
+    "motivo": "caminho de ícone da tabela fixa M, escolhido pelo código"
+  },
+  {
+    "regra": "html",
+    "arquivo": "painel.html",
+    "trecho": "",
+    "motivo": "painel: só ícones SVG das tabelas fixas do app e rótulos fixos; cores do tema validadas (HEX) na entrada e de novo em pacoteSvg"
+  },
+  {
+    "regra": "html",
+    "arquivo": "assets/vgx.js",
+    "trecho": "",
+    "motivo": "logo e ícones desenhados em SVG com medidas e cores do próprio app; cores só passam se forem 6 dígitos hexa"
+  },
+  {
+    "regra": "html",
+    "arquivo": "windows/ui/",
+    "trecho": "",
+    "motivo": "janelinhas do Windows: ícones SVG de tabelas fixas (IC, ICONES); texto de site ou do usuário usa textContent"
+  },
+  {
+    "regra": "http",
+    "arquivo": "Enderecos.kt",
+    "trecho": "http://$t",
+    "motivo": "endereço digitado que é da rede local (localhost ou número de IP); todo domínio digitado sem esquema vira https://"
+  },
+  {
+    "regra": "http",
+    "arquivo": "windows/bloqueio.js",
+    "trecho": "http://*/*",
+    "motivo": "padrão de filtro do bloqueador de anúncios (casa com endereços http e https); não abre conexão nenhuma"
+  }
+]

@@ -21,6 +21,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Teste de segurança
+        run: node --test windows/teste/seguranca.test.mjs
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin

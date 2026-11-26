@@ -10,7 +10,7 @@
     "start": "electron .",
     "preparar": "node preparar.js",
     "dist": "node preparar.js && electron-builder --win portable nsis --publish never",
-    "test": "node --test teste/*.test.js"
+    "test": "node --test teste/*.test.js teste/*.test.mjs"
   },
   "build": {
     "appId": "tech.vetorial.velox.windows",
